@@ -1,0 +1,12 @@
+version: '3.4'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "54320:5432"
+    environment:
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=root
+      - POSTGRES_DB=ms_homer
+    restart: unless-stopped

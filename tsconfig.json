@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "lib": ["esnext"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "paths": {
+      "@/*": ["src/*"],
+      "@root/*": ["*"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2020"
+  },
+  "include": ["__mocks__", "__tests__", "config", "src"],
+  "exclude": ["**/node_modules", "**/.*/"]
+}

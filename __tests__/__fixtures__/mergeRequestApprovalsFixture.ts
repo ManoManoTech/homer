@@ -1,0 +1,26 @@
+export const mergeRequestApprovalsFixture = {
+  id: 5,
+  iid: 5,
+  project_id: 1,
+  title: 'Approvals API',
+  description: 'Test',
+  state: 'opened',
+  created_at: '2016-06-08T00:19:52.638Z',
+  updated_at: '2016-06-08T21:20:42.470Z',
+  merge_status: 'cannot_be_merged',
+  approvals_required: 2,
+  approvals_left: 1,
+  approved_by: [
+    {
+      user: {
+        name: 'Administrator',
+        username: 'root',
+        id: 1,
+        state: 'active',
+        avatar_url:
+          'http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80\u0026d=identicon',
+        web_url: 'http://localhost:3000/root',
+      },
+    },
+  ],
+};

@@ -1,0 +1,71 @@
+import { projectFixture } from '../projectFixture';
+
+export const noteHookFixture = {
+  object_kind: 'note',
+  user: {
+    name: 'Administrator',
+    username: 'root',
+    avatar_url:
+      'http://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\u0026d=identicon',
+  },
+  project_id: projectFixture.id,
+  project: {
+    id: projectFixture.id,
+    name: projectFixture.name,
+    description: projectFixture.description,
+    web_url: projectFixture.web_url,
+    avatar_url: projectFixture.avatar_url,
+    git_ssh_url: 'git@example.com:mike/diaspora.git',
+    git_http_url: 'http://example.com/mike/diaspora.git',
+    namespace: projectFixture.namespace,
+    visibility_level: 0,
+    path_with_namespace: projectFixture.path_with_namespace,
+    default_branch: projectFixture.default_branch,
+    homepage: 'http://example.com/mike/diaspora',
+    url: 'git@example.com:mike/diaspora.git',
+    ssh_url: 'git@example.com:mike/diaspora.git',
+    http_url: 'http://example.com/mike/diaspora.git',
+  },
+  repository: {
+    name: 'Gitlab Test',
+    url: 'http://example.com/gitlab-org/gitlab-test.git',
+    description: 'Aut reprehenderit ut est.',
+    homepage: 'http://example.com/gitlab-org/gitlab-test',
+  },
+  object_attributes: {
+    id: 1243,
+    note: 'This is a commit comment. How does this work?',
+    noteable_type: 'Commit',
+    author_id: 1,
+    created_at: '2015-05-17 18:08:09 UTC',
+    updated_at: '2015-05-17 18:08:09 UTC',
+    project_id: 5,
+    attachment: null,
+    line_code: 'bec9703f7a456cd2b4ab5fb3220ae016e3e394e3_0_1',
+    commit_id: 'cfe32cf61b73a0d5e9f13e774abde7ff789b1660',
+    noteable_id: null,
+    system: false,
+    st_diff: {
+      diff: '--- /dev/null\n+++ b/six\n@@ -0,0 +1 @@\n+Subproject commit 409f37c4f05865e4fb208c771485f211a22c4c2d\n',
+      new_path: 'six',
+      old_path: 'six',
+      a_mode: '0',
+      b_mode: '160000',
+      new_file: true,
+      renamed_file: false,
+      deleted_file: false,
+    },
+    url: 'http://example.com/gitlab-org/gitlab-test/commit/cfe32cf61b73a0d5e9f13e774abde7ff789b1660#note_1243',
+  },
+  commit: {
+    id: 'cfe32cf61b73a0d5e9f13e774abde7ff789b1660',
+    message:
+      'Add submodule\n\nSigned-off-by: Example User \u003cuser@example.com.com\u003e\n',
+    timestamp: '2014-02-27T10:06:20+02:00',
+    url: 'http://example.com/gitlab-org/gitlab-test/commit/cfe32cf61b73a0d5e9f13e774abde7ff789b1660',
+    author: {
+      name: 'Example User',
+      email: 'user@example.com',
+    },
+  },
+};
