@@ -1,0 +1,64 @@
+{
+  "display_information": {
+    "name": "Homer",
+    "description": "Homer helps you to share your Gitlab merge requests.",
+    "background_color": "#0397a7"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Homer",
+      "always_online": true
+    },
+    "slash_commands": [
+      {
+        "command": "/homer",
+        "url": "HOMER_BASE_URL/api/v1/homer/command",
+        "description": "Make Homer work, it won't hurt him!",
+        "should_escape": false
+      }
+    ]
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "calls:read",
+        "calls:write",
+        "channels:read",
+        "chat:write",
+        "chat:write.public",
+        "commands",
+        "dnd:read",
+        "files:read",
+        "groups:read",
+        "groups:write",
+        "im:history",
+        "im:read",
+        "im:write",
+        "incoming-webhook",
+        "mpim:history",
+        "mpim:read",
+        "mpim:write",
+        "pins:write",
+        "reactions:read",
+        "reactions:write",
+        "remote_files:read",
+        "remote_files:share",
+        "remote_files:write",
+        "team:read",
+        "users:read",
+        "users:read.email",
+        "users:write",
+        "chat:write.customize"
+      ]
+    }
+  },
+  "settings": {
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "HOMER_BASE_URL/api/v1/homer/interactive"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

@@ -13,12 +13,14 @@ steps:
 
 #### Add a Gitlab project to a Slack channel
 
-- Make sure that [core-bot](https://git.manomano.tech/core-bot) has at least the
+- Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
   `Developer` role in your project.
 
 - Go in the Slack channel.
 
-- Run the following command: `/homer project add PROJECT_NAME` (Also supports `PROJECT_ID`)
+- Run one of the following commands:
+  - `/homer project add PROJECT_ID`
+  - `/homer project add PROJECT_NAME`
 
 **⚠️ If you want to use Homer in a private channel, you need to invite it to the
 channel first.**
@@ -30,58 +32,24 @@ when something occurs on the related merge requests.
 
 To do so, you need to set up a webhook in your project:
 
-- Get the Homer's `GITLAB_SECRET` in
-  [Vault](https://vault-eu-west-3.int.manomano.com/ui/vault/secrets/int/show/ms/homer/function).
+- Ask for Homer's `GITLAB_SECRET` to the person that manages Homer in your
+  organisation.
 
-  Use the role matching your feature team in **SSO** tab to log in and go to the
-  `int/ms/homer/function` folder.
+- Go to the `Webhooks` settings page of your Gitlab project.
 
-- Go to the `Webhooks` settings page of your Gitlab project (ex:
-  https://git.manomano.tech/solutions/spartacux/hooks).
+- Enter the following URL: `HOMER_BASE_URL/api/v1/homer/gitlab`.
 
-- Enter the following URL:
-  `https://openapi.support.manomano.com/api/v1/homer/gitlab`.
+  HOMER_BASE_URL should also be provided by the person that manages Homer in
+  your organisation.
 
 - Enter the value of `GITLAB_SECRET` in `Secret Token` field.
 
 - Check the following checkboxes: `Push events`, `Comments`,
   `Merge request events`.
 
-  _If you want to use Homer to release this project, you must also check
-  `Deployment events`._
-
 - Click on the `Add webhook` button on the bottom of the page.
 
 ℹ️ This can be skipped if your Gitlab project is already used in another channel.
-
-#### Configure Homer to release a Gitlab project
-
-- Make sure that the project has been added to the Slack channel where the
-  `/homer release` command will be used.
-
-- Make sure that [core-bot](https://git.manomano.tech/core-bot) has the
-  `Maintainer` role in your project.
-
-- Make sure the webhook set up in your project has the `Deployment events` checked.
-
-- Add your project in the dedicated
-  [Homer configuration file](https://git.manomano.tech/tools/homer/-/blob/master/config/homer/projectReleaseConfigs.ts#L19).
-
-  _This step may be quite complex so don't hesitate to ask for some help on
-  `#moes-tavern-homer` Slack channel._
-
-Once all these steps are done, you will be able to use the `/homer release` command
-to make Homer release your project.
-
-Homer will:
-
-- Create the release notes automatically with links to MRs and JIRA tickets.
-
-  _To do so, Homer will analyse the commits since the previous release and try to
-  find merge commits and Jira references._
-
-- Publish most of the messages automatically in `#it-deploy` and in the channel
-  of your choice.
 
 ### Display the help
 
@@ -101,57 +69,54 @@ You can provide merge request ID prefixed with `!`, e.g.: `/homer review !128`.
 
 Command `/homer review list` shows all the ongoing merge requests.
 
-### Make a release
+## Install
 
-- Run a `/homer release` command. A modal form will appear.
-- Provide project to release and a tag.
-- Service would be deployed to INT and STG automatically. You need to deploy to PRD manually using Gitlab pipeline.
-- Standard projects will be deployed automatically to INT and STG environments but you need to deploy to PRD manually using the Gitlab pipeline.
-- Post message about successful deployment manually.
+### Prerequisites
 
-## Contributing
+- [Docker Compose](https://docs.docker.com/compose/install/).
+- [Ngrok](https://ngrok.com/download).
+- [Node.js@18](https://nodejs.org/en/). You can use a version manager like [nvm](https://github.com/nvm-sh/nvm).
+- [Yarn@1](https://classic.yarnpkg.com/lang/en/).
 
-Here are listed all the ways you can contribute to the project.
-
-### Issues
-
-If you encounter an issue, you can either create a
-[Gitlab issue](https://git.manomano.tech/tools/homer/-/issues/new) or
-describe your problem in `#moes-tavern-homer` Slack channel.
-
-### Develop
-
-#### Monitoring
-
-- [Datadog INT logs](https://app.datadoghq.eu/logs?cols=host%2Cservice&from_ts=1573722380129&index=&live=true&messageDisplay=inline&query=service%3A%2Ahomer%2A%20%40env%3Aint&stream_sort=desc&to_ts=1573723280129)
-- [Datadog SUPPORT logs](https://app.datadoghq.eu/logs?cols=host%2Cservice&from_ts=1573722380129&index=&live=true&messageDisplay=inline&query=service%3A%2Ahomer%2A%20%40env%3Asupport&stream_sort=desc&to_ts=1573723280129)
-
-#### Necessary environment variables
-
-- **GITLAB_TOKEN**: to interact with Gitlab API.
-- **DB_PASSWORD**: password of the database.
-- **DB_USERNAME**: username of the database.
-- **GITLAB_SECRET_TOKEN**: from Gitlab project webhooks to validate entering
-  Gitlab requests.
-- **SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN**: to publish Slack messages.
-- **SLACK_SIGNING_SECRET**: to validate entering Slack requests.
-- **TOOLS_COMMON_PG_PORT**: port of the database.
-- **TOOLS_COMMON_PG_WRITE_HOST**: host of the database.
-
-#### Use Ngrok in DEV env
+### Install and run
 
 ```bash
+# Clone Homer repos
+git clone https://github.com/ManoManoTech/homer.git
+
+# Go to Homer folder
+cd homer
+
+# Install yarn dependencies
+yarn install
+
+# Start the database
+docker-compose up -d
+
+# Build Homer
+yarn build
+
+# Start Homer
+yarn start
+
+# Open a bridge for external HTTP call to reach your local Homer instance
 ngrok http localhost:3000
 ```
 
-#### Use Ngrok in INT env
+### Create the Slack app
 
-```bash
-ngrok http -host-header=ms.homer.int.manomano.com ms.homer.int.manomano.com
-```
+### Create Slack App
 
-#### Start DB locally
+- Go to https://api.slack.com/apps/.
+- Click on `Create New App`.
+- Select `From an app manifest`.
+- Select the right workspace and click on `Next`.
+- Replace `HOMER_BASE_URL` by the URL provided by `ngrok` command in the
+  `manifest.json` file located at the root of Homer repos.
+- Copy the content of `manifest.json` file and paste it in the Slack webapp
+  modal.
+- Create the app and enjoy.
 
-```bash
-docker-compose up -d
-```
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
