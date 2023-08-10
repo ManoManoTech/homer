@@ -1,14 +1,19 @@
 import type { Request, Response } from 'express';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { getProjects, getReviews } from '@/core/services/data';
+import { getProjects, getReleases, getReviews } from '@/core/services/data';
 import { State } from './State';
 
 export async function stateRequestHandler(req: Request, res: Response) {
   const search = typeof req.query.search === 'string' ? req.query.search : '';
-  const [projects, reviews] = await Promise.all([getProjects(), getReviews()]);
+  const [projects, releases, reviews] = await Promise.all([
+    getProjects(),
+    getReleases(),
+    getReviews(),
+  ]);
   const data = {
     projects: filter(projects, search),
+    releases: filter(releases, search),
     reviews: filter(reviews, search),
   };
 
