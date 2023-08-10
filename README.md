@@ -105,8 +105,6 @@ ngrok http localhost:3000
 
 ### Create the Slack app
 
-### Create Slack App
-
 - Go to https://api.slack.com/apps/.
 - Click on `Create New App`.
 - Select `From an app manifest`.
@@ -116,6 +114,10 @@ ngrok http localhost:3000
 - Copy the content of `manifest.json` file and paste it in the Slack webapp
   modal.
 - Create the app and enjoy.
+
+### Add Slack emojis
+
+Add all the emojis in `emojis` folder to you Slack organisation.
 
 ## Contributing
 
