@@ -21,7 +21,7 @@ import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 const BASE_API_URL = `${GITLAB_URL}/api/v4`;
-const COREBOT_TOKEN = getEnvVariable('COREBOT_TOKEN');
+const GITLAB_TOKEN = getEnvVariable('GITLAB_TOKEN');
 const MERGE_REQUEST_ID_REGEX = /^!?\d+$/;
 const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;
 
@@ -329,7 +329,7 @@ export async function searchProjects(search: string): Promise<GitlabProject[]> {
 async function callAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const separator = path.includes('?') ? '&' : '?';
   const response = await fetch(
-    `${BASE_API_URL}${path}${separator}private_token=${COREBOT_TOKEN}`,
+    `${BASE_API_URL}${path}${separator}private_token=${GITLAB_TOKEN}`,
     options
   );
   return response.json() as Promise<T>;

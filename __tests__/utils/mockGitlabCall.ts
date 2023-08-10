@@ -7,7 +7,7 @@ export function mockGitlabCall(url: string, response: unknown): HttpCallMock {
 
   return mockUrl(
     `${GITLAB_URL}/api/v4${url}${url.includes('?') ? '&' : '?'}private_token=${
-      process.env.COREBOT_TOKEN
+      process.env.GITLAB_TOKEN
     }`,
     { json: () => Promise.resolve(response) }
   );

@@ -2,14 +2,7 @@
 
 ![Homer](./homer256.png)
 
-Homer is a Slack bot intended to help you to **share your merge requests** and
-**release your Gitlab projects**.
-
-In the future, it will also allow to manage your releases easily.
-
-## Contents
-
-[[_TOC_]]
+Homer is a Slack bot intended to help you to **share your Gitlab merge requests**.
 
 ## Usage
 
@@ -135,7 +128,7 @@ describe your problem in `#moes-tavern-homer` Slack channel.
 
 #### Necessary environment variables
 
-- **COREBOT_TOKEN**: to interact with Gitlab API.
+- **GITLAB_TOKEN**: to interact with Gitlab API.
 - **DB_PASSWORD**: password of the database.
 - **DB_USERNAME**: username of the database.
 - **GITLAB_SECRET_TOKEN**: from Gitlab project webhooks to validate entering
