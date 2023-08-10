@@ -1,8 +1,8 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getReviewsByChannelId } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
-import {
+import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';

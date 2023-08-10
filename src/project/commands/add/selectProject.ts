@@ -1,6 +1,6 @@
-import { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import { deleteEphemeralMessage } from '@/core/services/slack';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { extractActionParameters } from '@/core/utils/slackActions';
 import { addProject } from './addProject';
 

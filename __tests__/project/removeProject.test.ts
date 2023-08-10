@@ -1,4 +1,4 @@
-import { SectionBlock, StaticSelect } from '@slack/web-api';
+import type { SectionBlock, StaticSelect } from '@slack/web-api';
 import * as nodeFetch from 'node-fetch';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
@@ -13,11 +13,11 @@ describe('project > removeProject', () => {
     // Given
     const channelId = 'channelId';
     const userId = 'userId';
-    let body = {
+    let body: Record<string, unknown> = {
       channel_id: channelId,
       text: 'project remove',
       user_id: userId,
-    } as Record<string, unknown>;
+    };
 
     await addProjectToChannel({
       channelId,
@@ -109,11 +109,11 @@ describe('project > removeProject', () => {
     // Given
     const channelId = 'channelId';
     const userId = 'userId';
-    const body = {
+    const body: Record<string, unknown> = {
       channel_id: channelId,
       text: 'project remove',
       user_id: userId,
-    } as Record<string, unknown>;
+    };
 
     // When
     const response = await fetch('/api/v1/homer/command', {

@@ -1,4 +1,5 @@
-import nodeFetch, { RequestInit, Response } from 'node-fetch';
+import type { RequestInit, Response } from 'node-fetch';
+import nodeFetch from 'node-fetch';
 
 export async function fetch(
   url: string,
@@ -9,10 +10,10 @@ export async function fetch(
   } = {}
 ): Promise<Response> {
   const { body = {}, headers = {}, method = 'post' } = options;
-  const init = {
+  const init: RequestInit = {
     headers: { 'Content-Type': 'application/json', ...headers },
     method,
-  } as RequestInit;
+  };
 
   if (method === 'post') {
     init.body = JSON.stringify(body);

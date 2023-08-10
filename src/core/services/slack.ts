@@ -1,17 +1,13 @@
 import { WebClient } from '@slack/web-api';
 import fetch from 'node-fetch';
-import { GitlabUser } from '@/core/typings/GitlabUser';
-import { SlackUser } from '@/core/typings/SlackUser';
+import type { GitlabUser } from '@/core/typings/GitlabUser';
+import type { SlackUser } from '@/core/typings/SlackUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 import { logger } from './logger';
 
-const SLACK_AUTH_TOKEN = getEnvVariable('SLACK_AUTH_TOKEN');
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = getEnvVariable(
   'SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN'
 );
-
-// This client should be used only to post on behalf on user.
-export const slackWebClient = new WebClient(SLACK_AUTH_TOKEN);
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
@@ -28,6 +24,14 @@ export async function deleteEphemeralMessage(
       delete_original: true,
     }),
   });
+}
+
+// See https://api.slack.com/reference/surfaces/formatting#escaping
+export function escapeText(input: string): string {
+  return input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 export async function getPermalink(

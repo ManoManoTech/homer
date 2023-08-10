@@ -1,12 +1,13 @@
-import pino, { LoggerOptions } from 'pino';
+import type { LoggerOptions } from 'pino';
+import pino from 'pino';
 
-const pinoConfig = {
+const pinoConfig: LoggerOptions = {
   formatters: {
     level: (label) => ({ level: label }),
   },
   messageKey: 'message',
   timestamp: () => `,"time":"${new Date().toISOString()}"`,
-} as LoggerOptions;
+};
 
 if (process.env.NODE_ENV !== 'production') {
   pinoConfig.level = 'debug';

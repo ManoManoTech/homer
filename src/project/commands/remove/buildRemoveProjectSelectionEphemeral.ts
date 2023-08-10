@@ -1,4 +1,4 @@
-import { ChatPostEphemeralArguments } from '@slack/web-api';
+import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { getProjectsByChannelId } from '@/core/services/data';
 import { fetchProjectById } from '@/core/services/gitlab';
 import { injectActionsParameters } from '@/core/utils/slackActions';

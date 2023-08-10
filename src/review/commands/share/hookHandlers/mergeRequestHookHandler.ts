@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import {
   getReviewsByMergeRequestIid,
@@ -6,7 +6,7 @@ import {
 } from '@/core/services/data';
 import {
   fetchSlackUserFromGitlabUsername,
-  slackWebClient,
+  slackBotWebClient,
 } from '@/core/services/slack';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 
@@ -49,36 +49,29 @@ export async function mergeRequestHookHandler(
   switch (action) {
     case 'approved':
       threadMessage = {
-        text: `${user.real_name} has approved this merge request`,
-        icon_emoji: ':+1:',
+        text: `*${user.real_name}* has approved this merge request.`,
+        icon_emoji: ':thumbsup_blue:',
       };
       break;
 
     case 'close':
       threadMessage = {
-        text: `${user.real_name} has closed this merge request`,
-        icon_emoji: ':closed_book:',
+        text: `*${user.real_name}* has closed this merge request.`,
+        icon_emoji: ':closed_book_blue:',
       };
       break;
 
     case 'merge':
       threadMessage = {
-        text: `${user.real_name} has merged this merge request`,
-        icon_emoji: ':ok_hand:',
-      };
-      break;
-
-    case 'reopen':
-      threadMessage = {
-        text: `${user.real_name} has reopened this merge request`,
-        icon_emoji: ':open_book:',
+        text: `*${user.real_name}* has merged this merge request.`,
+        icon_emoji: ':git-merge:',
       };
       break;
 
     case 'unapproved':
       threadMessage = {
-        text: `${user.real_name} has unapproved this merge request`,
-        icon_emoji: ':-1:',
+        text: `*${user.real_name}* has unapproved this merge request.`,
+        icon_emoji: ':thumbsdown_blue:',
       };
       break;
 
@@ -91,10 +84,10 @@ export async function mergeRequestHookHandler(
       .map(async ({ channelId, ts }) =>
         [
           buildReviewMessage(channelId, projectId, iid, ts).then(
-            slackWebClient.chat.update
+            slackBotWebClient.chat.update
           ),
           threadMessage &&
-            slackWebClient.chat.postMessage({
+            slackBotWebClient.chat.postMessage({
               channel: channelId,
               thread_ts: ts,
               ...threadMessage,

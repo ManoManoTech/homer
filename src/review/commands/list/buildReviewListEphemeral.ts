@@ -1,9 +1,9 @@
-import { ChatPostEphemeralArguments } from '@slack/web-api';
+import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import { fetchMergeRequestByIid } from '@/core/services/gitlab';
 import { getPermalink } from '@/core/services/slack';
-import { DataReview } from '@/core/typings/Data';
+import type { DataReview } from '@/core/typings/Data';
 
 interface BuildReviewListEphemeralData {
   channelId: string;

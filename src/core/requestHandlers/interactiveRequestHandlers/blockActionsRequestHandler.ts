@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { HTTP_STATUS_OK } from '@/constants';
 import { logger } from '@/core/services/logger';
-import { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
+import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import { projectBlockActionsHandler } from '@/project/projectBlockActionsHandler';
 import { reviewBlockActionsHandler } from '@/review/reviewBlockActionsHandler';
 

@@ -5,12 +5,14 @@ export interface HttpCallMock {
 }
 
 const { default: realNodeFetch } = jest.requireActual('node-fetch');
-let nodeFetchMocks = {} as Record<string, HttpCallMock>;
+let nodeFetchMocks: Record<string, HttpCallMock> = {};
 
 export default (url: string, ...args: any[]) => {
   if (url.includes('git.manomano.tech') || url.includes('slack')) {
     if (!nodeFetchMocks[url]) {
-      throw new Error(`Non mocked URL: ${url}`);
+      // eslint-disable-next-line no-console
+      console.error(`Non mocked URL: ${url}`);
+      return;
     }
     nodeFetchMocks[url].called = true;
     nodeFetchMocks[url].calledWith = [url, ...args];

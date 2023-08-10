@@ -1,6 +1,6 @@
-import { GitlabCommit } from '@/core/typings/GitlabCommit';
-import { GitlabPipeline } from '@/core/typings/GitlabPipeline';
-import { GitlabUser } from '@/core/typings/GitlabUser';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
+import type { GitlabUser } from '@/core/typings/GitlabUser';
 
 export type GitlabDownstreamPipeline = Pick<
   GitlabPipeline,

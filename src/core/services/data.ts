@@ -1,9 +1,9 @@
-import { DataTypes, Model, Op, Sequelize } from 'sequelize';
+import { DataTypes, Op, Sequelize, type Model } from 'sequelize';
 import { logger } from '@/core/services/logger';
-import {
+import type {
+  DatabaseEntry,
   DataProject,
   DataReview,
-  InternalDataModel,
 } from '@/core/typings/Data';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
@@ -41,7 +41,6 @@ export async function cleanOldEntries(): Promise<void> {
       },
     } as any, // Typing issue in sequelize
   });
-
   logger.info(`Cleaned ${cleanedReviewsCount} reviews.`);
 }
 
@@ -60,6 +59,7 @@ export async function addProjectToChannel({
   });
 }
 
+// Useless change
 export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
@@ -67,7 +67,7 @@ export async function addReviewToChannel({
   ts,
 }: DataReview): Promise<void> {
   const review = await Review.findOne({
-    where: { channelId, mergeRequestIid },
+    where: { channelId, mergeRequestIid, projectId },
   });
 
   if (review !== null) {
@@ -138,6 +138,8 @@ export async function removeReviewsByMergeRequestIid(
   });
 }
 
-function toJSON<T>(model: Model<T>): InternalDataModel & T {
+function toJSON<DataType extends object>(
+  model: Model<DataType>
+): DatabaseEntry<DataType> {
   return model.toJSON();
 }

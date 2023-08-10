@@ -1,15 +1,17 @@
-import { ChatPostEphemeralArguments } from '@slack/web-api';
+import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
-import { GitlabProject } from '@/core/typings/GitlabProject';
+import type { GitlabProject } from '@/core/typings/GitlabProject';
 
 interface BuildProjectListEphemeralData {
   channelId: string;
+  displayTitle: boolean;
   projects: GitlabProject[];
   userId: string;
 }
 
 export function buildProjectListEphemeral({
   channelId,
+  displayTitle,
   projects,
   userId,
 }: BuildProjectListEphemeralData): ChatPostEphemeralArguments {
@@ -18,12 +20,10 @@ export function buildProjectListEphemeral({
       ({ path_with_namespace, web_url }) =>
         `- [${path_with_namespace}](${web_url})`
     )
-    .sort()
     .join('\n');
 
   const formattedProjectsFallback = projects
     .map(({ path_with_namespace }) => path_with_namespace)
-    .sort()
     .join(', ');
 
   return {
@@ -31,7 +31,9 @@ export function buildProjectListEphemeral({
     user: userId,
     text:
       projects.length > 0
-        ? `Channel projects: ${formattedProjectsFallback}.`
+        ? `${
+            displayTitle ? 'Channel projects: ' : ''
+          }${formattedProjectsFallback}.`
         : 'No project has been added to this channel yet.',
     blocks: [
       {
@@ -40,7 +42,11 @@ export function buildProjectListEphemeral({
           type: 'mrkdwn',
           text:
             projects.length > 0
-              ? slackifyMarkdown(`**Channel projects:**\n${formattedProjects}`)
+              ? slackifyMarkdown(
+                  displayTitle
+                    ? `**Channel projects:**\n${formattedProjects}`
+                    : formattedProjects
+                )
               : 'No project has been added to this channel yet :homer-metal:',
         },
       },

@@ -1,6 +1,6 @@
-import { GitlabUserDetail } from '@/core/typings/GitlabUser';
+import type { GitlabUserDetails } from '@/core/typings/GitlabUser';
 
-export const userDetailsFixture: GitlabUserDetail = {
+export const userDetailsFixture: GitlabUserDetails = {
   id: 1,
   username: 'john_smith',
   name: 'John Smith',

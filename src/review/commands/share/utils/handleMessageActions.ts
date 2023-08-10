@@ -1,8 +1,8 @@
-import { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import { removeReview } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
-import { slackWebClient } from '@/core/services/slack';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { slackBotWebClient } from '@/core/services/slack';
+import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { createPipeline } from './createPipeline';
 import { rebaseSourceBranch } from './rebaseSourceBranch';
 
@@ -18,7 +18,7 @@ export async function handleMessageAction(
     const { channel, message } = payload;
     const { ts } = message;
 
-    await slackWebClient.chat.delete({ channel: channel.id, ts });
+    await slackBotWebClient.chat.delete({ channel: channel.id, ts });
     await removeReview(ts);
   } else if (mergeRequestAction.startsWith('review-rebase-source-branch')) {
     await rebaseSourceBranch(payload, action);

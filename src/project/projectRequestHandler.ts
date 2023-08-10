@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { SlackExpressRequest } from '@/core/typings/SlackSlashCommand';
+import type { Response } from 'express';
+import type { SlackExpressRequest } from '@/core/typings/SlackSlashCommand';
 import { buildHelpMessage } from '@/core/viewBuilders/buildHelpMessage';
 import { addProjectRequestHandler } from './commands/add/addProjectRequestHandler';
 import { listProjectsRequestHandler } from './commands/list/listProjectsRequestHandler';

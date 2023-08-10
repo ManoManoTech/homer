@@ -1,4 +1,4 @@
-import { GitlabTag } from '@/core/typings/GitlabTag';
+import type { GitlabTag } from '@/core/typings/GitlabTag';
 
 export const tagFixture: GitlabTag = {
   commit: {

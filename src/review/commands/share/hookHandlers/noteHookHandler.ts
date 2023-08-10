@@ -1,10 +1,18 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
-import { slackWebClient } from '@/core/services/slack';
-import { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import { slackBotWebClient } from '@/core/services/slack';
+import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import { StateUpdateDebouncer } from '../utils/StateUpdateDebouncer';
 import { buildNoteMessage } from '../viewBuilders/buildNoteMessage';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
+
+// Prevents spam on threads when reviews are submitted on merge requests,
+// because Gitlab sends all the note hooks at the same time.
+const shockAbsorbers = new Map<
+  string,
+  StateUpdateDebouncer<{ author_id: number; note: string; url: string }[]>
+>();
 
 export async function noteHookHandler(
   req: Request,
@@ -15,7 +23,7 @@ export async function noteHookHandler(
       author_id: number;
       iid: number;
     };
-    object_attributes: { author_id: number };
+    object_attributes: { author_id: number; note: string; url: string };
     project: GitlabProjectDetails;
   };
 
@@ -36,14 +44,34 @@ export async function noteHookHandler(
 
   await Promise.all(
     reviews
-      .map(({ channelId, ts }) => [
-        buildReviewMessage(channelId, project.id, iid, ts).then(
-          slackWebClient.chat.update
-        ),
-        buildNoteMessage(channelId, ts, object_attributes).then(
-          slackWebClient.chat.postMessage
-        ),
-      ])
+      .map(({ channelId, ts }) => {
+        const shockAbsorberId = `${channelId}_${ts}_${object_attributes.author_id}`;
+
+        if (!shockAbsorbers.has(shockAbsorberId)) {
+          shockAbsorbers.set(
+            shockAbsorberId,
+            new StateUpdateDebouncer([], (state) => {
+              shockAbsorbers.delete(shockAbsorberId);
+              return buildNoteMessage(channelId, ts, state).then(
+                slackBotWebClient.chat.postMessage
+              );
+            })
+          );
+        }
+
+        const shockAbsorber: StateUpdateDebouncer<
+          { author_id: number; note: string; url: string }[]
+        > = shockAbsorbers.get(shockAbsorberId)!;
+
+        shockAbsorber.state = [...shockAbsorber.state, object_attributes];
+
+        return [
+          buildReviewMessage(channelId, project.id, iid, ts).then(
+            slackBotWebClient.chat.update
+          ),
+          shockAbsorber.promise,
+        ];
+      })
       .flat()
   );
 }

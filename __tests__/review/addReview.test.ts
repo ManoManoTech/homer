@@ -1,10 +1,10 @@
-import { SectionBlock, StaticSelect } from '@slack/web-api';
+import type { SectionBlock, StaticSelect } from '@slack/web-api';
 import * as nodeFetch from 'node-fetch';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient, slackWebClient } from '@/core/services/slack';
-import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
+import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
+import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import {
   reviewMessagePostFixture,
@@ -17,7 +17,7 @@ import { mockGitlabCall } from '../utils/mockGitlabCall';
 
 describe('review > addReview', () => {
   beforeEach(async () => {
-    (slackWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
+    (slackBotWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
       ts: 'ts',
     });
     (slackBotWebClient.users.lookupByEmail as jest.Mock).mockImplementation(
@@ -65,7 +65,7 @@ describe('review > addReview', () => {
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
       reviewMessagePostFixture
     );
@@ -113,7 +113,7 @@ describe('review > addReview', () => {
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
       reviewMessageSpartacuxPostFixture
     );
@@ -153,7 +153,46 @@ describe('review > addReview', () => {
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      1,
+      reviewMessagePostFixture
+    );
+    expect(
+      await hasModelEntry('Review', {
+        channelId,
+        mergeRequestIid: mergeRequestDetailsFixture.iid,
+        ts: 'ts',
+      })
+    ).toEqual(true);
+  });
+
+  it('should add review from merge request url', async () => {
+    // Given
+    const { web_url } = mergeRequestDetailsFixture;
+    const channelId = 'channelId';
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: `review ${web_url}`,
+      user_id: userId,
+    };
+
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id,
+    });
+    mockBuildReviewMessageCalls();
+
+    // When
+    const response = await fetch('/api/v1/homer/command', {
+      body,
+      headers: getSlackHeaders(body),
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
       reviewMessagePostFixture
     );
@@ -228,11 +267,11 @@ describe('review > addReview', () => {
     const channelId = 'channelId';
     const search = 'chore(test)';
     const userId = 'userId';
-    let body = {
+    let body: Record<string, unknown> = {
       channel_id: channelId,
       text: `review ${search}`,
       user_id: userId,
-    } as Record<string, unknown>;
+    };
 
     await addProjectToChannel({
       channelId,
@@ -254,7 +293,7 @@ describe('review > addReview', () => {
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        blocks: expect.arrayContaining([]),
+        blocks: expect.any(Array),
         channel: channelId,
         user: userId,
       })
@@ -306,7 +345,7 @@ describe('review > addReview', () => {
       responseUrl,
       expect.anything()
     ); // Deletes ephemeral message
-    expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
       reviewMessagePostFixture
     );

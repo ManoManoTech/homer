@@ -1,9 +1,9 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { fetchProjectById, searchProjects } from '@/core/services/gitlab';
 import { slackBotWebClient } from '@/core/services/slack';
-import { GitlabProject } from '@/core/typings/GitlabProject';
-import {
+import type { GitlabProject } from '@/core/typings/GitlabProject';
+import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';

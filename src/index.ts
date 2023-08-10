@@ -21,7 +21,6 @@ Promise.all([import('@/core/services/logger'), import('./start')]).then(
   async ([{ logger }, { start }]) => {
     function errorHandler(error: unknown) {
       logger.error(error);
-      process.exit(1);
     }
     process.on('uncaughtException', errorHandler);
     process.on('unhandledRejection', errorHandler);

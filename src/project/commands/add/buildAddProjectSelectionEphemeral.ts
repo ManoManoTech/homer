@@ -1,5 +1,5 @@
-import { ChatPostEphemeralArguments } from '@slack/web-api';
-import { GitlabProject } from '@/core/typings/GitlabProject';
+import type { ChatPostEphemeralArguments } from '@slack/web-api';
+import type { GitlabProject } from '@/core/typings/GitlabProject';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 interface AddProjectSelectionEphemeralData {

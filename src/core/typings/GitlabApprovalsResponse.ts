@@ -1,10 +1,10 @@
-import {
+import type {
   GitlabMergeRequestMergeStatus,
   GitlabMergeRequestState,
 } from './GitlabMergeRequest';
-import { GitlabUser } from './GitlabUser';
+import type { GitlabUser } from './GitlabUser';
 
-export type GitlabApprovalsResponse = {
+export interface GitlabApprovalsResponse {
   id: number;
   iid: number;
   project_id: number;
@@ -19,4 +19,4 @@ export type GitlabApprovalsResponse = {
   approved_by: {
     user: GitlabUser;
   }[];
-};
+}

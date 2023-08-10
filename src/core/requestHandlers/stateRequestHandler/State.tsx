@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataProject, DataReview } from '@/core/typings/Data';
+import type { DataProject, DataReview } from '@/core/typings/Data';
 import { Highlight, themeStyles } from './Highlight';
 
 interface Props {

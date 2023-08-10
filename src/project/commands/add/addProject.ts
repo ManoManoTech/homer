@@ -1,4 +1,4 @@
-import { GITLAB_URL } from '@/constants';
+import { GITLAB_URL, HOMER_GITLAB_URL } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 
@@ -17,7 +17,7 @@ export async function addProject(
 
 Don't forget to <${GITLAB_URL}/${projectPath}/-/hooks|set up a webhook> \
 in your Gitlab project by following the \
-<${GITLAB_URL}/spartacux-front/homer/#make-homer-be-notified-of-changes-happening-in-your-gitlab-project|dedicated documentation>.
+<${HOMER_GITLAB_URL}/#make-homer-be-notified-of-changes-happening-in-your-gitlab-project|dedicated documentation>.
 `,
   });
 }

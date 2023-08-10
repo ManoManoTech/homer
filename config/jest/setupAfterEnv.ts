@@ -29,7 +29,11 @@ jest.mock('@slack/web-api', () => {
 jest.mock('dd-trace', () => ({}));
 jest.mock('node-fetch');
 jest.mock('sequelize');
+
+// ⚠️ The pino logger is not compatible with Jest, please use the console
+// instead to debug.
 jest.mock('@/core/services/logger', () => ({
+  // logger: console,
   logger: {
     debug: jest.fn(),
     info: jest.fn(),
@@ -51,4 +55,7 @@ beforeEach(async () => {
   clearSequelizeMock();
 });
 
-afterAll(async () => stopServer());
+afterAll(async () => {
+  await stopServer();
+  process.removeAllListeners();
+});

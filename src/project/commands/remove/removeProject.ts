@@ -1,10 +1,10 @@
-import { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import { removeProjectFromChannel } from '@/core/services/data';
 import {
   deleteEphemeralMessage,
   slackBotWebClient,
 } from '@/core/services/slack';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { extractActionParameters } from '@/core/utils/slackActions';
 
 export async function removeProject(

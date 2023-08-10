@@ -1,9 +1,9 @@
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
-import { slackBotWebClient, slackWebClient } from '@/core/services/slack';
+import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
-import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
+import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { reviewMessageUpdateFixture } from '../__fixtures__/reviewMessage';
 import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
@@ -27,11 +27,22 @@ describe('review > mergeRequestHook', () => {
   });
 
   it.each([
-    ['approved', ':+1:', 'root.real has approved this merge request'],
-    ['close', ':closed_book:', 'root.real has closed this merge request'],
-    ['merge', ':ok_hand:', 'root.real has merged this merge request'],
-    ['reopen', ':open_book:', 'root.real has reopened this merge request'],
-    ['unapproved', ':-1:', 'root.real has unapproved this merge request'],
+    [
+      'approved',
+      ':thumbsup_blue:',
+      '*root.real* has approved this merge request.',
+    ],
+    [
+      'close',
+      ':closed_book_blue:',
+      '*root.real* has closed this merge request.',
+    ],
+    ['merge', ':git-merge:', '*root.real* has merged this merge request.'],
+    [
+      'unapproved',
+      ':thumbsdown_blue:',
+      '*root.real* has unapproved this merge request.',
+    ],
   ])(
     'should update related review messages and publish a thread message on it whether "%s" action is received',
     async (action, iconEmoji, text) => {
@@ -61,11 +72,11 @@ describe('review > mergeRequestHook', () => {
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
-      expect(slackWebClient.chat.update).toHaveBeenNthCalledWith(
+      expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
         1,
         reviewMessageUpdateFixture
       );
-      expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
         channel: channelId,
         icon_emoji: iconEmoji,
         text,
@@ -107,8 +118,8 @@ describe('review > mergeRequestHook', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(
-      (slackWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]?.blocks?.[0]
-        ?.text?.text
+      (slackBotWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]
+        ?.blocks?.[0]?.text?.text
     ).toContain('~merge request title~ (closed)');
   });
 
@@ -145,8 +156,8 @@ describe('review > mergeRequestHook', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(
-      (slackWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]?.blocks?.[0]
-        ?.text?.text
+      (slackBotWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]
+        ?.blocks?.[0]?.text?.text
     ).toContain('~merge request title~ (merged)');
   });
 
@@ -177,11 +188,11 @@ describe('review > mergeRequestHook', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackWebClient.chat.update).toHaveBeenNthCalledWith(
+    expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
       1,
       reviewMessageUpdateFixture
     );
-    expect(slackWebClient.chat.postMessage).not.toHaveBeenCalled();
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
   it('should answer no content status whether the action is not managed', async () => {

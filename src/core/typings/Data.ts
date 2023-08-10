@@ -10,8 +10,8 @@ export interface DataReview {
   ts: string;
 }
 
-export interface InternalDataModel {
+export type DatabaseEntry<DataType> = DataType & {
   id: number;
   createdAt: string;
   updatedAt: string;
-}
+};

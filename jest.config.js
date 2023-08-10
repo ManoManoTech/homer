@@ -4,14 +4,18 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(process.cwd(), '.env.test') });
 
 module.exports = {
-  collectCoverageFrom: ['src/**', '!src/**/*.d.ts'],
+  collectCoverageFrom: [
+    'src/**',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**/*.test.ts',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@root/(.*)$': '<rootDir>/$1',
   },
   resetMocks: true,
   setupFilesAfterEnv: ['./config/jest/setupAfterEnv.ts'],
-  testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
+  testMatch: ['<rootDir>/**/__tests__/**/*.test.ts'],
   transform: {
     '\\.tsx?$': 'ts-jest',
   },

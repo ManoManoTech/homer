@@ -52,10 +52,14 @@ class ModelMock {
     );
   }
 
-  async findOrCreate({ where }: Options): Promise<void> {
-    if ((await this.findOne({ where })) === null) {
-      this.entries.push(new EntryMock(where));
+  async findOrCreate({ where }: Options): Promise<[EntryMock, boolean]> {
+    let entry = await this.findOne({ where });
+
+    if (entry === null) {
+      entry = new EntryMock(where);
+      this.entries.push(entry);
     }
+    return [entry, false];
   }
 
   async sync() {}

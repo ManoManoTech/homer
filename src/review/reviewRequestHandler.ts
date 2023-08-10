@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { SlackSlashCommandResponse } from '@/core/typings/SlackSlashCommand';
+import type { Request, Response } from 'express';
+import type { SlackSlashCommandResponse } from '@/core/typings/SlackSlashCommand';
 import { listReviewsRequestHandler } from './commands/list/listReviewsRequestHandler';
 import { shareReviewRequestHandler } from './commands/share/shareReviewRequestHandler';
 

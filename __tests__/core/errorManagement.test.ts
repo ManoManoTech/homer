@@ -4,8 +4,8 @@ import {
   HTTP_STATUS_OK,
   PRIVATE_CHANNEL_ERROR_MESSAGE,
 } from '@/constants';
-import { logger } from '@/core/services/logger';
 import { addProjectToChannel } from '@/core/services/data';
+import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { getProjects, getReviews } from '@/core/services/data';
@@ -22,6 +22,6 @@ function filter<T extends Record<any, any>>(data: T[], search: string): T[] {
     return data;
   }
   return data.filter((entry) =>
-    Object.values(entry).some((value) => value.toString().includes(search))
+    Object.values(entry).some((value) => `${value}`.includes(search))
   );
 }

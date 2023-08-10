@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { logger } from '@/core/services/logger';
 import { blockActionsRequestHandler } from './interactiveRequestHandlers/blockActionsRequestHandler';

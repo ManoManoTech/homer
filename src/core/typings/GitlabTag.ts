@@ -1,4 +1,4 @@
-import { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 
 export interface GitlabTag {
   commit: Omit<GitlabCommit, 'web_url'>;

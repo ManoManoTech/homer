@@ -1,12 +1,12 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import {
   addReviewToChannel,
   getProjectsByChannelId,
 } from '@/core/services/data';
 import { searchMergeRequests } from '@/core/services/gitlab';
-import { slackBotWebClient, slackWebClient } from '@/core/services/slack';
-import {
+import { slackBotWebClient } from '@/core/services/slack';
+import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
@@ -33,7 +33,7 @@ export async function shareReviewRequestHandler(
 
   if (mergeRequests.length === 1) {
     const { iid, project_id } = mergeRequests[0];
-    const { ts } = await slackWebClient.chat.postMessage(
+    const { ts } = await slackBotWebClient.chat.postMessage(
       await buildReviewMessage(channel_id, project_id, iid)
     );
 

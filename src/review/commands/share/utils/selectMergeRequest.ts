@@ -1,7 +1,10 @@
 import { addReviewToChannel } from '@/core/services/data';
-import { deleteEphemeralMessage, slackWebClient } from '@/core/services/slack';
-import { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import {
+  deleteEphemeralMessage,
+  slackBotWebClient,
+} from '@/core/services/slack';
+import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { extractActionParameters } from '@/core/utils/slackActions';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 
@@ -17,7 +20,7 @@ export async function selectMergeRequest(
 
   await deleteEphemeralMessage(response_url);
 
-  const { ts } = await slackWebClient.chat.postMessage(
+  const { ts } = await slackBotWebClient.chat.postMessage(
     await buildReviewMessage(channel_id, projectId, mergeRequestIid)
   );
 

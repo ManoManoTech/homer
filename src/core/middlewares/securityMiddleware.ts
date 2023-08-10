@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { logger } from '@/core/services/logger';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 

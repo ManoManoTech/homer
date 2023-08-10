@@ -1,7 +1,7 @@
-import { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
+import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
 import { projectFixture } from './projectFixture';
 
-export const mergeRequestDetailsFixture = {
+export const mergeRequestDetailsFixture: GitlabMergeRequestDetails = {
   id: 1,
   iid: 1,
   project_id: projectFixture.id,
@@ -21,9 +21,6 @@ export const mergeRequestDetailsFixture = {
     state: 'active',
     avatar_url: '',
     web_url: 'https://gitlab.example.com/admin',
-  },
-  user: {
-    can_merge: false,
   },
   assignee: {
     id: 1,
@@ -94,14 +91,6 @@ export const mergeRequestDetailsFixture = {
   latest_build_started_at: '2018-09-07T07:27:38.472Z',
   latest_build_finished_at: '2018-09-07T08:07:06.012Z',
   first_deployed_to_production_at: null,
-  pipeline: {
-    id: 29626725,
-    sha: '2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f',
-    ref: 'patch-28',
-    status: 'success',
-    web_url:
-      'https://gitlab.example.com/my-group/my-project/pipelines/29626725',
-  },
   diff_refs: {
     base_sha: 'c380d3acebd181f13629a25d2e2acca46ffe1e00',
     head_sha: '2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f',
@@ -116,4 +105,4 @@ export const mergeRequestDetailsFixture = {
   },
   has_conflicts: false,
   blocking_discussions_resolved: true,
-} as GitlabMergeRequestDetails;
+};

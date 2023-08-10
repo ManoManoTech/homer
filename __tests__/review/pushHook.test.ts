@@ -1,8 +1,8 @@
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
-import { slackBotWebClient, slackWebClient } from '@/core/services/slack';
-import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
+import { slackBotWebClient } from '@/core/services/slack';
 import { pushHookFixture } from '../__fixtures__/hooks/pushHookFixture';
+import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
@@ -51,22 +51,37 @@ describe('review > pushHook', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
-      attachments: [
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+      blocks: [
         {
-          author_icon: 'image_24',
-          author_name: 'gitlabdev.real',
-          color: '#d4d4d4',
-          footer: '2 changes',
-          title: 'fixed readme',
-          title_link:
-            'http://example.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7',
+          text: {
+            text: '<http://example.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7|fixed readme>',
+            type: 'mrkdwn',
+          },
+          type: 'section',
+        },
+        {
+          elements: [
+            {
+              alt_text: 'gitlabdev.real',
+              image_url: 'image_24',
+              type: 'image',
+            },
+            {
+              text: '*gitlabdev.real*',
+              type: 'mrkdwn',
+            },
+            {
+              text: '2 changes',
+              type: 'plain_text',
+            },
+          ],
+          type: 'context',
         },
       ],
       channel: 'channelId',
-      icon_emoji: ':point_up:',
-      link_names: true,
-      text: 'New commit',
+      icon_emoji: ':git-commit:',
+      text: ':git-commit: New commit(s)',
       thread_ts: 'ts',
     });
   });

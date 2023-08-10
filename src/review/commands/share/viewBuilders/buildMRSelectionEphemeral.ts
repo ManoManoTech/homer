@@ -1,5 +1,5 @@
-import { ChatPostEphemeralArguments } from '@slack/web-api';
-import { GitlabMergeRequest } from '@/core/typings/GitlabMergeRequest';
+import type { ChatPostEphemeralArguments } from '@slack/web-api';
+import type { GitlabMergeRequest } from '@/core/typings/GitlabMergeRequest';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 const MAX_OPTION_TEXT_LENGTH = 31;

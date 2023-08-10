@@ -1,4 +1,4 @@
-import { GitlabBridge } from '@/core/typings/GitlabBridge';
+import type { GitlabBridge } from '@/core/typings/GitlabBridge';
 import { pipelineFixture } from './pipelineFixture';
 import { userDetailsFixture } from './userDetailsFixture';
 

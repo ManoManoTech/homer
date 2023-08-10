@@ -1,23 +1,83 @@
-import fetch, { RequestInit } from 'node-fetch';
+import type { RequestInit } from 'node-fetch';
+import fetch from 'node-fetch';
 import { GITLAB_URL, MERGE_REQUEST_OPEN_STATES } from '@/constants';
-import { DataProject } from '@/core/typings/Data';
-import { GitlabApprovalsResponse } from '@/core/typings/GitlabApprovalsResponse';
-import { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
-import { GitlabCommit } from '@/core/typings/GitlabCommit';
-import {
+import type { DataProject } from '@/core/typings/Data';
+import type { GitlabApprovalsResponse } from '@/core/typings/GitlabApprovalsResponse';
+import type { GitlabBridge } from '@/core/typings/GitlabBridge';
+import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabJob } from '@/core/typings/GitlabJob';
+import type {
   GitlabMergeRequest,
   GitlabMergeRequestDetails,
 } from '@/core/typings/GitlabMergeRequest';
-import {
+import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
+import type {
   GitlabProject,
   GitlabProjectDetails,
 } from '@/core/typings/GitlabProject';
-import { GitlabUser, GitlabUserDetail } from '@/core/typings/GitlabUser';
+import type { GitlabTag } from '@/core/typings/GitlabTag';
+import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 const BASE_API_URL = `${GITLAB_URL}/api/v4`;
 const COREBOT_TOKEN = getEnvVariable('COREBOT_TOKEN');
-const MERGE_REQUEST_ID_REGEX = /^!\d+$/;
+const MERGE_REQUEST_ID_REGEX = /^!?\d+$/;
+const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;
+
+export async function cancelPipeline(
+  projectId: number,
+  pipelineId: number
+): Promise<void> {
+  const response = await callAPI<any>(
+    `/projects/${projectId}/pipelines/${pipelineId}/cancel`,
+    { method: 'post' }
+  );
+
+  if (response?.id === undefined) {
+    throw new Error(
+      `Unable to cancel the pipeline ${pipelineId} of project ${projectId}: ${JSON.stringify(
+        response
+      )}`
+    );
+  }
+}
+
+export async function createRelease(
+  projectId: number,
+  commitId: string,
+  tagName: string,
+  description: string
+): Promise<void> {
+  const body = {
+    description,
+    tag_name: tagName,
+    ref: commitId,
+  };
+  const response = await callAPI<any>(`/projects/${projectId}/releases`, {
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'post',
+  });
+
+  if (response?.name === undefined) {
+    throw new Error(
+      `Unable to create release ${tagName} for project ${projectId}: ${JSON.stringify(
+        {
+          body,
+          response,
+        }
+      )}`
+    );
+  }
+}
+
+export async function fetchBranchPipelines(
+  projectId: number,
+  branchName: string
+): Promise<GitlabPipeline[]> {
+  return callAPI(`/projects/${projectId}/pipelines?ref=${branchName}`);
+}
 
 export async function fetchMergeRequestApprovers(
   projectId: number,
@@ -66,12 +126,46 @@ export async function fetchMergeRequestsByBranchName(
   );
 }
 
-export async function fetchParticipants(
+export async function fetchPipelineBridges(
   projectId: number,
-  mergeRequestIid: number
-): Promise<GitlabUser[]> {
+  pipelineId: number
+): Promise<GitlabBridge[]> {
+  const bridges = await callAPI(
+    `/projects/${projectId}/pipelines/${pipelineId}/bridges?per_page=100`
+  );
+
+  if (!Array.isArray(bridges)) {
+    throw new Error(
+      `Unable to get bridges for pipeline ${pipelineId} of project ${projectId}: ${JSON.stringify(
+        bridges
+      )}`
+    );
+  }
+  return bridges;
+}
+
+export async function fetchPipelinesByRef(
+  projectId: number,
+  ref: string
+): Promise<GitlabPipeline[]> {
+  const pipelines = await callAPI<GitlabProjectDetails>(
+    `/projects/${projectId}/pipelines?ref=${ref}`
+  );
+
+  if (!Array.isArray(pipelines)) {
+    throw new Error(
+      `Unable to find pipelines with ref ${ref}: ${JSON.stringify(pipelines)}`
+    );
+  }
+  return pipelines;
+}
+
+export async function fetchPipelineJobs(
+  projectId: number,
+  pipelineId: number
+): Promise<GitlabJob[]> {
   return callAPI(
-    `/projects/${projectId}/merge_requests/${mergeRequestIid}/participants`
+    `/projects/${projectId}/pipelines/${pipelineId}/jobs?per_page=100`
   );
 }
 
@@ -88,9 +182,64 @@ export async function fetchProjectById(
   return project;
 }
 
+export async function fetchProjectCommit(
+  projectId: number,
+  commitId: string
+): Promise<GitlabCommit> {
+  return callAPI(`/projects/${projectId}/repository/commits/${commitId}`);
+}
+
+export async function fetchProjectCommits(
+  projectId: number
+): Promise<GitlabCommit[]> {
+  return callAPI(`/projects/${projectId}/repository/commits?per_page=100`);
+}
+
+export async function fetchProjectCommitsSince(
+  projectId: number,
+  since: string
+): Promise<GitlabCommit[]> {
+  return callAPI(
+    `/projects/${projectId}/repository/commits?since=${new Date(
+      since
+    ).toISOString()}&per_page=100`
+  );
+}
+
+export async function fetchProjectTag(
+  projectId: number,
+  tagName: string
+): Promise<GitlabTag> {
+  const tag = await callAPI<GitlabTag>(
+    `/projects/${projectId}/repository/tags/${tagName}`
+  );
+
+  if (tag.name === undefined) {
+    throw new Error(`Unable to find the tag named ${tagName}`);
+  }
+  return tag;
+}
+
+export async function fetchProjectTags(
+  projectId: number
+): Promise<GitlabTag[]> {
+  return callAPI(`/projects/${projectId}/repository/tags?per_page=100`);
+}
+
+export async function fetchReviewers(
+  projectId: number,
+  mergeRequestIid: number
+): Promise<GitlabUser[]> {
+  return (
+    await callAPI<{ user: GitlabUser }[]>(
+      `/projects/${projectId}/merge_requests/${mergeRequestIid}/reviewers`
+    )
+  ).map(({ user }) => user);
+}
+
 export async function fetchUserById(
   id: number
-): Promise<GitlabUserDetail | undefined> {
+): Promise<GitlabUserDetails | undefined> {
   return callAPI(`/users/${id}`);
 }
 
@@ -144,6 +293,12 @@ export async function searchMergeRequests(
 
   if (MERGE_REQUEST_ID_REGEX.test(search)) {
     const iid = search.replace('!', '');
+
+    projectMergeRequestPromises = projects.map(async ({ projectId }) =>
+      callAPI(`/projects/${projectId}/merge_requests/${iid}`)
+    );
+  } else if (MERGE_REQUEST_URL_REGEX.test(search)) {
+    const iid = search.match(MERGE_REQUEST_URL_REGEX)![1];
 
     projectMergeRequestPromises = projects.map(async ({ projectId }) =>
       callAPI(`/projects/${projectId}/merge_requests/${iid}`)

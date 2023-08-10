@@ -1,4 +1,4 @@
-import { GitlabUser } from './GitlabUser';
+import type { GitlabUser } from './GitlabUser';
 
 export type GitlabMergeRequestState =
   | 'locked'

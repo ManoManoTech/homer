@@ -1,6 +1,6 @@
-import { GitlabPipeline } from '@/core/typings/GitlabPipeline';
-import { GitlabCommit } from '@/core/typings/GitlabCommit';
-import { GitlabUser } from '@/core/typings/GitlabUser';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
+import type { GitlabUser } from '@/core/typings/GitlabUser';
 
 export interface GitlabJob {
   allow_failure: boolean;

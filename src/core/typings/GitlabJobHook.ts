@@ -1,7 +1,7 @@
-import { GitlabCommit } from '@/core/typings/GitlabCommit';
-import { GitlabProjectDetails } from '@/core/typings/GitlabProject';
-import { GitlabRunner } from '@/core/typings/GitlabRunner';
-import { GitlabUser } from '@/core/typings/GitlabUser';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import type { GitlabRunner } from '@/core/typings/GitlabRunner';
+import type { GitlabUser } from '@/core/typings/GitlabUser';
 
 export interface GitlabJobHook {
   before_sha: string;

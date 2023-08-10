@@ -1,6 +1,6 @@
 import { logger } from '@/core/services/logger';
-import { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { selectProject } from './commands/add/selectProject';
 import { removeProject } from './commands/remove/removeProject';
 

@@ -1,9 +1,9 @@
-import { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import { runPipeline } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
-import { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
+import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
+import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { extractActionParameters } from '@/core/utils/slackActions';
 
 export async function createPipeline(

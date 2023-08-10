@@ -1,8 +1,8 @@
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export type SlackCommand = '/review' | string;
 
-export type SlackSlashCommandResponse = {
+export interface SlackSlashCommandResponse {
   api_app_id: string;
   channel_id: string;
   channel_name: string;
@@ -15,6 +15,6 @@ export type SlackSlashCommandResponse = {
   trigger_id: string;
   user_id: string;
   user_name: string;
-};
+}
 
 export type SlackExpressRequest = Request<any, any, SlackSlashCommandResponse>;

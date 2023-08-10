@@ -1,14 +1,17 @@
-import { MessageAttachment } from '@slack/web-api';
-import { Request, Response } from 'express';
+import type { KnownBlock } from '@slack/types';
+import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
 import {
   fetchMergeRequestCommits,
   fetchMergeRequestsByBranchName,
 } from '@/core/services/gitlab';
-import { fetchSlackUserFromEmail, slackWebClient } from '@/core/services/slack';
-import { DataReview } from '@/core/typings/Data';
-import { GitlabPushedCommit } from '@/core/typings/GitlabPushedCommit';
+import {
+  fetchSlackUserFromEmail,
+  slackBotWebClient,
+} from '@/core/services/slack';
+import type { DataReview } from '@/core/typings/Data';
+import type { GitlabPushedCommit } from '@/core/typings/GitlabPushedCommit';
 
 export async function pushHookHandler(
   req: Request,
@@ -71,33 +74,57 @@ export async function pushHookHandler(
 
   await Promise.all(
     reviews.map(async ({ channelId, newMergeRequestCommits, ts }) =>
-      slackWebClient.chat.postMessage({
-        text: 'New commit',
-        icon_emoji: ':point_up:',
+      slackBotWebClient.chat.postMessage({
+        text: ':git-commit: New commit(s)',
+        icon_emoji: ':git-commit:',
         channel: channelId,
         thread_ts: ts,
-        link_names: true,
-        attachments: await Promise.all<MessageAttachment>(
-          newMergeRequestCommits.map(async (commit: GitlabPushedCommit) => {
-            const author = await fetchSlackUserFromEmail(commit.author.email);
-            const attachment = {
-              title: commit.title,
-              title_link: commit.url,
-              color: '#d4d4d4',
-              footer: `${
-                (commit.added || []).length +
-                (commit.modified || []).length +
-                (commit.removed || []).length
-              } changes`,
-            } as MessageAttachment;
-
-            if (author !== undefined) {
-              attachment.author_name = author.real_name;
-              attachment.author_icon = author.profile.image_24;
-            }
-            return attachment;
-          })
-        ),
+        blocks: (
+          await Promise.all<KnownBlock[]>(
+            newMergeRequestCommits.map(
+              async (commit: GitlabPushedCommit): Promise<KnownBlock[]> => {
+                const author = await fetchSlackUserFromEmail(
+                  commit.author.email
+                );
+                return [
+                  {
+                    type: 'section',
+                    text: {
+                      type: 'mrkdwn',
+                      text: `<${commit.url}|${commit.title}>`,
+                    },
+                  },
+                  {
+                    type: 'context',
+                    elements: [
+                      ...(author !== undefined
+                        ? [
+                            {
+                              type: 'image' as const,
+                              image_url: author.profile.image_24,
+                              alt_text: author.real_name,
+                            },
+                            {
+                              type: 'mrkdwn' as const,
+                              text: `*${author.real_name}*`,
+                            },
+                          ]
+                        : []),
+                      {
+                        type: 'plain_text' as const,
+                        text: `${
+                          (commit.added || []).length +
+                          (commit.modified || []).length +
+                          (commit.removed || []).length
+                        } changes`,
+                      },
+                    ],
+                  },
+                ];
+              }
+            )
+          )
+        ).flat(),
       })
     )
   );

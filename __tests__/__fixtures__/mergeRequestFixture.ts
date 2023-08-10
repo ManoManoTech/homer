@@ -1,4 +1,4 @@
-import { GitlabMergeRequest } from '@/core/typings/GitlabMergeRequest';
+import type { GitlabMergeRequest } from '@/core/typings/GitlabMergeRequest';
 import { projectFixture } from './projectFixture';
 
 export const mergeRequestFixture: GitlabMergeRequest = {

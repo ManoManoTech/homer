@@ -1,6 +1,6 @@
 import { HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
-import { slackWebClient } from '@/core/services/slack';
+import { slackBotWebClient } from '@/core/services/slack';
 import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 
@@ -26,7 +26,9 @@ describe('review > deleteReview', () => {
     };
 
     await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
-    (slackWebClient.chat.delete as jest.Mock).mockResolvedValueOnce(undefined);
+    (slackBotWebClient.chat.delete as jest.Mock).mockResolvedValueOnce(
+      undefined
+    );
 
     // When
     const response = await fetch('/api/v1/homer/interactive', {
@@ -37,7 +39,7 @@ describe('review > deleteReview', () => {
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackWebClient.chat.delete).toHaveBeenNthCalledWith(1, {
+    expect(slackBotWebClient.chat.delete).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       ts,
     });

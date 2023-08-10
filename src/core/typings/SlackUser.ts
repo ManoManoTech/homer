@@ -1,4 +1,4 @@
-export type SlackUser = {
+export interface SlackUser {
   id: string;
   team_id: string;
   name: string;
@@ -34,4 +34,4 @@ export type SlackUser = {
   updated: number;
   is_app_user: boolean;
   has_2fa: boolean;
-};
+}

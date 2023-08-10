@@ -1,4 +1,15 @@
-import { Action, ModalView, View } from '@slack/web-api';
+import type { Action, ModalView, View } from '@slack/web-api';
+
+export type BlockActionView<V extends View = ModalView> = V & {
+  id: string;
+  team_id: string;
+  state: { values: any };
+  hash: string;
+  root_view_id: string;
+  app_id: string;
+  app_installed_team_id: string;
+  bot_id: string;
+};
 
 export interface BlockActionsPayload<V extends View = ModalView> {
   actions: Action[];
@@ -31,16 +42,7 @@ export interface BlockActionsPayload<V extends View = ModalView> {
     username: string;
     team_id: string;
   };
-  view: V & {
-    id: string;
-    team_id: string;
-    state: { values: any };
-    hash: string;
-    root_view_id: string;
-    app_id: string;
-    app_installed_team_id: string;
-    bot_id: string;
-  };
+  view: BlockActionView<V>;
 }
 
 export interface BlockActionsPayloadWithChannel<V extends View = ModalView>

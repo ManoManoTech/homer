@@ -1,6 +1,7 @@
-import {
+import type {
   ChatPostMessageArguments,
   ChatUpdateArguments,
+  KnownBlock,
   MrkdwnElement,
 } from '@slack/web-api';
 import {
@@ -10,14 +11,16 @@ import {
 import {
   fetchMergeRequestApprovers,
   fetchMergeRequestByIid,
-  fetchParticipants,
   fetchProjectById,
+  fetchReviewers,
 } from '@/core/services/gitlab';
 import {
+  escapeText,
   fetchSlackUserFromGitlabUser,
   fetchSlackUsersFromGitlabUsers,
 } from '@/core/services/slack';
-import { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
+import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
+import { type SlackUser } from '@/core/typings/SlackUser';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 const SPARTACUX_PROJECT_PATH = 'spartacux';
@@ -42,49 +45,55 @@ export async function buildReviewMessage(
   ts?: string
 ) {
   const mergeRequest = await fetchMergeRequestByIid(projectId, mergeRequestIid);
-  const [approvers, mergeRequestAuthor, rawParticipants, project] =
-    await Promise.all([
-      fetchMergeRequestApprovers(projectId, mergeRequestIid).then(
-        fetchSlackUsersFromGitlabUsers
-      ),
-      fetchSlackUserFromGitlabUser(mergeRequest.author),
-      fetchParticipants(projectId, mergeRequestIid).then(
-        fetchSlackUsersFromGitlabUsers
-      ),
-      fetchProjectById(projectId),
-    ]);
+  const [
+    rawAssignees,
+    rawApprovers,
+    mergeRequestAuthor,
+    rawReviewers,
+    project,
+  ] = await Promise.all([
+    fetchSlackUsersFromGitlabUsers(mergeRequest.assignees),
+    fetchMergeRequestApprovers(projectId, mergeRequestIid).then(
+      fetchSlackUsersFromGitlabUsers
+    ),
+    fetchSlackUserFromGitlabUser(mergeRequest.author),
+    fetchReviewers(projectId, mergeRequestIid).then(
+      fetchSlackUsersFromGitlabUsers
+    ),
+    fetchProjectById(projectId),
+  ]);
 
-  const participants = rawParticipants
-    .filter(
-      (user) =>
-        !!user.name &&
-        !approvers.some((approver) => approver.name === user.name)
-    )
-    .map(({ name }) => `@${name}`)
-    .join(' ');
+  const formatUsers = (users: SlackUser[]) =>
+    users.map(({ name }) => `@${name}`);
 
-  const fields: MrkdwnElement[] = [
-    {
+  const fields: MrkdwnElement[] = [];
+  const approvers = formatUsers(rawApprovers);
+  const assignees = formatUsers(rawAssignees);
+  const reviewers = formatUsers(rawReviewers);
+
+  const participants = [...new Set([...assignees, ...reviewers])].filter(
+    (user) => !approvers.includes(user)
+  );
+
+  if (participants.length > 0) {
+    fields.push({
       type: 'mrkdwn',
-      text: `*Participants*\n ${participants}`,
-    },
-  ];
+      text: `*Participants*\n ${participants.sort().join(' ')}`,
+    });
+  }
 
   if (approvers.length > 0) {
     fields.push({
       type: 'mrkdwn',
-      text: `*Approved by*\n ${approvers
-        .filter((approver) => approver && approver.name)
-        .map((approver) => `@${approver?.name}`)
-        .join(' ')}`,
+      text: `*Approved by*\n ${approvers.sort().join(' ')}`,
     });
   }
 
   const mergeRequestTitle = MERGE_REQUEST_CLOSE_STATES.includes(
     mergeRequest.state
   )
-    ? `~${mergeRequest.title}~`
-    : mergeRequest.title;
+    ? `~${escapeText(mergeRequest.title)}~`
+    : escapeText(mergeRequest.title);
 
   const mergeRequestStatus = MERGE_REQUEST_OPEN_STATES.includes(
     mergeRequest.state
@@ -120,14 +129,6 @@ export async function buildReviewMessage(
         type: 'mrkdwn',
         text: `*<${mergeRequest.web_url}|${mergeRequestTitle}${mergeRequestStatus}>*`,
       },
-    },
-    {
-      type: 'context',
-      elements: titleContextElements,
-    },
-    {
-      type: 'section',
-      fields,
       accessory: {
         type: 'overflow',
         action_id: 'review-message-actions',
@@ -188,14 +189,25 @@ export async function buildReviewMessage(
         ].filter(Boolean),
       },
     },
-  ];
+    {
+      type: 'context',
+      elements: titleContextElements,
+    },
+  ] as KnownBlock[];
 
-  const message = {
+  if (fields.length > 0) {
+    blocks.push({
+      type: 'section',
+      fields,
+    });
+  }
+
+  const message: ChatPostMessageArguments = {
     channel: channelId,
     link_names: true,
     text: `${mergeRequestTitle} ${mergeRequest.web_url}${mergeRequestStatus}`,
     blocks,
-  } as ChatPostMessageArguments;
+  };
 
   if (mergeRequestAuthor !== undefined) {
     message.username = mergeRequestAuthor.real_name;

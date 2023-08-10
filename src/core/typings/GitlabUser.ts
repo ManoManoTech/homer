@@ -1,4 +1,4 @@
-export type GitlabUser = {
+export interface GitlabUser {
   avatar_url: string | null;
   id: number;
   /** ex: Josselin BUILS */
@@ -8,13 +8,13 @@ export type GitlabUser = {
   username: string;
   /** URL of user profile (ex: https://git.manomano.tech/josselin.buils) */
   web_url: string;
-};
+}
 
-export type GitlabUserDetail = GitlabUser & {
+export interface GitlabUserDetails extends GitlabUser {
+  bio: string | null;
+  bio_html: string;
   /** ex: 2018-12-12T18:40:30.864+01:00 */
   created_at: string;
-  bio: string;
-  bio_html: string;
   job_title: string;
   linkedin: string;
   location: string | null;
@@ -23,4 +23,4 @@ export type GitlabUserDetail = GitlabUser & {
   skype: string;
   twitter: string;
   website_url: string;
-};
+}

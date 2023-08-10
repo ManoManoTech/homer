@@ -1,6 +1,6 @@
 import { logger } from '@/core/services/logger';
-import { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
-import { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
+import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { handleMessageAction } from './commands/share/utils/handleMessageActions';
 import { selectMergeRequest } from './commands/share/utils/selectMergeRequest';
 

@@ -29,8 +29,10 @@ module.exports = {
   ],
   plugins: ['prettier', '@typescript-eslint'],
   rules: {
+    '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-shadow': 'error',
     '@typescript-eslint/no-unused-vars': [
       'error',
@@ -55,6 +57,7 @@ module.exports = {
     'import/order': [
       'error',
       {
+        alphabetize: { order: 'asc', caseInsensitive: false },
         groups: [
           'builtin', // Node.js internal modules
           'external', // npm dependencies
@@ -80,6 +83,7 @@ module.exports = {
     'lines-between-class-members': 'off',
     'no-await-in-loop': 'off',
     'no-console': 'error',
+    'no-irregular-whitespace': 'off',
     'no-param-reassign': 'off',
     'no-restricted-syntax': 'off',
     'no-shadow': 'off',

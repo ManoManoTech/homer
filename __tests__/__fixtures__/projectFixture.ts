@@ -1,4 +1,4 @@
-import { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 
 export const projectFixture: GitlabProjectDetails = {
   id: 1148, // Homer

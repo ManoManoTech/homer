@@ -1,4 +1,4 @@
-import { SectionBlock, StaticSelect } from '@slack/web-api';
+import type { SectionBlock, StaticSelect } from '@slack/web-api';
 import * as nodeFetch from 'node-fetch';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
@@ -165,11 +165,11 @@ describe('project > addProject', () => {
     const channelId = 'channelId';
     const search = 'search';
     const userId = 'userId';
-    let body = {
+    let body: Record<string, unknown> = {
       channel_id: channelId,
       text: `project add ${search}`,
       user_id: userId,
-    } as Record<string, unknown>;
+    };
 
     mockGitlabCall(`/projects?search=${search}`, [
       projectFixture,

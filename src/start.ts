@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import express from 'express';
 import helmet from 'helmet';
 import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { securityMiddleware } from '@/core/middlewares/securityMiddleware';
@@ -7,6 +8,7 @@ import { stateRequestHandler } from '@/core/requestHandlers/stateRequestHandler/
 import { connectToDatabase } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { catchAsyncRouteErrors } from '@/core/utils/catchAsyncRouteErrors';
+import { REQUEST_BODY_SIZE_LIMIT } from './constants';
 import { router } from './router';
 
 const PORT = 3000;
@@ -20,7 +22,12 @@ export async function start(): Promise<() => Promise<void>> {
     };
 
     app.use(helmet({ contentSecurityPolicy: false }));
-    app.use(express.json({ verify }));
+    app.use(
+      express.json({
+        limit: REQUEST_BODY_SIZE_LIMIT,
+        verify,
+      })
+    );
     app.use(express.urlencoded({ extended: true, verify }));
     app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
     app.get(
@@ -32,8 +39,9 @@ export async function start(): Promise<() => Promise<void>> {
     app.use(errorMiddleware);
 
     const server = app.listen(PORT, async () => {
-      logger.info(`Homer started on port ${PORT}`);
+      logger.info(`Homer started on port ${PORT}.`);
       await connectToDatabase();
+      logger.info('Homer connected to the database.');
       resolve(
         async () =>
           new Promise((r) => {

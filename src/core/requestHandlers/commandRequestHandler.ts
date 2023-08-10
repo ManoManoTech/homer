@@ -1,7 +1,7 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { projectRequestHandler } from '@/project/projectRequestHandler';
 import { reviewRequestHandler } from '@/review/reviewRequestHandler';
-import { SlackExpressRequest } from '../typings/SlackSlashCommand';
+import type { SlackExpressRequest } from '../typings/SlackSlashCommand';
 import { buildHelpMessage } from '../viewBuilders/buildHelpMessage';
 
 export async function commandRequestHandler(
