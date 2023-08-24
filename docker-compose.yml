@@ -8,5 +8,5 @@ services:
     environment:
       - POSTGRES_PASSWORD=root
       - POSTGRES_USER=root
-      - POSTGRES_DB=ms_homer
+      - POSTGRES_DB=homer
     restart: unless-stopped

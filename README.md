@@ -25,7 +25,7 @@ steps:
 **⚠️ If you want to use Homer in a private channel, you need to invite it to the
 channel first.**
 
-#### Make Homer be notified of changes happening in your Gitlab project
+#### Make Homer notified of changes happening in your Gitlab project
 
 To keep up to date the review messages it creates, Homer needs to be notified
 when something occurs on the related merge requests.
@@ -39,7 +39,7 @@ To do so, you need to set up a webhook in your project:
 
 - Enter the following URL: `HOMER_BASE_URL/api/v1/homer/gitlab`.
 
-  HOMER_BASE_URL should also be provided by the person that manages Homer in
+  `HOMER_BASE_URL` should also be provided by the person that manages Homer in
   your organisation.
 
 - Enter the value of `GITLAB_SECRET` in `Secret Token` field.
@@ -60,14 +60,15 @@ conversation:
 /homer
 ```
 
-### Sharing merge request on a channel
+### Sharing merge requests on a channel
 
 Homer does not post merge requests to the channel automatically. To post it to
 the channel, you should use `/homer review <search>` command.
 
-You can provide merge request ID prefixed with `!`, e.g.: `/homer review !128`.
+You can provide a merge request ID prefixed with `!`, e.g.: `/homer review !128`.
 
-Command `/homer review list` shows all the ongoing merge requests.
+If you want to get an overview of merge requests that are still being reviewed
+(meaning they are not merged yet), use `/homer review list`.
 
 ## Install
 
@@ -81,17 +82,17 @@ Command `/homer review list` shows all the ongoing merge requests.
 ### Install and run
 
 ```bash
-# Clone Homer repos
+# Clone the repo
 git clone https://github.com/ManoManoTech/homer.git
 
-# Go to Homer folder
+# Go to directory that was just created
 cd homer
 
 # Install yarn dependencies
 yarn install
 
-# Start the database
-docker-compose up -d
+# Start the database Docker container
+docker compose up -d
 
 # Build Homer
 yarn build
@@ -99,7 +100,7 @@ yarn build
 # Start Homer
 yarn start
 
-# Open a bridge for external HTTP call to reach your local Homer instance
+# Open a bridge for external HTTP calls to reach your local Homer instance
 ngrok http localhost:3000
 ```
 
@@ -109,15 +110,16 @@ ngrok http localhost:3000
 - Click on `Create New App`.
 - Select `From an app manifest`.
 - Select the right workspace and click on `Next`.
-- Replace `HOMER_BASE_URL` by the URL provided by `ngrok` command in the
-  `manifest.json` file located at the root of Homer repos.
+- In [manifest.json](./manifest.json), replace `HOMER_BASE_URL` with the URL provided by the `ngrok`.
 - Copy the content of `manifest.json` file and paste it in the Slack webapp
   modal.
 - Create the app and enjoy.
 
 ### Add Slack emojis
 
-Add all the emojis in `emojis` folder to you Slack organisation.
+Homer uses custom emojis when posting messages. To have them properly
+displayed, you will need to add all the emojis under [emojis](./emojis) to your
+Slack organisation.
 
 ## Contributing
 
