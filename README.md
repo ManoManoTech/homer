@@ -91,7 +91,7 @@ cd homer
 yarn install
 
 # Start the database
-docker-compose up -d
+docker compose up -d
 
 # Build Homer
 yarn build

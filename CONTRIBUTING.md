@@ -30,5 +30,5 @@ ngrok http localhost:3000
 #### Start database locally
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
