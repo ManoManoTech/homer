@@ -39,7 +39,7 @@ To do so, you need to set up a webhook in your project:
 
 - Enter the following URL: `HOMER_BASE_URL/api/v1/homer/gitlab`.
 
-  HOMER_BASE_URL should also be provided by the person that manages Homer in
+  `HOMER_BASE_URL` should also be provided by the person that manages Homer in
   your organisation.
 
 - Enter the value of `GITLAB_SECRET` in `Secret Token` field.
