@@ -8,29 +8,15 @@ Homer is a Slack bot intended to help you to **share your Gitlab merge requests*
 
 ### Prerequisites
 
-Before being able to use Homer in a Slack channel, you have to follow these
+Before being able to use Homer in Slack channels, you have to follow these
 steps:
 
-#### Add a Gitlab project to a Slack channel
-
-- Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
-  `Developer` role in your project.
-
-- Go in the Slack channel.
-
-- Run one of the following commands:
-  - `/homer project add PROJECT_ID`
-  - `/homer project add PROJECT_NAME`
-
-**⚠️ If you want to use Homer in a private channel, you need to invite it to the
-channel first.**
-
-#### Make Homer notified of changes happening in your Gitlab project
+#### Make Homer notified of changes happening in your Gitlab projects
 
 To keep up to date the review messages it creates, Homer needs to be notified
 when something occurs on the related merge requests.
 
-To do so, you need to set up a webhook in your project:
+To do so, you need to set up a webhook in each project you want to use with Homer:
 
 - Ask for Homer's `GITLAB_SECRET` to the person that manages Homer in your
   organisation.
@@ -49,7 +35,19 @@ To do so, you need to set up a webhook in your project:
 
 - Click on the `Add webhook` button on the bottom of the page.
 
-ℹ️ This can be skipped if your Gitlab project is already used in another channel.
+- Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
+  `Developer` role in your project.
+
+#### Add a Gitlab project to Slack channels
+
+Inside every channel where you want to add Homer, run one of the following
+commands:
+- `/homer project add PROJECT_ID`
+- `/homer project add PROJECT_NAME`
+
+**⚠️ If you want to use Homer in a private channel, you need to invite it to the
+channel first.**
+
 
 ### Display the help
 
