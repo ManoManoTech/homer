@@ -18,48 +18,68 @@ merge them more quickly:
 
 ## Usage
 
-### Prerequisites
+### Share a merge request using Homer
 
-Before being able to use Homer in Slack channels, you have to follow these
-steps:
+To share a merge request in a Slack channel using Homer, you have to follow the
+following steps:
 
-#### Make Homer notified of changes happening in your Gitlab projects
+#### 1. Make Homer notified of changes happening in the Gitlab project
 
-To keep up to date the review messages it creates, Homer needs to be notified
+To keep up to date the Slack messages it creates, Homer needs to be notified
 when something occurs on the related merge requests.
 
-To do so, you need to set up a webhook in each project you want to use with Homer:
+To do so, you need to set up a webhook in the Gitlab project of your merge
+request:
 
 - Ask for Homer's `GITLAB_SECRET` to the person that manages Homer in your
   organisation.
 
-- Go to the `Webhooks` settings page of your Gitlab project.
+- Go to the `Webhooks` setting page of your Gitlab project.
+
+  ![Webhooks menu](./docs/assets/webhooks-menu.png)
 
 - Enter the following URL: `HOMER_BASE_URL/api/v1/homer/gitlab`.
 
   `HOMER_BASE_URL` should also be provided by the person that manages Homer in
   your organisation.
 
-- Enter the value of `GITLAB_SECRET` in `Secret Token` field.
+  ![Webhook URL](./docs/assets/webhook-url.png)
+
+- Enter the value of `GITLAB_SECRET` in `Secret token` field.
+
+  ![Webhook secret](./docs/assets/webhook-secret.png)
 
 - Check the following checkboxes: `Push events`, `Comments`,
   `Merge request events`.
 
+  ![Webhook secret](./docs/assets/webhook-triggers.png)
+
 - Click on the `Add webhook` button on the bottom of the page.
 
+  ![Webhook secret](./docs/assets/webhook-add.png)
+
 - Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
-  `Developer` role in your project.
+  `Developer` role in your project:
 
-#### Add a Gitlab project to Slack channels
+  - Go to the `Projects members` page:
 
-Inside every channel where you want to add Homer, run one of the following
-commands:
+    ![Members menu](./docs/assets/members-menu.png)
+
+  - Use the search bar to find the information of the user.
+
+  - Check that the role in `Max role` is at least `Developer`.
+
+#### 2. Add the Gitlab project to a Slack channel
+
+Inside the channel where you want to share your merge request, run one of the
+following commands:
 
 - `/homer project add PROJECT_ID`
 - `/homer project add PROJECT_NAME`
 
-**⚠️ If you want to use Homer in a private channel, you need to invite it to the
-channel first.**
+> [!WARNING]
+> If you want to use Homer in a private channel, you need to invite it to the
+> channel first.
 
 ### Display the help
 
