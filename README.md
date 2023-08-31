@@ -24,7 +24,6 @@ Here are the available commands:
 
 | Command                                         | Description                                                                                                                                                     |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/homer changelog`                              | Generate changelogs for any Gitlab project using release tags.                                                                                                  |
 | `/homer project add <project_name\|project_id>` | Add a Gitlab project to a channel.                                                                                                                              |
 | `/homer project list`                           | List the Gitlab projects added to a channel.                                                                                                                    |
 | `/homer project remove`                         | Remove a Gitlab project from a channel.                                                                                                                         |
