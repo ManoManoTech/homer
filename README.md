@@ -129,7 +129,15 @@ If you want to get an overview of merge requests that are still being reviewed
 
 - Create the app and enjoy.
 
-### 2. Prerequisites
+### 2. Add Slack emojis
+
+Homer uses custom emojis when posting messages. To have them properly
+displayed, you will need to add all the emojis under [emojis](./emojis) to your
+Slack organisation.
+
+![Customize menu](docs/assets/slack/customize-menu.png)
+
+### 3. Prerequisites
 
 Be sure to have all those installed:
 
@@ -138,7 +146,7 @@ Be sure to have all those installed:
   [nvm](https://github.com/nvm-sh/nvm).
 - [Yarn@1](https://classic.yarnpkg.com/lang/en/).
 
-### 3. Set the necessary environment variables
+### 4. Set the necessary environment variables
 
 Create a `.env` file containing the following variables:
 
@@ -181,7 +189,7 @@ Create a `.env` file containing the following variables:
 
     ![OAuth token](docs/assets/slack/oauth-token.png)
 
-### 4. Install and run
+### 5. Install and run
 
 ```bash
 # Clone the repo
@@ -207,7 +215,7 @@ To check that Homer is working properly, you can go to
 http://localhost:3000/api/monitoring/healthcheck and check that a donut is
 displayed.
 
-### 5. Make your local instance of Homer reachable from outside
+### 6. Make your local instance of Homer reachable from outside
 
 - On another terminal, open an HTTP bridge using [ngrok](https://ngrok.com/):
   `npx ngrok http localhost:3000`.
@@ -245,12 +253,6 @@ displayed.
   ![Slash save button](docs/assets/slack/slash-save.png)
 
 You should now be able to use Homer commands on Slack 🎉
-
-### Add Slack emojis
-
-Homer uses custom emojis when posting messages. To have them properly
-displayed, you will need to add all the emojis under [emojis](./emojis) to your
-Slack organisation.
 
 ## Contributing
 
