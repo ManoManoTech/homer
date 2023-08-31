@@ -14,7 +14,7 @@ Since we use Slack, we decided to create a bot that would help us to share our
 merge requests to other developers and to track their progress, so we could
 merge them more quickly:
 
-![Slack message](./docs/assets/thread.png)
+![Slack message](docs/assets/slack/thread.png)
 
 ## Usage
 
@@ -48,34 +48,34 @@ request:
 
 - Go to the `Webhooks` setting page of your Gitlab project.
 
-  ![Webhooks menu](./docs/assets/webhooks-menu.png)
+  ![Webhooks menu](docs/assets/gitlab/webhooks-menu.png)
 
 - Enter the following URL: `HOMER_BASE_URL/api/v1/homer/gitlab`.
 
   `HOMER_BASE_URL` should also be provided by the person that manages Homer in
   your organisation.
 
-  ![Webhook URL](./docs/assets/webhook-url.png)
+  ![Webhook URL](docs/assets/gitlab/webhook-url.png)
 
 - Enter the value of `GITLAB_SECRET` in `Secret token` field.
 
-  ![Webhook secret](./docs/assets/webhook-secret.png)
+  ![Webhook secret](docs/assets/gitlab/webhook-secret.png)
 
 - Check the following checkboxes: `Push events`, `Comments`,
   `Merge request events`.
 
-  ![Webhook secret](./docs/assets/webhook-triggers.png)
+  ![Webhook secret](docs/assets/gitlab/webhook-triggers.png)
 
 - Click on the `Add webhook` button on the bottom of the page.
 
-  ![Webhook secret](./docs/assets/webhook-add.png)
+  ![Webhook secret](docs/assets/gitlab/webhook-add.png)
 
 - Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
   `Developer` role in your project:
 
   - Go to the `Projects members` page:
 
-    ![Members menu](./docs/assets/members-menu.png)
+    ![Members menu](docs/assets/gitlab/members-menu.png)
 
   - Use the search bar to find the information of the user.
 
@@ -107,14 +107,81 @@ If you want to get an overview of merge requests that are still being reviewed
 
 ## Install
 
-### Prerequisites
+### 1. Create the Slack app
+
+- Go to https://api.slack.com/apps/.
+- Click on `Create New App`.
+
+  ![Create New App](docs/assets/slack/create-new-app.png)
+
+- Select `From an app manifest`.
+
+  ![From app manifest](docs/assets/slack/app-manifest.png)
+
+- Select the right workspace and click on `Next`.
+
+  ![Select workspace](docs/assets/slack/select-workspace.png)
+
+- Copy the content of [manifest.json](./manifest.json) file and paste it in the
+  Slack webapp modal.
+
+  ![Manifest modal](docs/assets/slack/manifest-modal.png)
+
+- Create the app and enjoy.
+
+### 2. Prerequisites
+
+Be sure to have all those installed:
 
 - [Docker Compose](https://docs.docker.com/compose/install/).
-- [Ngrok](https://ngrok.com/download).
-- [Node.js@18](https://nodejs.org/en/). You can use a version manager like [nvm](https://github.com/nvm-sh/nvm).
+- [Node.js@18](https://nodejs.org/en/). You can use a version manager like
+  [nvm](https://github.com/nvm-sh/nvm).
 - [Yarn@1](https://classic.yarnpkg.com/lang/en/).
 
-### Install and run
+### 3. Set the necessary environment variables
+
+Create a `.env` file containing the following variables:
+
+- `GITLAB_SECRET=`
+
+  This is a user generated secret, so you can put any value.
+
+  It will be used later to set up Gitlab webhooks to allow Homer to verify
+  that Gitlab→Homer calls are authentic.
+
+- `GITLAB_TOKEN=`
+
+  If you don't already have one, you need to create a project access token on
+  Gitlab by following the
+  [dedicated documentation](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html#create-a-project-access-token).
+
+  This token allows Homer to use the Gitlab API.
+
+- `SLACK_SIGNING_SECRET=`
+
+  - Go to the [Slack apps page](https://api.slack.com/apps/) of your
+    organisation.
+  - Click on your app.
+  - Find `Signin Secret` input in `App credentials` section.
+
+    ![Signin secret](docs/assets/slack/signin-secret.png)
+
+  This secret allows Homer to verify that Slack→Homer calls are authentic.
+
+- `SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN=`
+
+  - Go to the [Slack apps page](https://api.slack.com/apps/) of your
+    organisation.
+  - Click on your app.
+  - Click on `OAuth & Permissions` in `Features` menu.
+
+    ![OAuth menu](docs/assets/slack/oauth-menu.png)
+
+  - Copy the `Bot User OAuth Token`.
+
+    ![OAuth token](docs/assets/slack/oauth-token.png)
+
+### 4. Install and run
 
 ```bash
 # Clone the repo
@@ -134,21 +201,50 @@ yarn build
 
 # Start Homer
 yarn start
-
-# Open a bridge for external HTTP calls to reach your local Homer instance
-ngrok http localhost:3000
 ```
 
-### Create the Slack app
+To check that Homer is working properly, you can go to
+http://localhost:3000/api/monitoring/healthcheck and check that a donut is
+displayed.
 
-- Go to https://api.slack.com/apps/.
-- Click on `Create New App`.
-- Select `From an app manifest`.
-- Select the right workspace and click on `Next`.
-- In [manifest.json](./manifest.json), replace `HOMER_BASE_URL` with the URL provided by the `ngrok`.
-- Copy the content of `manifest.json` file and paste it in the Slack webapp
-  modal.
-- Create the app and enjoy.
+### 5. Make your local instance of Homer reachable from outside
+
+- On another terminal, open an HTTP bridge using [ngrok](https://ngrok.com/):
+  `npx ngrok http localhost:3000`.
+- Copy the `Forwarding` URL (ex: `https://d59a-176-179-182-210.ngrok.io`).
+- Go to the [Slack apps page](https://api.slack.com/apps/) of your organisation.
+- Click on your app.
+- Click on `Interactivity & Shortcuts` in `Features` menu.
+
+  ![Interactivity menu](docs/assets/slack/interactivity-menu.png)
+
+- In `Request URL`, replace `https://HOMER_BASE_URL` by the URL you copied
+  above.
+
+  ![Interactivity URL](docs/assets/slack/interactivity-url.png)
+
+- Click on `Save Change` button.
+
+  ![Interactivity save button](docs/assets/slack/interactivity-save.png)
+
+- Click on `Slash Commands` in `Features` menu.
+
+  ![Slash menu](docs/assets/slack/slash-menu.png)
+
+- Click on edit button.
+
+  ![Slash edit button](docs/assets/slack/slash-edit.png)
+
+- In `Request URL`, replace `https://HOMER_BASE_URL` by the URL you copied
+  above.
+
+  ![Slash URL](docs/assets/slack/slash-url.png)
+
+- Click on `Save` button.
+
+  ![Slash save button](docs/assets/slack/slash-save.png)
+
+You should now be able to use Homer commands on Slack 🎉
 
 ### Add Slack emojis
 

@@ -12,7 +12,7 @@
     "slash_commands": [
       {
         "command": "/homer",
-        "url": "HOMER_BASE_URL/api/v1/homer/command",
+        "url": "https://HOMER_BASE_URL/api/v1/homer/command",
         "description": "Make Homer work, it won't hurt him!",
         "should_escape": false
       }
@@ -55,7 +55,7 @@
   "settings": {
     "interactivity": {
       "is_enabled": true,
-      "request_url": "HOMER_BASE_URL/api/v1/homer/interactive"
+      "request_url": "https://HOMER_BASE_URL/api/v1/homer/interactive"
     },
     "org_deploy_enabled": false,
     "socket_mode_enabled": false,
