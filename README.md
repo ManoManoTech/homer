@@ -18,6 +18,19 @@ merge them more quickly:
 
 ## Usage
 
+### Commands
+
+Here are the available commands:
+
+| Command                                         | Description                                                                                                                                                     |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/homer changelog`                              | Generate changelogs for any Gitlab project using release tags.                                                                                                  |
+| `/homer project add <project_name\|project_id>` | Add a Gitlab project to a channel.                                                                                                                              |
+| `/homer project list`                           | List the Gitlab projects added to a channel.                                                                                                                    |
+| `/homer project remove`                         | Remove a Gitlab project from a channel.                                                                                                                         |
+| `/homer review <search>`                        | Share a merge request on a channel.<br />Searches in title and description by default.<br />Accepts merge request URLs and merge request IDs prefixed with "!". |
+| `/homer review list`                            | List ongoing reviews shared in a channel.                                                                                                                       |
+
 ### Share a merge request using Homer
 
 To share a merge request in a Slack channel using Homer, you have to follow the
@@ -71,8 +84,10 @@ request:
 
 #### 2. Add the Gitlab project to a Slack channel
 
-Inside the channel where you want to share your merge request, run one of the
-following commands:
+If it is the first time that you share a merge request of the Gitlab project in
+a Slack channel, you have to link them.
+
+Inside the Slack channel, run one of the following commands:
 
 - `/homer project add PROJECT_ID`
 - `/homer project add PROJECT_NAME`
@@ -81,19 +96,10 @@ following commands:
 > If you want to use Homer in a private channel, you need to invite it to the
 > channel first.
 
-### Display the help
+#### 3. Share the merge request
 
-To display the help, run the following command in any Slack channel or
-conversation:
-
-```bash
-/homer
-```
-
-### Sharing merge requests on a channel
-
-Homer does not post merge requests to the channel automatically. To post it to
-the channel, you should use `/homer review <search>` command.
+To share a Gitlab merge request to a Slack channel, use the
+`/homer review <search>` command.
 
 You can provide a merge request ID prefixed with `!`, e.g.: `/homer review !128`.
 
