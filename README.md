@@ -2,15 +2,17 @@
 
 ![Homer](./docs/assets/homer256.png)
 
-Homer is a Slack bot intended to help you to **share your Gitlab merge requests**.
+Homer is a **Slack** bot intended to help you to easily **share and follow
+Gitlab merge requests**.
 
 ## Why Homer?
 
 At ManoMano, we were a bit tired of reading Gitlab emails to try keeping up to
 date with merge request updates.
 
-Since we use Slack, we decided to create a bot that would help us share and
-track the progress of our merge requests:
+Since we use Slack, we decided to create a bot that would help us to share our
+merge requests to other developers and to track their progress, so we could
+merge them more quickly:
 
 ![Slack message](./docs/assets/thread.png)
 
