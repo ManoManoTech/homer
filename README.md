@@ -159,14 +159,14 @@ Be sure to have all those installed:
 
 Create a `.env` file containing the following variables:
 
-- `GITLAB_SECRET=`
+- `GITLAB_SECRET`
 
   This is a user generated secret, so you can put any value.
 
   It will be used later to set up Gitlab webhooks to allow Homer to verify
   that Gitlab→Homer calls are authentic.
 
-- `GITLAB_TOKEN=`
+- `GITLAB_TOKEN`
 
   If you don't already have one, you need to create a project access token on
   Gitlab by following the
@@ -174,7 +174,7 @@ Create a `.env` file containing the following variables:
 
   This token allows Homer to use the Gitlab API.
 
-- `SLACK_SIGNING_SECRET=`
+- `SLACK_SIGNING_SECRET`
 
   - Go to the [Slack apps page](https://api.slack.com/apps/) of your
     organisation.
@@ -185,7 +185,7 @@ Create a `.env` file containing the following variables:
 
   This secret allows Homer to verify that Slack→Homer calls are authentic.
 
-- `SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN=`
+- `SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN`
 
   - Go to the [Slack apps page](https://api.slack.com/apps/) of your
     organisation.
@@ -197,6 +197,14 @@ Create a `.env` file containing the following variables:
   - Copy the `Bot User OAuth Token`.
 
     ![OAuth token](docs/assets/slack/oauth-token.png)
+
+If you want Homer to connect to an **external PostgreSQL database**, you can set
+the following variables:
+
+- `POSTGRES_HOST`: host of the database.
+- `POSTGRES_PASSWORD`: password used when connecting to the database.
+- `POSTGRES_PORT`: port where the database listens.
+- `POSTGRES_USER`: username used when connecting to the database.
 
 ### 5. Install and run
 
