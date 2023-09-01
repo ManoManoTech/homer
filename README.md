@@ -1,3 +1,5 @@
+![CI badge](https://github.com/ManoManoTech/homer/actions/workflows/ci.yaml/badge.svg)
+
 # Homer
 
 ![Homer](docs/assets/homer256.png)
@@ -209,7 +211,7 @@ cd homer
 yarn install
 
 # Start the database Docker container
-docker compose up -d
+docker compose -f config/docker/docker-compose.dev.yml up -d
 
 # Build Homer
 yarn build
