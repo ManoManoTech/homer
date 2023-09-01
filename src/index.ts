@@ -24,6 +24,11 @@ Promise.all([import('@/core/services/logger'), import('./start')]).then(
     }
     process.on('uncaughtException', errorHandler);
     process.on('unhandledRejection', errorHandler);
-    await start();
+    try {
+      await start();
+    } catch (error) {
+      logger.error(error);
+      process.exit(1);
+    }
   }
 );

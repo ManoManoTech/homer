@@ -14,7 +14,7 @@ import { router } from './router';
 const PORT = 3000;
 
 export async function start(): Promise<() => Promise<void>> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const app = express();
 
     const verify = (req: Request, res: Response, buffer: Buffer) => {
@@ -39,9 +39,19 @@ export async function start(): Promise<() => Promise<void>> {
     app.use(errorMiddleware);
 
     const server = app.listen(PORT, async () => {
+      try {
+        await connectToDatabase();
+      } catch (error) {
+        reject(
+          new Error(
+            `Unable to connect to the database: ${
+              (error as Error).stack ?? error
+            }`
+          )
+        );
+        return;
+      }
       logger.info(`Homer started on port ${PORT}.`);
-      await connectToDatabase();
-      logger.info('Homer connected to the database.');
       resolve(
         async () =>
           new Promise((r) => {
