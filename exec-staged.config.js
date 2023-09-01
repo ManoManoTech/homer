@@ -4,7 +4,7 @@ module.exports = [
     commands: ['eslint'],
   },
   {
-    regex: /\.(js|json|md|tsx?)$/,
+    regex: /\.(js|json|md|tsx?|ya?ml)$/,
     commands: ['prettier --write', 'git add'],
   },
 ];
