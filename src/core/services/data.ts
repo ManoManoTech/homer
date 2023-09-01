@@ -14,11 +14,11 @@ const REVIEW_LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 const sequelize = new Sequelize({
   database: 'homer',
   dialect: 'postgres',
-  host: getEnvVariable('TOOLS_COMMON_PG_WRITE_HOST'),
+  host: getEnvVariable('POSTGRES_HOST'),
   logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
-  password: getEnvVariable('DB_PASSWORD'),
-  port: Number(getEnvVariable('TOOLS_COMMON_PG_PORT')),
-  username: getEnvVariable('DB_USERNAME'),
+  password: getEnvVariable('POSTGRES_PASSWORD'),
+  port: Number(getEnvVariable('POSTGRES_PORT')),
+  username: getEnvVariable('POSTGRES_USER'),
 });
 
 const Project = sequelize.define<Model<DataProject>>('Project', {
