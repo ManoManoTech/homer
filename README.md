@@ -1,6 +1,6 @@
 # Homer
 
-![Homer](./docs/assets/homer256.png)
+![Homer](docs/assets/homer256.png)
 
 Homer is a **Slack** bot intended to help you to easily **share and follow
 Gitlab merge requests**.
@@ -15,6 +15,13 @@ merge requests to other developers and to track their progress, so we could
 merge them more quickly:
 
 ![Slack message](docs/assets/slack/thread.png)
+
+## How does it work?
+
+Homer communicates with both **Slack** and **Gitlab** to get merge request
+information and publish Slack messages.
+
+![Architecture](docs/assets/archi.png)
 
 ## Usage
 
