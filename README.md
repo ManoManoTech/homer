@@ -117,6 +117,9 @@ If you want to get an overview of merge requests that are still being reviewed
 
 ## Install
 
+> [!WARNING]
+> Currently, Homer can only be installed by manually cloning the git repository.
+
 ### 1. Create the Slack app
 
 - Go to https://api.slack.com/apps/.
