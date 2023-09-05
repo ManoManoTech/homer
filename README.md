@@ -23,7 +23,8 @@ merge them more quickly:
 Homer communicates with both **Slack** and **Gitlab** to get merge request
 information and publish Slack messages.
 
-![Architecture](docs/assets/archi.png)
+![Architecture](docs/assets/archi-dark.png#gh-dark-mode-only)
+![Architecture](docs/assets/archi-light.png#gh-light-mode-only)
 
 ## Usage
 
