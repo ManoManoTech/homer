@@ -223,7 +223,7 @@ cd homer
 yarn install
 
 # Start the database Docker container
-docker compose -f config/docker/docker-compose.dev.yml up -d
+docker compose up -d
 
 # Build Homer
 yarn build
