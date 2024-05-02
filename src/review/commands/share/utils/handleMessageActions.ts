@@ -4,6 +4,7 @@ import { slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { createPipeline } from './createPipeline';
+import { drawReviewers } from './drawReviewers';
 import { rebaseSourceBranch } from './rebaseSourceBranch';
 
 export async function handleMessageAction(
@@ -20,6 +21,8 @@ export async function handleMessageAction(
 
     await slackBotWebClient.chat.delete({ channel: channel.id, ts });
     await removeReview(ts);
+  } else if (mergeRequestAction.startsWith('draw-reviewers')) {
+    await drawReviewers(payload, action);
   } else if (mergeRequestAction.startsWith('review-rebase-source-branch')) {
     await rebaseSourceBranch(payload, action);
   } else {

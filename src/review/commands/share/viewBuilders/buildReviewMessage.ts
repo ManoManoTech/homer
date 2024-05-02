@@ -182,6 +182,17 @@ export async function buildReviewMessage(
           {
             text: {
               type: 'plain_text',
+              text: 'Draw reviewers',
+            },
+            value: injectActionsParameters(
+              'draw-reviewers',
+              projectId,
+              mergeRequest.iid
+            ),
+          },
+          {
+            text: {
+              type: 'plain_text',
               text: 'Delete message',
             },
             value: 'review-delete-message',

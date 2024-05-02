@@ -326,6 +326,19 @@ export async function searchProjects(search: string): Promise<GitlabProject[]> {
   return callAPI(`/projects?search=${encodeURIComponent(search)}`);
 }
 
+export async function drawReviewers(
+  projectId: number,
+  mergeRequestIid: number
+): Promise<GitlabUser[]> {
+  const rawReviewers = await fetchReviewers(projectId, mergeRequestIid);
+  if (rawReviewers.length > 0) {
+    throw new Error(
+      `Unable to draw reviewers on MR ${mergeRequestIid} of project ${projectId}: already ${rawReviewers.length} reviewers found.}`
+    );
+  }
+  return rawReviewers;
+}
+
 async function callAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const separator = path.includes('?') ? '&' : '?';
   const response = await fetch(

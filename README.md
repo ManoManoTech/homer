@@ -176,6 +176,8 @@ Create a `.env` file containing the following variables:
   Gitlab by following the
   [dedicated documentation](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html#create-a-project-access-token).
 
+  Token role should be at least **Developer**.
+
   This token allows Homer to use the Gitlab API.
 
 - `SLACK_SIGNING_SECRET`
