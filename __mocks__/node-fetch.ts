@@ -8,7 +8,7 @@ const { default: realNodeFetch } = jest.requireActual('node-fetch');
 let nodeFetchMocks: Record<string, HttpCallMock> = {};
 
 export default (url: string, ...args: any[]) => {
-  if (url.includes('git.manomano.tech') || url.includes('slack')) {
+  if (url.includes('my-git.domain.com') || url.includes('slack')) {
     if (!nodeFetchMocks[url]) {
       // eslint-disable-next-line no-console
       console.error(`Non mocked URL: ${url}`);
