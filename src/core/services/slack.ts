@@ -8,6 +8,7 @@ import { logger } from './logger';
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = getEnvVariable(
   'SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN'
 );
+const EMAIL_DOMAINS = getEnvVariable('EMAIL_DOMAINS');
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
@@ -94,10 +95,10 @@ export async function fetchSlackUserFromGitlabUser({
 export async function fetchSlackUserFromGitlabUsername(
   username: string
 ): Promise<SlackUser | undefined> {
-  return fetchSlackUserFromEmails([
-    `${username}@manomano.com`,
-    `${username}@prt.manomano.com`,
-  ]);
+  const emails = EMAIL_DOMAINS.split(',').map(
+    (emailDomain) => `${username}@${emailDomain}`
+  );
+  return fetchSlackUserFromEmails(emails);
 }
 
 export async function fetchSlackUserFromId(
