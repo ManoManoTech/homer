@@ -203,10 +203,15 @@ Create a `.env` file containing the following variables:
     ![OAuth token](docs/assets/slack/oauth-token.png)
 
 - `EMAIL_DOMAINS`
+
   Email domains of your organization (separated by comma),
   for instance `my-domain.com,ext.my-domain.com`.
   Used to find Slack users from Gitlab username.
   Note that this means your org has to use the same naming scheme for emails and gitlab username.
+
+- `GITLAB_URL`
+
+  The gitlab URL of your organization
 
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:

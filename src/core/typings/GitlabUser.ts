@@ -6,7 +6,7 @@ export interface GitlabUser {
   state: 'active' | 'blocked';
   /** ex: josselin.buils */
   username: string;
-  /** URL of user profile (ex: https://git.manomano.tech/josselin.buils) */
+  /** URL of user profile (ex: https://my-git.domain.com/firstname.lastname) */
   web_url: string;
 }
 
