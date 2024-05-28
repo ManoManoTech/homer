@@ -47,7 +47,7 @@ export async function shareReviewRequestHandler(
     await slackBotWebClient.chat.postEphemeral({
       channel: channel_id,
       user: user_id,
-      text: `No merge request match \`${query}\` :homer-stressed:`,
+      text: `No merge request matches \`${query}\` :homer-stressed:`,
     });
   } else {
     await slackBotWebClient.chat.postEphemeral(

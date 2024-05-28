@@ -256,7 +256,7 @@ describe('review > addReview', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
-      text: expect.stringContaining(`No merge request match \`${search}\``),
+      text: expect.stringContaining(`No merge request matches \`${search}\``),
       user: userId,
     });
   });
