@@ -213,6 +213,14 @@ Create a `.env` file containing the following variables:
 
   The gitlab URL of your organization
 
+- `SLACK_SUPPORT_CHANNEL_ID`
+
+  This slack channel id is displayed when a user enters the help command. People having trouble with homer can be helped on this support channel.
+
+- `SLACK_SUPPORT_CHANNEL_NAME`
+
+  This slack channel name is displayed when a user enters the help command. People having trouble with homer can be helped on this support channel.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
