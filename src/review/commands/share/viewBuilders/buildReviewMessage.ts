@@ -23,8 +23,6 @@ import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeReques
 import { type SlackUser } from '@/core/typings/SlackUser';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
-const SPARTACUX_PROJECT_PATH = 'spartacux';
-
 export function buildReviewMessage(
   channelId: string,
   projectId: number,
@@ -142,30 +140,6 @@ export async function buildReviewMessage(
               'review-create-pipeline',
               projectId,
               mergeRequest.source_branch
-            ),
-          },
-          project.path === SPARTACUX_PROJECT_PATH && {
-            text: {
-              type: 'plain_text',
-              text: '↳ and deploy FR B2C',
-            },
-            value: injectActionsParameters(
-              'review-create-pipeline',
-              projectId,
-              mergeRequest.source_branch,
-              'fr-b2c'
-            ),
-          },
-          project.path === SPARTACUX_PROJECT_PATH && {
-            text: {
-              type: 'plain_text',
-              text: '↳ and deploy FR B2B',
-            },
-            value: injectActionsParameters(
-              'review-create-pipeline',
-              projectId,
-              mergeRequest.source_branch,
-              'fr-b2b'
             ),
           },
           {
