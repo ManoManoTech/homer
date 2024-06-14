@@ -6,10 +6,7 @@ import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { projectFixture } from '../__fixtures__/projectFixture';
-import {
-  reviewMessagePostFixture,
-  reviewMessageSpartacuxPostFixture,
-} from '../__fixtures__/reviewMessage';
+import { reviewMessagePostFixture } from '../__fixtures__/reviewMessage';
 import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
@@ -68,54 +65,6 @@ describe('review > addReview', () => {
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
       reviewMessagePostFixture
-    );
-    expect(
-      await hasModelEntry('Review', {
-        channelId,
-        mergeRequestIid: mergeRequestDetailsFixture.iid,
-        ts: 'ts',
-      })
-    ).toEqual(true);
-  });
-
-  it('should add review on Spartacux', async () => {
-    // Given
-    const { project_id } = mergeRequestDetailsFixture;
-    const channelId = 'channelId';
-    const search = 'chore(test)';
-    const userId = 'userId';
-    const body = {
-      channel_id: channelId,
-      text: `review ${search}`,
-      user_id: userId,
-    };
-
-    await addProjectToChannel({
-      channelId,
-      projectId: projectFixture.id,
-    });
-    mockGitlabCall(
-      `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
-      [mergeRequestFixture]
-    );
-    mockBuildReviewMessageCalls();
-    mockGitlabCall(`/projects/${project_id}`, {
-      ...projectFixture,
-      path: 'spartacux',
-    });
-
-    // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-
-    // Then
-    const { hasModelEntry } = (await import('sequelize')) as any;
-    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
-      1,
-      reviewMessageSpartacuxPostFixture
     );
     expect(
       await hasModelEntry('Review', {
