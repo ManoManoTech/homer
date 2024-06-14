@@ -22,8 +22,6 @@ If you want to better know me, here are some useful links:
 :gitlab: <${HOMER_GITLAB_URL}|Gitlab project>
 :books: <${HOMER_GITLAB_URL}/-/blob/master/README.md|Documentation>
 :bug: <${HOMER_GITLAB_URL}/-/issues|Issues>
-:datadog: <https://app.datadoghq.eu/logs?cols=host%2Cservice&from_ts=1573722380129&index=&live=true&messageDisplay=inline&query=service%3A%2Ahomer%2A%20%40env%3Aint&stream_sort=desc&to_ts=1573723280129|Logs INT>
-:datadog: <https://app.datadoghq.eu/logs?cols=host%2Cservice&from_ts=1573722380129&index=&live=true&messageDisplay=inline&query=service%3A%2Ahomer%2A+%40env%3Asupport&stream_sort=desc&to_ts=1573723280129|Logs SUPPORT>
 `,
         },
       },

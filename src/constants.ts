@@ -6,7 +6,7 @@ export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
   'D’oh! It looks like I took too much time to respond for Slack, could you retry your command? :homer-donut:';
 export const EXPIRED_TRIGGER_ID_SLACK_ERROR = 'expired_trigger_id';
 export const GENERIC_ERROR_MESSAGE =
-  "D'oh! Something went wrong :homer-stressed: You will probably find more information on the error on <https://app.datadoghq.eu/logs?cols=host%2Cservice&live=true&messageDisplay=inline&query=service%3A%2Ahomer%2A%20%40env%3Asupport&index=%2A&stream_sort=desc|Datadog>.";
+  "D'oh! Something went wrong :homer-stressed:";
 export const GITLAB_URL = getEnvVariable('GITLAB_URL');
 export const HOMER_GITLAB_URL = `${GITLAB_URL}/tools/homer`;
 export const HTTP_STATUS_NO_CONTENT = 204;
