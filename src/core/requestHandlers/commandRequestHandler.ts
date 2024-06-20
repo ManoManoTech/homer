@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import { changelogRequestHandler } from '@/changelog/changelogRequestHandler';
 import { projectRequestHandler } from '@/project/projectRequestHandler';
 import { reviewRequestHandler } from '@/review/reviewRequestHandler';
 import type { SlackExpressRequest } from '../typings/SlackSlashCommand';
@@ -12,6 +13,9 @@ export async function commandRequestHandler(
   const command = text?.split(' ')?.[0];
 
   switch (command) {
+    case 'changelog':
+      return changelogRequestHandler(req, res);
+
     case 'project':
       return projectRequestHandler(req, res);
 

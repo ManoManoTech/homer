@@ -213,6 +213,11 @@ Create a `.env` file containing the following variables:
 
   The gitlab URL of your organization
 
+- `TICKET_MANAGEMENT_URL_PATTERN`
+
+  The ticket management URL pattern for your organization. It must contain the `{ticketId}` matcher to be replaced by the ticket ID,
+  for instance `https://my-ticket-management.com/view/{ticketId}`.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
