@@ -215,8 +215,8 @@ Create a `.env` file containing the following variables:
 
 - `TICKET_MANAGEMENT_URL_PATTERN`
 
-  The ticket management URL pattern for your organization. It must contain the `{ticketId}` matcher to be replaced by the ticket ID,
-  for instance `https://my-ticket-management.com/view/{ticketId}`.
+  The ticket management URL pattern for your organization, this is used to generate a link to the ticket in the changelog.
+  It must contain the `{ticketId}` matcher to be replaced by the ticket ID, for instance `https://my-ticket-management.com/view/{ticketId}`.
 
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
