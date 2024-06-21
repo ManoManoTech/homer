@@ -122,7 +122,7 @@ export async function buildChangelogModalView({
               elements: [
                 {
                   type: 'plain_text',
-                  text: 'This should be changed only whether the previous release has been aborted.',
+                  text: 'This should be changed only if the previous release has been aborted.',
                 },
               ],
             },
