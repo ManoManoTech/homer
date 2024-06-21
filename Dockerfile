@@ -15,6 +15,6 @@ COPY --chown=node:node package.json /home/node/app/package.json
 COPY --chown=node:node yarn.lock /home/node/app/yarn.lock
 COPY --chown=node:node dist /home/node/app/dist
 
-RUN yarn install --production
+RUN yarn install
 
 CMD ["node", "dist/src/index.js"]
