@@ -7,6 +7,7 @@ export function buildHelpMessage(channelId: string): ChatPostMessageArguments {
     text: `\
 Here are the available commands:
 
+- /homer changelog - Display changelogs, for any Gitlab project, between 2 release tags.
 - /homer project add &lt;project_name|project_id&gt; - Add a Gitlab project to a channel.
 - /homer project list - List the Gitlab projects added to a channel.
 - /homer project remove - Remove a Gitlab project from a channel.
@@ -22,6 +23,7 @@ Don't hesitate to join me on #moes-tavern-homer to take a beer!`,
           text: `\
 Here are the available commands:
 
+•   \`/homer changelog\` Display changelogs, for any Gitlab project, between 2 release tags.
 •   \`/homer project add &lt;project_name|project_id&gt;\` Add a Gitlab project to a channel.
 •   \`/homer project list\` List the Gitlab projects added to a channel.
 •   \`/homer project remove\` Remove a Gitlab project from a channel.

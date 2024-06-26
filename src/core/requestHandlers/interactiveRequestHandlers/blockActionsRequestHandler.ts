@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { changelogBlockActionsHandler } from '@/changelog/changelogBlockActionsHandler';
 import { HTTP_STATUS_OK } from '@/constants';
 import { logger } from '@/core/services/logger';
 import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
@@ -21,6 +22,9 @@ export async function blockActionsRequestHandler(
       }
 
       switch (true) {
+        case action_id.startsWith('changelog'):
+          return changelogBlockActionsHandler(payload);
+
         case action_id.startsWith('project'):
           return projectBlockActionsHandler(payload);
 
