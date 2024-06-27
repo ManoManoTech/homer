@@ -4,6 +4,7 @@ import { HTTP_STATUS_OK } from '@/constants';
 import { logger } from '@/core/services/logger';
 import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import { projectBlockActionsHandler } from '@/project/projectBlockActionsHandler';
+import { releaseBlockActionsHandler } from '@/release/releaseBlockActionsHandler';
 import { reviewBlockActionsHandler } from '@/review/reviewBlockActionsHandler';
 
 export async function blockActionsRequestHandler(
@@ -27,6 +28,9 @@ export async function blockActionsRequestHandler(
 
         case action_id.startsWith('project'):
           return projectBlockActionsHandler(payload);
+
+        case action_id.startsWith('release'):
+          return releaseBlockActionsHandler(payload);
 
         case action_id.startsWith('review'):
           return reviewBlockActionsHandler(payload);

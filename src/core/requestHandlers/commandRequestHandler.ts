@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import { changelogRequestHandler } from '@/changelog/changelogRequestHandler';
 import { projectRequestHandler } from '@/project/projectRequestHandler';
+import { releaseRequestHandler } from '@/release/releaseRequestHandler';
 import { reviewRequestHandler } from '@/review/reviewRequestHandler';
 import type { SlackExpressRequest } from '../typings/SlackSlashCommand';
 import { buildHelpMessage } from '../viewBuilders/buildHelpMessage';
@@ -18,6 +19,9 @@ export async function commandRequestHandler(
 
     case 'project':
       return projectRequestHandler(req, res);
+
+    case 'release':
+      return releaseRequestHandler(req, res);
 
     case 'review':
       return reviewRequestHandler(req, res);
