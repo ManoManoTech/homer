@@ -63,6 +63,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      - name: Unconfigure npm proxy
+        run: |
+          npm config rm proxy
+          npm config rm https-proxy
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
