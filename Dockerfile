@@ -15,6 +15,6 @@ COPY --chown=node:node package.json /home/node/app/package.json
 COPY --chown=node:node yarn.lock /home/node/app/yarn.lock
 COPY --chown=node:node dist /home/node/app/dist
 
-RUN yarn install
+RUN yarn install --network-timeout 1000000
 
 CMD ["node", "dist/src/index.js"]
