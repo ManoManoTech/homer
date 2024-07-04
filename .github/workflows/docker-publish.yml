@@ -4,6 +4,8 @@ on:
   push:
     # Publish semver tags as releases.
     tags: ['v*.*.*']
+    branches:
+      - "chore-docker-platform"
 
 env:
   REGISTRY: ghcr.io
