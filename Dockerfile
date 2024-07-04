@@ -1,4 +1,4 @@
-FROM arm64v8/node:18
+FROM arm64v8/node:20
 
 RUN mkdir -p /home/node/app \
     && chown -R node:node /home/node/app
