@@ -11,10 +11,7 @@ EXPOSE 3000
 
 USER node
 
-COPY --chown=node:node package.json /home/node/app/package.json
-COPY --chown=node:node yarn.lock /home/node/app/yarn.lock
 COPY --chown=node:node dist /home/node/app/dist
-
-RUN yarn install --network-timeout 1000000
+COPY --chown=node:node node_modules /home/node/app/node_modules
 
 CMD ["node", "dist/src/index.js"]
