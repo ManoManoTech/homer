@@ -7,7 +7,7 @@ export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
 export const EXPIRED_TRIGGER_ID_SLACK_ERROR = 'expired_trigger_id';
 export const GENERIC_ERROR_MESSAGE =
   "D'oh! Something went wrong :homer-stressed:";
-export const GITLAB_URL = getEnvVariable('GITLAB_URL');
+export const GITLAB_URL = 'https://git.manomano.tech';
 export const HOMER_GITLAB_URL = `${GITLAB_URL}/tools/homer`;
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_OK = 200;
