@@ -223,6 +223,7 @@ Create a `.env` file containing the following variables:
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
+- `POSTGRES_DATABASE_NAME`: database name (like `homer`).
 - `POSTGRES_HOST`: host of the database.
 - `POSTGRES_PASSWORD`: password used when connecting to the database.
 - `POSTGRES_PORT`: port where the database listens.
