@@ -1,5 +1,4 @@
 import type { GitlabMergeRequestState } from '@/core/typings/GitlabMergeRequest';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 export const CHANNEL_NOT_FOUND_SLACK_ERROR = 'channel_not_found';
 export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
@@ -7,8 +6,7 @@ export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
 export const EXPIRED_TRIGGER_ID_SLACK_ERROR = 'expired_trigger_id';
 export const GENERIC_ERROR_MESSAGE =
   "D'oh! Something went wrong :homer-stressed:";
-export const GITLAB_URL = getEnvVariable('GITLAB_URL');
-export const HOMER_GITLAB_URL = `${GITLAB_URL}/tools/homer`;
+export const HOMER_GIT_URL = `https://github.com/ManoManoTech/homer/`;
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_OK = 200;
 export const MERGE_REQUEST_CLOSE_STATES: GitlabMergeRequestState[] = [

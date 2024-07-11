@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { HOMER_GITLAB_URL } from '@/constants';
+import { HOMER_GIT_URL } from '@/constants';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
@@ -17,7 +17,7 @@ export async function releaseRequestHandler(
 
   if (!hasChannelReleaseConfigs(channel_id)) {
     res.send(
-      `The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <${HOMER_GITLAB_URL}#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:`
+      `The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <${HOMER_GIT_URL}#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:`
     );
     return;
   }

@@ -20,7 +20,7 @@ const CLEAN_INTERVAL_MS = DAY_IN_MS;
 const REVIEW_LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 
 const sequelize = new Sequelize({
-  database: 'homer',
+  database: getEnvVariable('POSTGRES_DATABASE_NAME'),
   dialect: 'postgres',
   host: getEnvVariable('POSTGRES_HOST'),
   logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
