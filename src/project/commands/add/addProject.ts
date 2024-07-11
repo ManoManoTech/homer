@@ -1,6 +1,7 @@
-import { GITLAB_URL, HOMER_GITLAB_URL } from '@/constants';
+import { HOMER_GIT_URL } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 export async function addProject(
   projectId: number,
@@ -15,9 +16,11 @@ export async function addProject(
     text: `\
 \`${projectPath}\` added to this channel :homer-happy:
 
-Don't forget to <${GITLAB_URL}/${projectPath}/-/hooks|set up a webhook> \
+Don't forget to <${getEnvVariable(
+      'GITLAB_URL'
+    )}/${projectPath}/-/hooks|set up a webhook> \
 in your Gitlab project by following the \
-<${HOMER_GITLAB_URL}/#make-homer-be-notified-of-changes-happening-in-your-gitlab-project|dedicated documentation>.
+<${HOMER_GIT_URL}/#make-homer-be-notified-of-changes-happening-in-your-gitlab-project|dedicated documentation>.
 `,
   });
 }

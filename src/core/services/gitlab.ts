@@ -1,6 +1,6 @@
 import type { RequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
-import { GITLAB_URL, MERGE_REQUEST_OPEN_STATES } from '@/constants';
+import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import type { DataProject } from '@/core/typings/Data';
 import type { GitlabApprovalsResponse } from '@/core/typings/GitlabApprovalsResponse';
 import type { GitlabBridge } from '@/core/typings/GitlabBridge';
@@ -22,7 +22,7 @@ import type { GitlabTag } from '@/core/typings/GitlabTag';
 import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
-const BASE_API_URL = `${GITLAB_URL}/api/v4`;
+const BASE_API_URL = `${getEnvVariable('GITLAB_URL')}/api/v4`;
 const GITLAB_TOKEN = getEnvVariable('GITLAB_TOKEN');
 const MERGE_REQUEST_ID_REGEX = /^!?\d+$/;
 const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;

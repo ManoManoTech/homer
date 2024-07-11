@@ -791,7 +791,7 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(await response.text()).toMatch(
-      'The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <https://my-git.domain.com/tools/homer#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:'
+      'The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <https://github.com/ManoManoTech/homer/#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:'
     );
   });
 });
