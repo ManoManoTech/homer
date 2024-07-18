@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
+import { releaseHookHandler } from '@/release/releaseHookHandler';
 import { reviewHookHandler } from '@/review/reviewHookHandler';
 
 export async function gitlabHookHandler(
@@ -9,6 +10,9 @@ export async function gitlabHookHandler(
   const { object_kind } = req.body;
 
   switch (object_kind) {
+    case 'deployment':
+      return releaseHookHandler(req, res);
+
     case 'merge_request':
     case 'note':
     case 'push':

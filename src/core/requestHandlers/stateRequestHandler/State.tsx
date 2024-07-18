@@ -1,17 +1,18 @@
 import React from 'react';
-import type { DataProject, DataReview } from '@/core/typings/Data';
+import type { DataProject, DataRelease, DataReview } from '@/core/typings/Data';
 import { Highlight, themeStyles } from './Highlight';
 
 interface Props {
   data: {
     projects: DataProject[];
+    releases: DataRelease[];
     reviews: DataReview[];
   };
   search: string;
 }
 
 export function State({ data, search }: Props) {
-  const { projects, reviews } = data;
+  const { projects, releases, reviews } = data;
 
   return (
     <html>
@@ -58,6 +59,10 @@ input {
         <section>
           <h2>Projects</h2>
           <Highlight data={projects} />
+        </section>
+        <section>
+          <h2>Releases</h2>
+          <Highlight data={releases} />
         </section>
         <section>
           <h2>Reviews</h2>

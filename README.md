@@ -38,6 +38,7 @@ Here are the available commands:
 | `/homer project add <project_name\|project_id>` | Add a Gitlab project to a channel.                                                                                                                              |
 | `/homer project list`                           | List the Gitlab projects added to a channel.                                                                                                                    |
 | `/homer project remove`                         | Remove a Gitlab project from a channel.                                                                                                                         |
+| `/homer release`                                | Create a release for configured Gitlab project in a channel.                                                                                                    |
 | `/homer review <search>`                        | Share a merge request on a channel.<br />Searches in title and description by default.<br />Accepts merge request URLs and merge request IDs prefixed with "!". |
 | `/homer review list`                            | List ongoing reviews shared in a channel.                                                                                                                       |
 
@@ -226,6 +227,7 @@ Create a `.env` file containing the following variables:
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
+- `POSTGRES_DATABASE_NAME`: database name (like `homer`).
 - `POSTGRES_HOST`: host of the database.
 - `POSTGRES_PASSWORD`: password used when connecting to the database.
 - `POSTGRES_PORT`: port where the database listens.

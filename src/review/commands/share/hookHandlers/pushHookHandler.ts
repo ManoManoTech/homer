@@ -29,7 +29,7 @@ export async function pushHookHandler(
     return;
   }
 
-  const branchName = ref.split('/').pop() as string;
+  const branchName = ref.split('/').slice(2).join('/') as string;
 
   const mergeRequests =
     (await fetchMergeRequestsByBranchName(project_id, branchName)).filter(

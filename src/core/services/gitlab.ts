@@ -1,11 +1,12 @@
 import type { RequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
-import { GITLAB_URL, MERGE_REQUEST_OPEN_STATES } from '@/constants';
+import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import type { DataProject } from '@/core/typings/Data';
 import type { GitlabApprovalsResponse } from '@/core/typings/GitlabApprovalsResponse';
 import type { GitlabBridge } from '@/core/typings/GitlabBridge';
 import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
 import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { GitlabDeployment } from '@/core/typings/GitlabDeployment';
 import type { GitlabJob } from '@/core/typings/GitlabJob';
 import type {
   GitlabMergeRequest,
@@ -16,11 +17,12 @@ import type {
   GitlabProject,
   GitlabProjectDetails,
 } from '@/core/typings/GitlabProject';
+import type { GitlabRelease } from '@/core/typings/GitlabRelease';
 import type { GitlabTag } from '@/core/typings/GitlabTag';
 import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
-const BASE_API_URL = `${GITLAB_URL}/api/v4`;
+const BASE_API_URL = `${getEnvVariable('GITLAB_URL')}/api/v4`;
 const GITLAB_TOKEN = getEnvVariable('GITLAB_TOKEN');
 const MERGE_REQUEST_ID_REGEX = /^!?\d+$/;
 const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;
@@ -77,6 +79,24 @@ export async function fetchBranchPipelines(
   branchName: string
 ): Promise<GitlabPipeline[]> {
   return callAPI(`/projects/${projectId}/pipelines?ref=${branchName}`);
+}
+
+export async function fetchDeploymentById(
+  projectId: number,
+  id: number
+): Promise<GitlabDeployment> {
+  const deployment = await callAPI<GitlabDeployment>(
+    `/projects/${projectId}/deployments/${id}`
+  );
+
+  if (deployment.id === undefined) {
+    throw new Error(
+      `Unable to find deployment with id ${id} on project ${projectId}: ${JSON.stringify(
+        deployment
+      )}`
+    );
+  }
+  return deployment;
 }
 
 export async function fetchMergeRequestApprovers(
@@ -226,6 +246,24 @@ export async function fetchProjectTags(
   return callAPI(`/projects/${projectId}/repository/tags?per_page=100`);
 }
 
+export async function fetchReleaseByTagName(
+  projectId: number,
+  tagName: string
+): Promise<GitlabRelease> {
+  const release = await callAPI<GitlabRelease>(
+    `/projects/${projectId}/releases/${tagName}`
+  );
+
+  if (release.tag_name === undefined) {
+    throw new Error(
+      `Unable to find release with tag name ${tagName}: ${JSON.stringify(
+        release
+      )}`
+    );
+  }
+  return release;
+}
+
 export async function fetchReviewers(
   projectId: number,
   mergeRequestIid: number
@@ -324,6 +362,37 @@ export async function searchMergeRequests(
 
 export async function searchProjects(search: string): Promise<GitlabProject[]> {
   return callAPI(`/projects?search=${encodeURIComponent(search)}`);
+}
+
+export async function updateReleaseName(
+  projectId: number,
+  tagName: string,
+  name: string
+): Promise<void> {
+  const body = {
+    id: projectId,
+    tag_name: tagName,
+    name,
+  };
+  const response = await callAPI<GitlabRelease>(
+    `/projects/${projectId}/releases/${tagName}`,
+    {
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'put',
+    }
+  );
+
+  if (response?.tag_name === undefined) {
+    throw new Error(
+      `Unable to update release ${tagName} for project ${projectId}: ${JSON.stringify(
+        {
+          body,
+          response,
+        }
+      )}`
+    );
+  }
 }
 
 async function callAPI<T>(path: string, options?: RequestInit): Promise<T> {

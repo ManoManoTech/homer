@@ -8,6 +8,7 @@ import { stateRequestHandler } from '@/core/requestHandlers/stateRequestHandler/
 import { connectToDatabase } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { catchAsyncRouteErrors } from '@/core/utils/catchAsyncRouteErrors';
+import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { REQUEST_BODY_SIZE_LIMIT } from './constants';
 import { getEnvVariable } from './core/utils/getEnvVariable';
 import { router } from './router';
@@ -53,6 +54,7 @@ export async function start(): Promise<() => Promise<void>> {
         return;
       }
       logger.info(`Homer started on port ${PORT}.`);
+      waitForNonReadyReleases(); // Promise ignored on purpose
       resolve(
         async () =>
           new Promise((r) => {
