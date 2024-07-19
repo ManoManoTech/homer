@@ -167,7 +167,7 @@ Create a `.env` file containing the following variables:
 
 - `API_BASE_PATH`
 
-  This is the base path that will be used to build the API URL to call homer, for example `https://homer.com/<API_BASE_PATH>/command`.
+  This is the base path that will be used to build the API URL to call homer, for example `https://homer.com<API_BASE_PATH>/command`.
 
 - `GITLAB_SECRET`
 
