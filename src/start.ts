@@ -10,6 +10,7 @@ import { logger } from '@/core/services/logger';
 import { catchAsyncRouteErrors } from '@/core/utils/catchAsyncRouteErrors';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { REQUEST_BODY_SIZE_LIMIT } from './constants';
+import { getEnvVariable } from './core/utils/getEnvVariable';
 import { router } from './router';
 
 const PORT = 3000;
@@ -36,7 +37,7 @@ export async function start(): Promise<() => Promise<void>> {
       catchAsyncRouteErrors(stateRequestHandler)
     );
     app.use(securityMiddleware);
-    app.use('/api/v1/homer', router);
+    app.use(getEnvVariable('API_BASE_PATH'), router);
     app.use(errorMiddleware);
 
     const server = app.listen(PORT, async () => {
