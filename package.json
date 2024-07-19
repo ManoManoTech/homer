@@ -17,7 +17,7 @@
     "test": "jest --runInBand --forceExit"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@slack/web-api": "6.8.1",
