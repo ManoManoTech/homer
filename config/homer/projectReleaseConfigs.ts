@@ -1,4 +1,4 @@
-import { MOES_TAVERN_CHANNEL_ID } from '@/constants';
+import { SLACK_SUPPORT_CHANNEL_ID } from '@/constants';
 import { defaultReleaseManager } from '@/release/commands/create/managers/defaultReleaseManager';
 import { stableDateReleaseTagManager } from '@/release/commands/create/managers/stableDateReleaseTagManager';
 import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
@@ -6,9 +6,9 @@ import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfi
 export const projectReleaseConfigs: ProjectReleaseConfig[] = [
   // tools/homer
   {
-    notificationChannelIds: [MOES_TAVERN_CHANNEL_ID],
+    notificationChannelIds: [SLACK_SUPPORT_CHANNEL_ID],
     projectId: 1148,
-    releaseChannelId: MOES_TAVERN_CHANNEL_ID,
+    releaseChannelId: SLACK_SUPPORT_CHANNEL_ID,
     releaseManager: defaultReleaseManager,
     releaseTagManager: stableDateReleaseTagManager,
   },
