@@ -226,7 +226,7 @@ Create a `.env` file containing the following variables:
 
 - `SLACK_SUPPORT_CHANNEL_ID`
 
-  This slack channel id is displayed when a user enters the help command. People having trouble with homer can be helped on this support channel.
+  This slack channel id is displayed when a user enters the help command. People having trouble with Homer can be helped on this support channel.
 
 - `SLACK_SUPPORT_CHANNEL_NAME`
 
