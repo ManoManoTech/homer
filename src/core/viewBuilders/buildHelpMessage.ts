@@ -1,5 +1,8 @@
 import type { ChatPostMessageArguments } from '@slack/web-api';
-import { MOES_TAVERN_CHANNEL_ID } from '@/constants';
+import {
+  SLACK_SUPPORT_CHANNEL_ID,
+  SLACK_SUPPORT_CHANNEL_NAME,
+} from '@/constants';
 
 export function buildHelpMessage(channelId: string): ChatPostMessageArguments {
   return {
@@ -14,7 +17,7 @@ Here are the available commands:
 - /homer review &lt;search&gt; - Share a merge request on a channel. Searches in title and description by default. Accepts merge request URLs and merge request IDs prefixed with "!".
 - /homer review list - List ongoing reviews shared in a channel.
 
-Don't hesitate to join me on #moes-tavern-homer to take a beer!`,
+Don't hesitate to join me on #${SLACK_SUPPORT_CHANNEL_NAME} to take a beer!`,
     blocks: [
       {
         type: 'section',
@@ -30,7 +33,7 @@ Here are the available commands:
 •   \`/homer review &lt;search&gt;\` Share a merge request on a channel. Searches in title and description by default. Accepts merge request URLs and merge request IDs prefixed with "!".
 •   \`/homer review list\` List ongoing reviews shared in a channel.
 
-Don't hesitate to join me on <#${MOES_TAVERN_CHANNEL_ID}> to take a :beer:!`,
+Don't hesitate to join me on <#${SLACK_SUPPORT_CHANNEL_ID}> to take a :beer:!`,
         },
       },
     ],

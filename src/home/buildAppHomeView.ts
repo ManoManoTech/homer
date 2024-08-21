@@ -1,5 +1,5 @@
 import type { View } from '@slack/web-api';
-import { HOMER_GIT_URL, MOES_TAVERN_CHANNEL_ID } from '@/constants';
+import { HOMER_GIT_URL, SLACK_SUPPORT_CHANNEL_ID } from '@/constants';
 import type { SlackUser } from '@/core/typings/SlackUser';
 
 export async function buildAppHomeView(user: SlackUser): Promise<View> {
@@ -15,7 +15,7 @@ export async function buildAppHomeView(user: SlackUser): Promise<View> {
           text: `\
 Hello *${firstName}*, I'm *Homer*, the Slack Gitlab master!
 
-If you want to take a :beer: with me, don't hesitate to join <#${MOES_TAVERN_CHANNEL_ID}>.
+If you want to take a :beer: with me, don't hesitate to join <#${SLACK_SUPPORT_CHANNEL_ID}>.
 
 If you want to better know me, here are some useful links:
 

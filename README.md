@@ -224,6 +224,14 @@ Create a `.env` file containing the following variables:
   The ticket management URL pattern for your organization, this is used to generate a link to the ticket in the changelog.
   It must contain the `{ticketId}` matcher to be replaced by the ticket ID, for instance `https://my-ticket-management.com/view/{ticketId}`.
 
+- `SLACK_SUPPORT_CHANNEL_ID`
+
+  This slack channel id is used to build a link displayed when a user enters the help command. People having trouble with Homer can be helped on this support channel.
+
+- `SLACK_SUPPORT_CHANNEL_NAME`
+
+  This slack channel name is displayed when a user enters the help command. People having trouble with Homer can be helped on this support channel.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
