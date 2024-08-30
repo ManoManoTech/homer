@@ -1,5 +1,4 @@
 import type { GitlabMergeRequestState } from '@/core/typings/GitlabMergeRequest';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 export const CHANNEL_NOT_FOUND_SLACK_ERROR = 'channel_not_found';
 export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
@@ -19,12 +18,7 @@ export const MERGE_REQUEST_OPEN_STATES: GitlabMergeRequestState[] = [
   'opened',
   'reopened',
 ];
-export const SLACK_SUPPORT_CHANNEL_ID = getEnvVariable(
-  'SLACK_SUPPORT_CHANNEL_ID'
-);
-export const SLACK_SUPPORT_CHANNEL_NAME = getEnvVariable(
-  'SLACK_SUPPORT_CHANNEL_NAME'
-);
+
 export const PRIVATE_CHANNEL_ERROR_MESSAGE =
   'D’oh! It looks like you tried to use me on a private channel I’m not in. Please invite me using `/invite @homer` so I can publish messages :homer-donut:';
 export const REQUEST_BODY_SIZE_LIMIT = '500kb';
