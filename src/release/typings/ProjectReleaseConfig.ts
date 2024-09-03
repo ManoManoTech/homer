@@ -9,3 +9,12 @@ export interface ProjectReleaseConfig {
   releaseTagManager?: ReleaseTagManager;
   hasReleasePipeline?: boolean;
 }
+
+export type ProjectReleaseConfigJSON = Omit<
+  ProjectReleaseConfig,
+  'releaseManager' | 'releaseTagManager'
+> & {
+  releaseManager: string;
+  releaseTagManager?: string;
+  description?: string;
+};

@@ -1,5 +1,30 @@
-import { projectReleaseConfigs } from '@root/config/homer/projectReleaseConfigs';
-import type { ProjectReleaseConfig } from '../typings/ProjectReleaseConfig';
+import { defaultReleaseManager } from '@/release/commands/create/managers/defaultReleaseManager';
+import { federationReleaseTagManager } from '@/release/commands/create/managers/federationReleaseTagManager';
+import { libraryReleaseManager } from '@/release/commands/create/managers/libraryReleaseManager';
+import { semanticReleaseTagManager } from '@/release/commands/create/managers/semanticReleaseTagManager';
+import { stableDateReleaseTagManager } from '@/release/commands/create/managers/stableDateReleaseTagManager';
+import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
+import type { ReleaseManager } from '@/release/typings/ReleaseManager';
+import type { ReleaseTagManager } from '@/release/typings/ReleaseTagManager';
+import { buildProjectReleaseConfigs } from '@/release/utils/configBuilder';
+import projectsConfig from '@root/config/homer/projects.json';
+
+const releaseManagers: Record<string, ReleaseManager> = {
+  defaultReleaseManager,
+  libraryReleaseManager,
+};
+const releaseTagManagers: Record<string, ReleaseTagManager> = {
+  federationReleaseTagManager,
+  semanticReleaseTagManager,
+  stableDateReleaseTagManager,
+};
+
+export const projectReleaseConfigs: ProjectReleaseConfig[] =
+  buildProjectReleaseConfigs(
+    projectsConfig.projects,
+    releaseManagers,
+    releaseTagManagers
+  );
 
 export function getChannelProjectReleaseConfigs(
   channelId: string
