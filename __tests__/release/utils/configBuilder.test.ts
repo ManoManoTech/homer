@@ -4,7 +4,7 @@ import { buildProjectReleaseConfigs } from '@/release/utils/configBuilder';
 
 describe('configBuilder', () => {
   it('should build configs', () => {
-    const configs = [
+    const projects = [
       {
         releaseManager: 'defaultReleaseManager',
         releaseTagManager: 'federationReleaseTagManager',
@@ -21,7 +21,7 @@ describe('configBuilder', () => {
     ];
     expect(
       buildProjectReleaseConfigs(
-        configs,
+        { projects },
         { defaultReleaseManager },
         { federationReleaseTagManager }
       )
@@ -41,22 +41,26 @@ describe('configBuilder', () => {
       },
     ]);
   });
-  it('should return empty array if configs is not an array', () => {
-    expect(
+  it('should throw an error if projects is not an array', () => {
+    expect(() =>
       buildProjectReleaseConfigs(
         {} as any,
         { defaultReleaseManager },
         { federationReleaseTagManager }
       )
-    ).toEqual([]);
+    ).toThrow(
+      'The config file should contain an array of valid project configurations'
+    );
   });
-  it('should return empty array if no valid configurations', () => {
-    expect(
+  it('should throw an error if there is an invalid project configuration', () => {
+    expect(() =>
       buildProjectReleaseConfigs(
         [{ projectId: 123, releaseManager: 'defaultReleaseManager' }] as any,
         { defaultReleaseManager },
         { federationReleaseTagManager }
       )
-    ).toEqual([]);
+    ).toThrow(
+      'The config file should contain an array of valid project configurations'
+    );
   });
 });

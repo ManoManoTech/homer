@@ -21,7 +21,7 @@ const releaseTagManagers: Record<string, ReleaseTagManager> = {
 
 export const projectReleaseConfigs: ProjectReleaseConfig[] =
   buildProjectReleaseConfigs(
-    projectsConfig.projects,
+    projectsConfig,
     releaseManagers,
     releaseTagManagers
   );
