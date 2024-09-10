@@ -306,9 +306,10 @@ displayed.
 
 You should now be able to use Homer commands on Slack 🎉
 
-### 7. Add a JSON file for the release configurations
+### 7. Configure releases
 
-Add/update a JSON file (it must be called `projects.json`) in `config/homer` folder to enable release management for your projects. The file should be like below:
+Releases management can be configured in `config/homer/projects.json`.
+Here is a sample configuration with one project:
 
 ```json
 {
