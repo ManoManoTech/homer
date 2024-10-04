@@ -16,6 +16,7 @@ Here are the available commands:
 - /homer project remove - Remove a Gitlab project from a channel.
 - /homer review &lt;search&gt; - Share a merge request on a channel. Searches in title and description by default. Accepts merge request URLs and merge request IDs prefixed with "!".
 - /homer review list - List ongoing reviews shared in a channel.
+- /homer release - Create a release for configured Gitlab project in a channel.
 
 Don't hesitate to join me on #${SLACK_SUPPORT_CHANNEL_NAME} to take a beer!`,
     blocks: [
@@ -32,6 +33,7 @@ Here are the available commands:
 •   \`/homer project remove\` Remove a Gitlab project from a channel.
 •   \`/homer review &lt;search&gt;\` Share a merge request on a channel. Searches in title and description by default. Accepts merge request URLs and merge request IDs prefixed with "!".
 •   \`/homer review list\` List ongoing reviews shared in a channel.
+•   \`/homer release\` Create a release for configured Gitlab project in a channel.
 
 Don't hesitate to join me on <#${SLACK_SUPPORT_CHANNEL_ID}> to take a :beer:!`,
         },
