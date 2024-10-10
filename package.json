@@ -14,6 +14,7 @@
     "pre-commit": "exec-staged",
     "prepare": "husky install",
     "start": "node dist/src/index.js",
+    "start-env": "node --env-file=.env dist/src/index.js",
     "test": "jest --runInBand --forceExit"
   },
   "engines": {
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "@slack/web-api": "6.8.1",
+    "ajv": "^8.17.1",
     "dayjs": "1.11.7",
     "dd-trace": "3.13.2",
     "dotenv": "16.0.3",
