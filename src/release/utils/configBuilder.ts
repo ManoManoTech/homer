@@ -1,9 +1,12 @@
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
+import { multipleProjectReleaseManager } from '../commands/create/managers/multipleProjectReleaseManager';
 import type {
   ProjectConfigurationsJSON,
   ProjectReleaseConfig,
   ProjectConfigJSON,
+  ReleaseManagerJSON,
+  MultipleProjectReleaseManagerJSON,
 } from '../typings/ProjectReleaseConfig';
 import type { ReleaseManager } from '../typings/ReleaseManager';
 import type { ReleaseTagManager } from '../typings/ReleaseTagManager';
@@ -12,13 +15,37 @@ import type { ReleaseTagManager } from '../typings/ReleaseTagManager';
 // maybe a singleton class would be better
 const ajv = new Ajv();
 
+const multipleProjectReleaseManagerSchema: JSONSchemaType<MultipleProjectReleaseManagerJSON> =
+  {
+    type: 'object',
+    properties: {
+      type: { type: 'string', const: 'multipleProjectReleaseManager' },
+      config: {
+        type: 'object',
+        properties: {
+          appNameDefault: { type: 'string' },
+          appName: { type: 'string' },
+          appNameOther: { type: 'string' },
+        },
+        required: ['appNameDefault', 'appName', 'appNameOther'],
+        additionalProperties: false,
+      },
+    },
+    required: ['type', 'config'],
+    additionalProperties: false,
+  } as const;
+
+const releaseManagerSchema: JSONSchemaType<ReleaseManagerJSON> = {
+  anyOf: [{ type: 'string' }, multipleProjectReleaseManagerSchema],
+} as const;
+
 const projectSchema: JSONSchemaType<ProjectConfigJSON> = {
   type: 'object',
   properties: {
     notificationChannelIds: { type: 'array', items: { type: 'string' } },
     projectId: { type: 'number' },
     releaseChannelId: { type: 'string' },
-    releaseManager: { type: 'string' },
+    releaseManager: releaseManagerSchema,
     releaseTagManager: { type: 'string', nullable: true },
     description: { type: 'string', nullable: true },
     hasReleasePipeline: { type: 'boolean', nullable: true },
@@ -30,7 +57,7 @@ const projectSchema: JSONSchemaType<ProjectConfigJSON> = {
     'releaseManager',
   ],
   additionalProperties: false,
-};
+} as const;
 
 const configsSchema: JSONSchemaType<ProjectConfigurationsJSON> = {
   type: 'object',
@@ -42,7 +69,7 @@ const configsSchema: JSONSchemaType<ProjectConfigurationsJSON> = {
   },
   required: ['projects'],
   additionalProperties: false,
-};
+} as const;
 
 const validateProjectReleaseConfig = ajv.compile(configsSchema);
 
@@ -58,19 +85,25 @@ export function buildProjectReleaseConfigs(
   }
   const projects: ProjectReleaseConfig[] = [];
   for (const project of configs.projects) {
-    const {
-      releaseManager,
-      releaseTagManager,
-      notificationChannelIds,
-      projectId,
-      releaseChannelId,
-    } = project;
-    if (releaseManager in releaseManagers) {
+    const { releaseManager, releaseTagManager, ...projectInfo } = project;
+    if (
+      typeof releaseManager === 'string' &&
+      releaseManager in releaseManagers
+    ) {
       projects.push({
-        notificationChannelIds,
-        projectId,
-        releaseChannelId,
+        ...projectInfo,
         releaseManager: releaseManagers[releaseManager],
+        releaseTagManager: releaseTagManager
+          ? releaseTagManagers[releaseTagManager]
+          : undefined,
+      });
+    } else if (
+      typeof releaseManager === 'object' &&
+      releaseManager.type === 'multipleProjectReleaseManager'
+    ) {
+      projects.push({
+        ...projectInfo,
+        releaseManager: multipleProjectReleaseManager,
         releaseTagManager: releaseTagManager
           ? releaseTagManagers[releaseTagManager]
           : undefined,

@@ -326,6 +326,32 @@ Here is a sample configuration with one project:
 }
 ```
 
+
+### 8. Configure multiple project releases
+
+Releases management can be configured in `config/homer/projects.json`.
+Here is a sample configuration with one project:
+
+```json
+{
+  "projects": [
+    {
+      "description": "project_example",
+      "notificationChannelIds": ["C0XXXXXXXXX"],
+      "projectId": 1148,
+      "releaseChannelId": "C0XXXXXXXXX",
+      "releaseManager": {
+        "type": "multipleProjectReleaseManager",
+        "appNameDefault": "defaultAppName",
+        "appName": "appName",
+        "appNameOther": "other"
+      },
+      "releaseTagManager": "stableDateReleaseTagManager"
+    }
+  ]
+}
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).

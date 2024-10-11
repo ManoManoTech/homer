@@ -10,11 +10,24 @@ export interface ProjectReleaseConfig {
   hasReleasePipeline?: boolean;
 }
 
+interface ReleaseManagerConfig {
+  appNameDefault?: string;
+  appName?: string;
+  appNameOther?: string;
+}
+
+export interface MultipleProjectReleaseManagerJSON {
+  type: 'multipleProjectReleaseManager';
+  config: Required<ReleaseManagerConfig>;
+}
+
+export type ReleaseManagerJSON = string | MultipleProjectReleaseManagerJSON;
+
 export type ProjectConfigJSON = Omit<
   ProjectReleaseConfig,
   'releaseManager' | 'releaseTagManager'
 > & {
-  releaseManager: string;
+  releaseManager: ReleaseManagerJSON;
   releaseTagManager?: string;
   description?: string;
 };

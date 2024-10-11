@@ -1,5 +1,6 @@
 import { defaultReleaseManager } from '@/release/commands/create/managers/defaultReleaseManager';
 import { federationReleaseTagManager } from '@/release/commands/create/managers/federationReleaseTagManager';
+import { multipleProjectReleaseManager } from '@/release/commands/create/managers/multipleProjectReleaseManager';
 import { buildProjectReleaseConfigs } from '@/release/utils/configBuilder';
 
 describe('configBuilder', () => {
@@ -62,5 +63,38 @@ describe('configBuilder', () => {
     ).toThrow(
       'The config file should contain an array of valid project configurations'
     );
+  });
+  it('should build a multiple project config', () => {
+    const projects = [
+      {
+        releaseManager: {
+          type: 'multipleProjectReleaseManager' as const,
+          config: {
+            appNameDefault: 'defaultName',
+            appName: 'appName',
+            appNameOther: 'otherName',
+          },
+        },
+        releaseTagManager: 'federationReleaseTagManager',
+        notificationChannelIds: ['C678'],
+        projectId: 123,
+        releaseChannelId: 'C456',
+      },
+    ];
+    expect(
+      buildProjectReleaseConfigs(
+        { projects },
+        { defaultReleaseManager },
+        { federationReleaseTagManager }
+      )
+    ).toEqual([
+      {
+        notificationChannelIds: ['C678'],
+        projectId: 123,
+        releaseChannelId: 'C456',
+        releaseManager: multipleProjectReleaseManager,
+        releaseTagManager: federationReleaseTagManager,
+      },
+    ]);
   });
 });
