@@ -5,7 +5,8 @@ import { selectReleaseToCancel } from './commands/cancel/selectReleaseToCancel';
 import { updateReleaseChangelog } from './commands/create/utils/updateReleaseChangelog';
 import { updateReleaseProject } from './commands/create/utils/updateReleaseProject';
 import { selectReleaseToEnd } from './commands/end/selectReleaseToEnd';
-import { getProjectReleaseConfig } from './utils/configHelper';
+import getReleaseOptions from './releaseOptions';
+import ConfigHelper from './utils/ConfigHelper';
 
 export async function releaseBlockActionsHandler(
   payload: BlockActionsPayload
@@ -35,12 +36,15 @@ export async function releaseBlockActionsHandler(
             ]?.selected_option?.value,
             10
           );
-          const { releaseManager } = getProjectReleaseConfig(projectId);
+          const { releaseManager } = await ConfigHelper.getProjectReleaseConfig(
+            projectId
+          );
 
           if (releaseManager.blockActionsHandler !== undefined) {
             return releaseManager.blockActionsHandler(
               payload,
-              action as StaticSelectAction
+              action as StaticSelectAction,
+              getReleaseOptions()
             );
           }
           logger.error(new Error(`Unknown block action: ${action_id}`));

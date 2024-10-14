@@ -326,6 +326,10 @@ Here is a sample configuration with one project:
 }
 ```
 
+### 8. Add your own release manager
+
+A simple plugin system enables the addition of custom release managers. See this dedicated [page](./PLUGIN_RELEASE.md) for more details.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).

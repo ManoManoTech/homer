@@ -19,6 +19,6 @@
     "strict": true,
     "target": "es2020"
   },
-  "include": ["__mocks__", "__tests__", "config", "src"],
+  "include": ["__mocks__", "__tests__", "config", "src", "plugins"],
   "exclude": ["**/node_modules", "**/.*/"]
 }

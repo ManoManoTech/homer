@@ -3,7 +3,7 @@ import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { createRelease } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { SlackUser } from '@/core/typings/SlackUser';
-import { getProjectReleaseConfig } from '@/release/utils/configHelper';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 import { pipelineFixture } from '@root/__tests__/__fixtures__/pipelineFixture';
 import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
 import { releaseFixture } from '@root/__tests__/__fixtures__/releaseFixture';
@@ -16,7 +16,9 @@ describe('release > endRelease', () => {
     it('should end a release in monitoring state', async () => {
       // Given
       const projectId = projectFixture.id;
-      const releaseConfig = getProjectReleaseConfig(projectId);
+      const releaseConfig = await ConfigHelper.getProjectReleaseConfig(
+        projectId
+      );
       const channelId = releaseConfig.releaseChannelId;
       const userId = 'userId';
       let body: any = {

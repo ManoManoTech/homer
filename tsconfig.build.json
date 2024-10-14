@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["config/homer", "src"]
+  "include": ["config/homer", "src", "plugins"]
 }

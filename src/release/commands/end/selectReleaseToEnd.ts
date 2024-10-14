@@ -8,7 +8,8 @@ import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { extractActionParameters } from '@/core/utils/slackActions';
 import { buildReleaseStateMessage } from '@/release/commands/create/viewBuilders/buildReleaseStateMessage';
-import { getProjectReleaseConfig } from '@/release/utils/configHelper';
+import getReleaseOptions from '@/release/releaseOptions';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 
 export async function selectReleaseToEnd(
   payload: BlockActionsPayload,
@@ -29,10 +30,12 @@ export async function selectReleaseToEnd(
   }
 
   const { notificationChannelIds, releaseManager } =
-    getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId);
 
   const releaseStateUpdates = await releaseManager.getReleaseStateUpdate(
-    release
+    release,
+    undefined,
+    getReleaseOptions()
   );
 
   if (releaseStateUpdates.length > 0) {

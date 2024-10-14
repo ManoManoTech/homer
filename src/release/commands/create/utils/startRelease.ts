@@ -3,7 +3,7 @@ import { createRelease as createGitlabRelease } from '@/core/services/gitlab';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { GitlabProject } from '@/core/typings/GitlabProject';
 import type { SlackUser } from '@/core/typings/SlackUser';
-import { getProjectReleaseConfig } from '../../../utils/configHelper';
+import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReleasePipeline } from './waitForReleasePipeline';
 
 interface StartReleaseData {
@@ -23,7 +23,9 @@ export async function startRelease({
   releaseTagName,
   hasReleasePipeline = true,
 }: StartReleaseData): Promise<void> {
-  const { releaseChannelId } = getProjectReleaseConfig(project.id);
+  const { releaseChannelId } = await ConfigHelper.getProjectReleaseConfig(
+    project.id
+  );
 
   await createGitlabRelease(project.id, commitId, releaseTagName, description);
 

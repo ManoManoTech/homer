@@ -1,8 +1,10 @@
-import { fetchPipelineJobs } from '@/core/services/gitlab';
 import type { DataRelease } from '@/core/typings/Data';
 import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
-import type { ReleaseManager } from '../../../typings/ReleaseManager';
-import type { ReleaseStateUpdate } from '../../../typings/ReleaseStateUpdate';
+import type {
+  ReleaseManager,
+  ReleaseOptions,
+} from '../../src/release/typings/ReleaseManager';
+import type { ReleaseStateUpdate } from '../../src/release/typings/ReleaseStateUpdate';
 
 const dockerBuildJobNames = [
   'Build Image',
@@ -78,9 +80,10 @@ async function getReleaseStateUpdate(
   return [];
 }
 
-export async function isReadyToRelease(
+async function isReadyToRelease(
   { projectId }: DataRelease,
-  mainBranchPipelineId: number
+  mainBranchPipelineId: number,
+  { gitlab: { fetchPipelineJobs } }: ReleaseOptions
 ) {
   const pipelinesJobs = await fetchPipelineJobs(
     projectId,
@@ -92,7 +95,9 @@ export async function isReadyToRelease(
   return dockerBuildJob?.status === 'success';
 }
 
-export const defaultReleaseManager: ReleaseManager = {
+const defaultReleaseManager: ReleaseManager = {
   getReleaseStateUpdate,
   isReadyToRelease,
 };
+
+export default defaultReleaseManager;

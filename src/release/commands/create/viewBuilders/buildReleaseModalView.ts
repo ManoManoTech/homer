@@ -9,10 +9,8 @@ import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
-import {
-  getChannelProjectReleaseConfigs,
-  getProjectReleaseConfig,
-} from '../../../utils/configHelper';
+import getReleaseOptions from '@/release/releaseOptions';
+import ConfigHelper from '../../../utils/ConfigHelper';
 import { slackifyChangelog } from '../utils/slackifyChangelog';
 
 interface ReleaseModalData {
@@ -47,7 +45,8 @@ export async function buildReleaseModalView({
   }
 
   if (projectOptions === undefined && channelId !== undefined) {
-    const projectReleaseConfigs = getChannelProjectReleaseConfigs(channelId);
+    const projectReleaseConfigs =
+      await ConfigHelper.getChannelProjectReleaseConfigs(channelId);
     const projects = await Promise.all(
       projectReleaseConfigs.map(async (config) =>
         fetchProjectById(config.projectId)
@@ -78,14 +77,17 @@ export async function buildReleaseModalView({
   }
 
   const { releaseTagManager, releaseManager } =
-    getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId);
 
   if (releaseManager.buildReleaseModalView) {
-    return releaseManager.buildReleaseModalView({
-      projectId,
-      projectOptions,
-      view,
-    });
+    return releaseManager.buildReleaseModalView(
+      {
+        projectId,
+        projectOptions,
+        view,
+      },
+      getReleaseOptions()
+    );
   }
 
   if (releaseTagManager === undefined) {

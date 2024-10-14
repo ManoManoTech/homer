@@ -8,7 +8,8 @@ import {
 import { fetchSlackUserFromId } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
-import { getProjectReleaseConfig } from '../../../utils/configHelper';
+import getReleaseOptions from '@/release/releaseOptions';
+import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReadinessAndStartRelease } from './waitForReadinessAndStartRelease';
 
 export async function createRelease(
@@ -30,7 +31,9 @@ export async function createRelease(
     values['release-previous-tag-block']?.['release-select-previous-tag-action']
       ?.selected_option.value;
 
-  const { releaseManager } = getProjectReleaseConfig(projectId);
+  const { releaseManager } = await ConfigHelper.getProjectReleaseConfig(
+    projectId
+  );
 
   const [description, slackAuthor] = await Promise.all([
     generateChangelog(
@@ -39,6 +42,7 @@ export async function createRelease(
       (commit) => releaseManager.filterChangelog?.(commit, view.state) ?? true
     ),
     fetchSlackUserFromId(user.id),
+    getReleaseOptions(),
   ]);
 
   if (slackAuthor === undefined) {
@@ -62,7 +66,7 @@ export async function createRelease(
   if (releaseManager.filterReleasesToClean) {
     const projectReleases = await getProjectReleases(projectId);
     const tagNames = releaseManager
-      .filterReleasesToClean(releaseData, projectReleases)
+      .filterReleasesToClean(releaseData, projectReleases, getReleaseOptions())
       .map(({ tagName }) => tagName);
 
     if (tagNames.length > 0) {

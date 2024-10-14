@@ -8,7 +8,7 @@ import type {
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
 import type { ReleaseState } from '../../typings/ReleaseState';
-import { getChannelProjectReleaseConfigs } from '../../utils/configHelper';
+import ConfigHelper from '../../utils/ConfigHelper';
 import { buildReleaseSelectionEphemeral } from '../../viewBuilders/buildReleaseSelectionEphemeral';
 
 export async function cancelReleaseRequestHandler(
@@ -20,9 +20,9 @@ export async function cancelReleaseRequestHandler(
   const { channel_id: channelId, user_id: userId } =
     req.body as SlackSlashCommandResponse;
 
-  const projectsIds = getChannelProjectReleaseConfigs(channelId).map(
-    ({ projectId }) => projectId
-  );
+  const projectsIds = (
+    await ConfigHelper.getChannelProjectReleaseConfigs(channelId)
+  ).map(({ projectId }) => projectId);
   const releases = await getReleases({
     projectId: { [Op.or]: projectsIds },
     state: { [Op.or]: ['notYetReady', 'created'] as ReleaseState[] },

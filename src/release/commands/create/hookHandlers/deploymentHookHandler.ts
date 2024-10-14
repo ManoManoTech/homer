@@ -6,10 +6,8 @@ import { slackBotWebClient } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { GitlabDeploymentStatus } from '@/core/typings/GitlabDeployment';
 import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
-import {
-  getProjectReleaseConfig,
-  hasProjectReleaseConfig,
-} from '../../../utils/configHelper';
+import getReleaseOptions from '@/release/releaseOptions';
+import ConfigHelper from '../../../utils/ConfigHelper';
 import { buildReleaseStateMessage } from '../viewBuilders/buildReleaseStateMessage';
 
 const STATUSES_TO_HANDLE: GitlabDeploymentStatus[] = [
@@ -31,10 +29,11 @@ export async function deploymentHookHandler(
   } = deploymentHook;
   const projectId = project.id;
 
-  if (
-    !STATUSES_TO_HANDLE.includes(status) ||
-    !hasProjectReleaseConfig(projectId)
-  ) {
+  const hasProjectReleaseConfig = await ConfigHelper.hasProjectReleaseConfig(
+    projectId
+  );
+
+  if (!STATUSES_TO_HANDLE.includes(status) || !hasProjectReleaseConfig) {
     res.sendStatus(HTTP_STATUS_NO_CONTENT);
     return;
   }
@@ -78,11 +77,12 @@ export async function deploymentHookHandler(
 
   const release = await updateRelease(projectId, releaseTagName, updateGetter);
   const { notificationChannelIds, releaseManager } =
-    getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId);
 
   const releaseStateUpdates = await releaseManager.getReleaseStateUpdate(
     release,
-    deploymentHook
+    deploymentHook,
+    getReleaseOptions()
   );
 
   if (releaseStateUpdates.length > 0) {
