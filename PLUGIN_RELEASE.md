@@ -3,7 +3,7 @@
 ## Introduction
 
 This document provides instructions on how to use the plugin system to add your own release manager to the Homer project.
-You can create a project containing a `plugins/release` folder which will contain your release manager and build a new Docker image where `plugins/release` will be copied to `dist/plugins`.
+You can create a project containing a `plugins/release` directory which will contain your release manager and build a new Docker image where `plugins/release` will be copied to `dist/plugins`.
 
 ## Steps to Add a Custom Release Manager
 
