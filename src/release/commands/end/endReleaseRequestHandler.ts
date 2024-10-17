@@ -7,7 +7,7 @@ import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
-import { getChannelProjectReleaseConfigs } from '../../utils/configHelper';
+import ConfigHelper from '../../utils/ConfigHelper';
 import { buildReleaseSelectionEphemeral } from '../../viewBuilders/buildReleaseSelectionEphemeral';
 
 export async function endReleaseRequestHandler(
@@ -19,9 +19,9 @@ export async function endReleaseRequestHandler(
   const { channel_id: channelId, user_id: userId } =
     req.body as SlackSlashCommandResponse;
 
-  const projectIds = getChannelProjectReleaseConfigs(channelId).map(
-    ({ projectId }) => projectId
-  );
+  const projectIds = (
+    await ConfigHelper.getChannelProjectReleaseConfigs(channelId)
+  ).map(({ projectId }) => projectId);
 
   const releases = await getReleases({
     projectId: { [Op.or]: projectIds },

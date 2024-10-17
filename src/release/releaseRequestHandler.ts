@@ -7,7 +7,7 @@ import type {
 import { endReleaseRequestHandler } from '@/release/commands/end/endReleaseRequestHandler';
 import { cancelReleaseRequestHandler } from './commands/cancel/cancelReleaseRequestHandler';
 import { createReleaseRequestHandler } from './commands/create/createReleaseRequestHandler';
-import { hasChannelReleaseConfigs } from './utils/configHelper';
+import ConfigHelper from './utils/ConfigHelper';
 
 export async function releaseRequestHandler(
   req: SlackExpressRequest,
@@ -15,7 +15,7 @@ export async function releaseRequestHandler(
 ) {
   const { channel_id, text } = req.body as SlackSlashCommandResponse;
 
-  if (!hasChannelReleaseConfigs(channel_id)) {
+  if (!(await ConfigHelper.hasChannelReleaseConfigs(channel_id))) {
     res.send(
       `The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <${HOMER_GIT_URL}#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:`
     );

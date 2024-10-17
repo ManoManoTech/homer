@@ -1,7 +1,7 @@
 import { fetchPipelineJobs } from '@/core/services/gitlab';
 import type { DataRelease } from '@/core/typings/Data';
-import type { ReleaseManager } from '../../../typings/ReleaseManager';
-import type { ReleaseStateUpdate } from '../../../typings/ReleaseStateUpdate';
+import type { ReleaseManager } from '../../src/release/typings/ReleaseManager';
+import type { ReleaseStateUpdate } from '../../src/release/typings/ReleaseStateUpdate';
 
 const buildJobNames = ['goreleaser-build-snapshot'];
 
@@ -23,7 +23,9 @@ export async function isReadyToRelease(
   return buildJob?.status === 'success';
 }
 
-export const libraryReleaseManager: ReleaseManager = {
+const libraryReleaseManager: ReleaseManager = {
   getReleaseStateUpdate,
   isReadyToRelease,
 };
+
+export default libraryReleaseManager;

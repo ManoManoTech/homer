@@ -6,7 +6,8 @@ import type {
 } from '@slack/web-api';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
-import { getProjectReleaseConfig } from '@/release/utils/configHelper';
+import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 import { dockerBuildJobFixture } from '../__fixtures__/dockerBuildJobFixture';
 import { jobFixture } from '../__fixtures__/jobFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
@@ -20,7 +21,12 @@ import { mockGitlabCall } from '../utils/mockGitlabCall';
 import { waitFor } from '../utils/waitFor';
 
 describe('release > createRelease', () => {
-  const releaseConfig = getProjectReleaseConfig(projectFixture.id);
+  let releaseConfig: ProjectReleaseConfig;
+  beforeAll(async () => {
+    releaseConfig = await ConfigHelper.getProjectReleaseConfig(
+      projectFixture.id
+    );
+  });
 
   it('should create a release whereas main pipeline is ready', async () => {
     /** Step 1: display release modal */

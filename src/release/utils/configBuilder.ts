@@ -1,11 +1,11 @@
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
+import ReleasePluginManager from '@/core/pluginManager/ReleasePluginManager';
 import type {
   ProjectConfigurationsJSON,
   ProjectReleaseConfig,
   ProjectConfigJSON,
 } from '../typings/ProjectReleaseConfig';
-import type { ReleaseManager } from '../typings/ReleaseManager';
 import type { ReleaseTagManager } from '../typings/ReleaseTagManager';
 
 // only one Ajv instance should be used across all the application
@@ -46,9 +46,8 @@ const configsSchema: JSONSchemaType<ProjectConfigurationsJSON> = {
 
 const validateProjectReleaseConfig = ajv.compile(configsSchema);
 
-export function buildProjectReleaseConfigs(
+export async function buildProjectReleaseConfigs(
   configs: ProjectConfigurationsJSON,
-  releaseManagers: Record<string, ReleaseManager>,
   releaseTagManagers: Record<string, ReleaseTagManager>
 ) {
   if (!validateProjectReleaseConfig(configs)) {
@@ -58,24 +57,19 @@ export function buildProjectReleaseConfigs(
   }
   const projects: ProjectReleaseConfig[] = [];
   for (const project of configs.projects) {
-    const {
-      releaseManager,
-      releaseTagManager,
-      notificationChannelIds,
-      projectId,
-      releaseChannelId,
-    } = project;
-    if (releaseManager in releaseManagers) {
-      projects.push({
-        notificationChannelIds,
-        projectId,
-        releaseChannelId,
-        releaseManager: releaseManagers[releaseManager],
-        releaseTagManager: releaseTagManager
-          ? releaseTagManagers[releaseTagManager]
-          : undefined,
-      });
+    const { releaseManager, releaseTagManager, ...ids } = project;
+    if (ReleasePluginManager.getReleaseManager(releaseManager) === undefined) {
+      await ReleasePluginManager.loadReleaseManagerPlugin(
+        `@root/plugins/release/${releaseManager}`
+      );
     }
+    projects.push({
+      ...ids,
+      releaseManager: ReleasePluginManager.getReleaseManager(releaseManager)!,
+      releaseTagManager: releaseTagManager
+        ? releaseTagManagers[releaseTagManager]
+        : undefined,
+    });
   }
   return projects;
 }

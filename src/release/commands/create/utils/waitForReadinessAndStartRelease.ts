@@ -10,8 +10,9 @@ import { slackBotWebClient } from '@/core/services/slack';
 import type { DatabaseEntry, DataRelease } from '@/core/typings/Data';
 import { getBranchLastPipeline } from '@/release/commands/create/utils/getBranchLastPipeline';
 import { startRelease } from '@/release/commands/create/utils/startRelease';
+import getReleaseOptions from '@/release/releaseOptions';
 import type { ReleaseManager } from '@/release/typings/ReleaseManager';
-import { getProjectReleaseConfig } from '@/release/utils/configHelper';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 
 const READINESS_TIMEOUT_DELAY_MS = 45 * 60 * 1000; // 45 minutes
 const READINESS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
@@ -32,7 +33,7 @@ export async function waitForReadinessAndStartRelease(
   }
 
   const { releaseChannelId, releaseManager, hasReleasePipeline } =
-    getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId);
 
   const project = await fetchProjectById(projectId);
 
@@ -44,7 +45,8 @@ export async function waitForReadinessAndStartRelease(
   let hasReachedTimeout = false;
   let isReady = await releaseManager.isReadyToRelease(
     release,
-    mainBranchPipeline.id
+    mainBranchPipeline.id,
+    getReleaseOptions()
   );
 
   if (!isReady) {
@@ -122,7 +124,8 @@ async function waitForReadiness(
 
     isReady = await releaseManager.isReadyToRelease(
       release,
-      mainBranchPipelineId
+      mainBranchPipelineId,
+      getReleaseOptions()
     );
 
     if (isReady) {
