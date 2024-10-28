@@ -7,6 +7,7 @@ import type {
   ProjectConfigJSON,
 } from '../typings/ProjectReleaseConfig';
 import type { ReleaseTagManager } from '../typings/ReleaseTagManager';
+import { logger } from '@/core/services/logger';
 
 // only one Ajv instance should be used across all the application
 // maybe a singleton class would be better
@@ -51,6 +52,7 @@ export async function buildProjectReleaseConfigs(
   releaseTagManagers: Record<string, ReleaseTagManager>
 ) {
   if (!validateProjectReleaseConfig(configs)) {
+    logger.error(`The config file validation failed : ${validateProjectReleaseConfig.errors}`);
     throw new Error(
       'The config file should contain an array of valid project configurations'
     );
