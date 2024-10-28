@@ -46,7 +46,7 @@ export default class ReleasePluginManager {
       this.instance.releaseManagers.set(releaseManagerName, releaseManager);
       return releaseManager;
     } catch (error) {
-      throw new Error(errMessage);
+      throw new Error(`${errMessage} Reason: ${error}`);
     }
   }
 

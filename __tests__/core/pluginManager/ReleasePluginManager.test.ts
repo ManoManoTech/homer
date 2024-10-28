@@ -15,7 +15,7 @@ describe('pluginManager', () => {
     await expect(async () =>
       ReleasePluginManager.loadReleaseManagerPlugin('invalidPath')
     ).rejects.toThrow(
-      'Cannot load release manager plugin. Invalid path or plugin already loaded.'
+      "Cannot load release manager plugin. Invalid path or plugin already loaded. Reason: Error: Cannot find module 'invalidPath' from 'src/core/pluginManager/ReleasePluginManager.ts'"
     );
   });
   it('should throw an error if the plugin is already added', async () => {
