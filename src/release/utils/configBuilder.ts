@@ -1,13 +1,13 @@
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
 import ReleasePluginManager from '@/core/pluginManager/ReleasePluginManager';
+import { logger } from '@/core/services/logger';
 import type {
   ProjectConfigurationsJSON,
   ProjectReleaseConfig,
   ProjectConfigJSON,
 } from '../typings/ProjectReleaseConfig';
 import type { ReleaseTagManager } from '../typings/ReleaseTagManager';
-import { logger } from '@/core/services/logger';
 
 // only one Ajv instance should be used across all the application
 // maybe a singleton class would be better
