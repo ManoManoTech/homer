@@ -24,7 +24,7 @@ describe('pluginManager', () => {
         '@root/plugins/release/defaultReleaseManager'
       )
     ).rejects.toThrow(
-      'Cannot load release manager plugin. Invalid path or plugin already loaded.'
+      'Cannot load release manager plugin. Invalid path or plugin already loaded. Plugin: defaultReleaseManager'
     );
   });
   it('should return release manager by name', async () => {
