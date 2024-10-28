@@ -37,7 +37,7 @@ export default class ReleasePluginManager {
       'Cannot load release manager plugin. Invalid path or plugin already loaded.';
     const releaseManagerName = path.split('/').pop()!;
     if (this.instance.releaseManagers.has(releaseManagerName)) {
-      throw new Error(errMessage);
+      throw new Error(`${errMessage} Plugin: ${releaseManagerName}`);
     }
     try {
       // import default export from the given path
