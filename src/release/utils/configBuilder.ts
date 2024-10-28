@@ -1,6 +1,7 @@
 import type { JSONSchemaType } from 'ajv';
 import Ajv from 'ajv';
 import ReleasePluginManager from '@/core/pluginManager/ReleasePluginManager';
+import { logger } from '@/core/services/logger';
 import type {
   ProjectConfigurationsJSON,
   ProjectReleaseConfig,
@@ -51,6 +52,7 @@ export async function buildProjectReleaseConfigs(
   releaseTagManagers: Record<string, ReleaseTagManager>
 ) {
   if (!validateProjectReleaseConfig(configs)) {
+    logger.error({errors : validateProjectReleaseConfig.errors}, 'The config file validation failed');
     throw new Error(
       'The config file should contain an array of valid project configurations'
     );
