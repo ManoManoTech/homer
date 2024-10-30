@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getProjectsByChannelId } from '@/core/services/data';
 import { fetchProjectById } from '@/core/services/gitlab';
+import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type {
@@ -20,11 +21,20 @@ export async function listProjectsRequestHandler(
 
   const { channel_id, user_id } = req.body as SlackSlashCommandResponse;
   const dataProjects = await getProjectsByChannelId(channel_id);
-  const projects = (
+  const projects: GitlabProjectDetails[] = (
     await Promise.all(
-      dataProjects.map(async ({ projectId }) => fetchProjectById(projectId))
+      dataProjects.map(async ({ projectId }) => {
+        try {
+          return await fetchProjectById(projectId);
+        } catch (error) {
+          logger.error(`Failed to fetch project ${projectId}:`, error);
+          return null;
+        }
+      })
     )
-  ).sort((a, b) => a.path_with_namespace.localeCompare(b.path_with_namespace));
+  )
+    .filter((project): project is GitlabProjectDetails => project !== null)
+    .sort((a, b) => a.path_with_namespace.localeCompare(b.path_with_namespace));
 
   const projectsParts: GitlabProjectDetails[][] = [];
 

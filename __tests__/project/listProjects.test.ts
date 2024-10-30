@@ -26,8 +26,15 @@ describe('project > listProjects', () => {
       channelId,
       projectId: projectFixture.id + 1,
     });
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id + 2,
+    });
+
     mockGitlabCall(`/projects/${projectFixture.id}`, projectFixture);
     mockGitlabCall(`/projects/${projectFixture.id + 1}`, projectFixture);
+    // This project will be removed from the list because it doesn't exist
+    mockGitlabCall(`/projects/${projectFixture.id + 2}`, {});
 
     // When
     const response = await fetch('/api/v1/homer/command', {
