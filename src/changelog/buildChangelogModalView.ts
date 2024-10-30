@@ -28,7 +28,7 @@ export async function buildChangelogModalView({
           try {
             return await fetchProjectById(Number(dataProject.projectId));
           } catch (error) {
-            logger.warn(
+            logger.error(
               `Failed to fetch project ${dataProject.projectId}:`,
               error
             );

@@ -27,7 +27,7 @@ export async function listProjectsRequestHandler(
         try {
           return await fetchProjectById(projectId);
         } catch (error) {
-          logger.warn(`Failed to fetch project ${projectId}:`, error);
+          logger.error(`Failed to fetch project ${projectId}:`, error);
           return null;
         }
       })
