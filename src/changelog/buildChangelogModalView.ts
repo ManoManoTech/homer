@@ -3,6 +3,8 @@ import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import { slackifyChangelog } from '@/changelog/utils/slackifyChangelog';
 import { getProjectsByChannelId } from '@/core/services/data';
 import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
+import { logger } from '@/core/services/logger';
+import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type { SlackOption } from '@/core/typings/SlackOption';
 
 interface ChangelogModalData {
@@ -20,11 +22,21 @@ export async function buildChangelogModalView({
 }: ChangelogModalData): Promise<View> {
   if (channelId !== undefined && projectOptions === undefined) {
     const dataProjects = await getProjectsByChannelId(channelId);
-    const projects = await Promise.all(
-      dataProjects.map(async (dataProject) =>
-        fetchProjectById(Number(dataProject.projectId))
+    const projects: GitlabProjectDetails[] = (
+      await Promise.all(
+        dataProjects.map(async (dataProject) => {
+          try {
+            return await fetchProjectById(Number(dataProject.projectId));
+          } catch (error) {
+            logger.warn(
+              `Failed to fetch project ${dataProject.projectId}:`,
+              error
+            );
+            return null;
+          }
+        })
       )
-    );
+    ).filter((project): project is GitlabProjectDetails => project !== null);
 
     projectOptions = projects
       .sort((a, b) =>
