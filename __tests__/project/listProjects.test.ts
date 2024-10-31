@@ -50,8 +50,8 @@ describe('project > listProjects', () => {
         {
           text: {
             text: slackifyMarkdown(`**Channel projects:**
-- [diaspora/diaspora-project-site](http://example.com/diaspora/diaspora-project-site)
-- [diaspora/diaspora-project-site](http://example.com/diaspora/diaspora-project-site)`),
+- [diaspora/diaspora-project-site](https://my-git.domain.com/diaspora/diaspora-project-site)
+- [diaspora/diaspora-project-site](https://my-git.domain.com/diaspora/diaspora-project-site)`),
             type: 'mrkdwn',
           },
           type: 'section',
