@@ -162,7 +162,7 @@ describe('project > addProject', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
-      text: expect.stringContaining(`No project match \`${search}\``),
+      text: expect.stringContaining(`No project matches \`${search}\``),
       user: userId,
     });
   });
