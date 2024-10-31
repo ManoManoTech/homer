@@ -6,7 +6,14 @@ import { projectFixture } from '../__fixtures__/projectFixture';
 import { mockGitlabCall } from './mockGitlabCall';
 
 export function mockBuildReviewMessageCalls() {
-  const { iid, project_id } = mergeRequestFixture;
+  const { iid, project_id, web_url } = mergeRequestFixture;
+
+  const url = new URL(web_url);
+  const projectPath = url.pathname
+    .split('/')
+    .filter(Boolean)
+    .slice(0, -2)
+    .join('/');
 
   mockGitlabCall(
     `/projects/${project_id}/merge_requests/${iid}/approvals`,
@@ -14,6 +21,10 @@ export function mockBuildReviewMessageCalls() {
   );
   mockGitlabCall(
     `/projects/${project_id}/merge_requests/${iid}`,
+    mergeRequestDetailsFixture
+  );
+  mockGitlabCall(
+    `/projects/${encodeURIComponent(projectPath)}/merge_requests/${iid}`,
     mergeRequestDetailsFixture
   );
   mockGitlabCall(
