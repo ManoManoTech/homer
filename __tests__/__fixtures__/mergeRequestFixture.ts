@@ -72,7 +72,7 @@ export const mergeRequestFixture: GitlabMergeRequest = {
   force_remove_source_branch: false,
   allow_collaboration: false,
   allow_maintainer_to_push: false,
-  web_url: 'http://gitlab.example.com/my-group/my-project/merge_requests/1',
+  web_url: 'http://gitlab.example.com/my-group/my-project/-/merge_requests/1',
   references: {
     short: '!1',
     relative: 'my-group/my-project!1',
