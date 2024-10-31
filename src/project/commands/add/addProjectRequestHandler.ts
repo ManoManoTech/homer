@@ -46,7 +46,7 @@ export async function addProjectRequestHandler(
       await slackBotWebClient.chat.postEphemeral({
         channel: channel_id,
         user: user_id,
-        text: `No project match \`${query}\` :homer-stressed:`,
+        text: `No project matches \`${query}\` :homer-stressed:`,
       });
       return;
     }
