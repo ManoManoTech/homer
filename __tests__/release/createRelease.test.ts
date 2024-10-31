@@ -243,7 +243,7 @@ describe('release > createRelease', () => {
           {
             block_id: 'release-changelog-block',
             text: {
-              text: '•   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>\n•   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>\n',
+              text: '•   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>\n•   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>\n',
               type: 'mrkdwn',
             },
             type: 'section',
@@ -406,7 +406,7 @@ describe('release > createRelease', () => {
           {
             block_id: 'release-changelog-block',
             text: {
-              text: '•   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>\n•   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>\n',
+              text: '•   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>\n•   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>\n',
               type: 'mrkdwn',
             },
             type: 'section',
@@ -567,7 +567,7 @@ describe('release > createRelease', () => {
     ).toEqual(true);
     expect(releaseCallMock.called).toEqual(true);
     expect(releaseCallMock.calledWith?.[1]).toEqual({
-      body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
+      body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
       headers: { 'Content-Type': 'application/json' },
       method: 'post',
     });
@@ -607,8 +607,8 @@ describe('release > createRelease', () => {
           text: {
             text: `\
 :homer: New release <${projectFixture.web_url}/-/releases/stable-19700101-0100|${releaseTagName}> for project <${projectFixture.web_url}|${projectFixture.path_with_namespace}>:
-  •   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>
-  •   <http://gitlab.example.com/my-group/my-project/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>`,
+  •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>
+  •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -762,7 +762,7 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     await waitFor(() => {
       expect(releaseCallMock.called).toEqual(true);
       expect(releaseCallMock.calledWith?.[1]).toEqual({
-        body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
+        body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
       });
