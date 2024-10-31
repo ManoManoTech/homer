@@ -327,37 +327,77 @@ export async function searchMergeRequests(
   search: string,
   projects: DataProject[]
 ): Promise<GitlabMergeRequest[]> {
-  let projectMergeRequestPromises;
+  const mergeRequests = await fetchMergeRequests(search, projects);
 
+  return mergeRequests
+    .flat()
+    .filter((mr) =>
+      MERGE_REQUEST_OPEN_STATES.includes(mr?.state)
+    ) as GitlabMergeRequest[];
+}
+
+async function fetchMergeRequests(
+  search: string,
+  projects: DataProject[]
+): Promise<GitlabMergeRequest[]> {
   if (MERGE_REQUEST_ID_REGEX.test(search)) {
-    const iid = search.replace('!', '');
-
-    projectMergeRequestPromises = projects.map(async ({ projectId }) =>
-      callAPI(`/projects/${projectId}/merge_requests/${iid}`)
-    );
-  } else if (MERGE_REQUEST_URL_REGEX.test(search)) {
-    const iid = search.match(MERGE_REQUEST_URL_REGEX)![1];
-
-    projectMergeRequestPromises = projects.map(async ({ projectId }) =>
-      callAPI(`/projects/${projectId}/merge_requests/${iid}`)
-    );
-  } else {
-    projectMergeRequestPromises = projects.map(async ({ projectId }) =>
-      callAPI(
-        `/projects/${projectId}/merge_requests?state=opened&search=${encodeURIComponent(
-          search
-        )}`
-      )
-    );
+    return searchMergeRequestsById(search, projects);
   }
 
-  return (await Promise.all(projectMergeRequestPromises))
-    .flat()
-    .filter((mergeRequest) =>
-      MERGE_REQUEST_OPEN_STATES.includes(
-        (mergeRequest as GitlabMergeRequest)?.state
-      )
-    ) as GitlabMergeRequest[];
+  if (MERGE_REQUEST_URL_REGEX.test(search)) {
+    return searchMergeRequestsByUrl(search);
+  }
+
+  return searchMergeRequestsByText(search, projects);
+}
+
+async function searchMergeRequestsById(
+  search: string,
+  projects: DataProject[]
+): Promise<GitlabMergeRequest[]> {
+  const iid = search.replace('!', '');
+  return Promise.all(
+    projects.map(
+      ({ projectId }) =>
+        callAPI(
+          `/projects/${projectId}/merge_requests/${iid}`
+        ) as Promise<GitlabMergeRequest>
+    )
+  );
+}
+
+async function searchMergeRequestsByUrl(
+  search: string
+): Promise<GitlabMergeRequest[]> {
+  const iid = search.match(MERGE_REQUEST_URL_REGEX)![1];
+  const url = new URL(search);
+  const projectPath = url.pathname
+    .split('/')
+    .filter(Boolean)
+    .slice(0, -2)
+    .join('/');
+
+  return Promise.all([
+    callAPI(
+      `/projects/${encodeURIComponent(projectPath)}/merge_requests/${iid}`
+    ) as Promise<GitlabMergeRequest>,
+  ]);
+}
+
+async function searchMergeRequestsByText(
+  search: string,
+  projects: DataProject[]
+): Promise<GitlabMergeRequest[]> {
+  return Promise.all(
+    projects.map(
+      ({ projectId }) =>
+        callAPI(
+          `/projects/${projectId}/merge_requests?state=opened&search=${encodeURIComponent(
+            search
+          )}`
+        ) as Promise<GitlabMergeRequest>
+    )
+  );
 }
 
 export async function searchProjects(search: string): Promise<GitlabProject[]> {
