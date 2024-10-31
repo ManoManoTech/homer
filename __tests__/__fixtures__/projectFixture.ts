@@ -7,9 +7,9 @@ export const projectFixture: GitlabProjectDetails = {
   visibility: 'private',
   ssh_url_to_repo: 'git@example.com:diaspora/diaspora-project-site.git',
   http_url_to_repo: 'http://example.com/diaspora/diaspora-project-site.git',
-  web_url: 'http://example.com/diaspora/diaspora-project-site',
+  web_url: 'https://my-git.domain.com/diaspora/diaspora-project-site',
   readme_url:
-    'http://example.com/diaspora/diaspora-project-site/blob/master/README.md',
+    'https://my-git.domain.com/diaspora/diaspora-project-site/blob/master/README.md',
   tag_list: ['example', 'disapora project'],
   owner: {
     id: 3,
@@ -64,9 +64,10 @@ export const projectFixture: GitlabProjectDetails = {
     },
   },
   archived: false,
-  avatar_url: 'http://example.com/uploads/project/avatar/3/uploads/avatar.png',
+  avatar_url:
+    'https://my-git.domain.com/uploads/project/avatar/3/uploads/avatar.png',
   license_url:
-    'http://example.com/diaspora/diaspora-client/blob/master/LICENSE',
+    'https://my-git.domain.com/diaspora/diaspora-client/blob/master/LICENSE',
   license: {
     key: 'lgpl-3.0',
     name: 'GNU Lesser General Public License v3.0',

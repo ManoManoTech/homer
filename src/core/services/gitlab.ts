@@ -22,7 +22,8 @@ import type { GitlabTag } from '@/core/typings/GitlabTag';
 import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
-const BASE_API_URL = `${getEnvVariable('GITLAB_URL')}/api/v4`;
+const GITLAB_URL = getEnvVariable('GITLAB_URL');
+const BASE_API_URL = `${GITLAB_URL}/api/v4`;
 const GITLAB_TOKEN = getEnvVariable('GITLAB_TOKEN');
 const MERGE_REQUEST_ID_REGEX = /^!?\d+$/;
 const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;
@@ -361,6 +362,12 @@ export async function searchMergeRequests(
 }
 
 export async function searchProjects(search: string): Promise<GitlabProject[]> {
+  if (search.startsWith(GITLAB_URL)) {
+    const projectName = search.replace(`${GITLAB_URL}/`, '').split('/').pop();
+    return callAPI(
+      `/projects?search=${encodeURIComponent(projectName || search)}`
+    );
+  }
   return callAPI(`/projects?search=${encodeURIComponent(search)}`);
 }
 

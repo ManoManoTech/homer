@@ -8,7 +8,7 @@ import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
 describe('project > addProject', () => {
-  it('should add project by name', async () => {
+  it('should add project by search', async () => {
     // Given
     const channelId = 'channelId';
     const search = 'search';
@@ -20,6 +20,43 @@ describe('project > addProject', () => {
     };
 
     mockGitlabCall(`/projects?search=${search}`, [projectFixture]);
+
+    // When
+    const response = await fetch('/api/v1/homer/command', {
+      body,
+      headers: getSlackHeaders(body),
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(
+      await hasModelEntry('Project', {
+        channelId,
+        projectId: projectFixture.id,
+      })
+    ).toEqual(true);
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
+      channel: channelId,
+      text: expect.stringContaining(
+        `\`${projectFixture.path_with_namespace}\` added`
+      ),
+      user: userId,
+    });
+  });
+
+  it('should add project by web_url', async () => {
+    // Given
+    const { web_url, path } = projectFixture;
+    const channelId = 'channelId';
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: `project add ${web_url}`,
+      user_id: userId,
+    };
+
+    mockGitlabCall(`/projects?search=${path}`, [projectFixture]);
 
     // When
     const response = await fetch('/api/v1/homer/command', {
