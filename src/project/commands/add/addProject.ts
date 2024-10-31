@@ -20,7 +20,7 @@ Don't forget to <${getEnvVariable(
       'GITLAB_URL'
     )}/${projectPath}/-/hooks|set up a webhook> \
 in your Gitlab project by following the \
-<${HOMER_GIT_URL}/#make-homer-be-notified-of-changes-happening-in-your-gitlab-project|dedicated documentation>.
+<${HOMER_GIT_URL}/#1-make-homer-notified-of-changes-happening-in-the-gitlab-project|dedicated documentation>.
 `,
   });
 }
