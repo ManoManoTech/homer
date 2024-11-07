@@ -119,8 +119,9 @@ If you want to get an overview of merge requests that are still being reviewed
 
 ## Install
 
-> [!WARNING]
-> Currently, Homer can only be installed by manually cloning the git repository.
+> [!NOTE]
+> Homer can be installed by either manually cloning the git repository or by using the package provided.
+> Check the [deploy example](./examples/deploy/) to see how to deploy using the package.
 
 ### 1. Create the Slack app
 
@@ -329,6 +330,10 @@ Here is a sample configuration with one project:
 ### 8. Add your own release manager
 
 A simple plugin system enables the addition of custom release managers. See this dedicated [page](./PLUGIN_RELEASE.md) for more details.
+
+### 9. Examples
+
+You can find some [examples](./examples/) to add your own configuration, plugins and how to deploy.
 
 ## Contributing
 
