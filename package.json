@@ -27,7 +27,7 @@
     "dd-trace": "3.13.2",
     "dotenv": "16.0.3",
     "express": "4.21.1",
-    "helmet": "6.0.1",
+    "helmet": "8.0.0",
     "node-fetch": "2.6.9",
     "pg": "8.9.0",
     "pg-hstore": "2.3.4",
