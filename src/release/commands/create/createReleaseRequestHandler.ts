@@ -5,6 +5,7 @@ import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
+import { buildReleaseModalLoadingView } from '@/release/commands/create/viewBuilders/buildReleaseModalLoadingView';
 import { buildReleaseModalView } from './viewBuilders/buildReleaseModalView';
 
 export async function createReleaseRequestHandler(
@@ -15,8 +16,15 @@ export async function createReleaseRequestHandler(
 
   const { channel_id, trigger_id } = req.body as SlackSlashCommandResponse;
 
-  await slackBotWebClient.views.open({
+  const loadingView = await slackBotWebClient.views.open({
     trigger_id,
-    view: await buildReleaseModalView({ channelId: channel_id }),
+    view: await buildReleaseModalLoadingView(),
   });
+
+  if (loadingView.view) {
+    await slackBotWebClient.views.update({
+      view_id: loadingView.view.id,
+      view: await buildReleaseModalView({ channelId: channel_id }),
+    });
+  }
 }

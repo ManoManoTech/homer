@@ -93,6 +93,20 @@ describe('release > createRelease', () => {
       ]
     );
 
+    // We mock the loading view answer to define the viewId
+    jest.mock('@/core/services/slack', () => ({
+      slackBotWebClient: {
+        views: {
+          open: jest.fn(),
+        },
+      },
+    }));
+    (slackBotWebClient.views.open as jest.Mock).mockResolvedValue({
+      view: {
+        id: 'viewId',
+      },
+    });
+
     // When
     let response = await fetch('/api/v1/homer/command', {
       body,
@@ -103,6 +117,31 @@ describe('release > createRelease', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.views.open).toHaveBeenNthCalledWith(1, {
       trigger_id: 'triggerId',
+      view: {
+        type: 'modal',
+        callback_id: 'release-create-modal',
+        title: {
+          type: 'plain_text',
+          text: 'Release',
+        },
+        submit: {
+          type: 'plain_text',
+          text: 'Start',
+        },
+        notify_on_close: false,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'plain_text',
+              text: ':loader: Loading project data, please wait…',
+            },
+          },
+        ],
+      },
+    });
+    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(1, {
+      view_id: 'viewId',
       view: {
         type: 'modal',
         callback_id: 'release-create-modal',
@@ -255,7 +294,7 @@ describe('release > createRelease', () => {
     /** Step 2: select project */
 
     // Given
-    let { view } = (slackBotWebClient.views.open as jest.Mock).mock
+    let { view } = (slackBotWebClient.views.update as jest.Mock).mock
       .calls[0][0] as ViewsOpenArguments;
 
     const selectProjectBlock = [...view.blocks].find(
@@ -290,7 +329,7 @@ describe('release > createRelease', () => {
     });
 
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(1, {
+    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(2, {
       view: {
         ...view,
         blocks: [
@@ -306,7 +345,7 @@ describe('release > createRelease', () => {
       },
       view_id: 'viewId',
     });
-    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(2, {
+    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(3, {
       view: {
         blocks: [
           {
@@ -425,7 +464,7 @@ describe('release > createRelease', () => {
 
     // Given
     ({ view } = (slackBotWebClient.views.update as jest.Mock).mock
-      .calls[1][0] as ViewsOpenArguments);
+      .calls[2][0] as ViewsOpenArguments);
 
     const previousTagBlock = [...view.blocks].find(
       (block) => block.block_id === 'release-previous-tag-block'
@@ -465,7 +504,7 @@ describe('release > createRelease', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(3, {
+    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(4, {
       view: {
         ...view,
         blocks: [
@@ -481,7 +520,7 @@ describe('release > createRelease', () => {
       },
       view_id: 'viewId',
     });
-    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(4, {
+    expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(5, {
       view,
       view_id: 'viewId',
     });
