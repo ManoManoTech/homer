@@ -18,7 +18,7 @@ export async function buildReleaseModalLoadingView(): Promise<View> {
         type: 'section',
         text: {
           type: 'plain_text',
-          text: ':loader: Loading projects data, please wait...',
+          text: ':loader: Loading project data, please wait…',
         },
       },
     ],
