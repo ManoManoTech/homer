@@ -186,6 +186,15 @@ export async function getReviewsByMergeRequestIid(
   return reviews.map(toJSON);
 }
 
+export async function getChannelsByProjectId(
+  projectId: number
+): Promise<DataProject[]> {
+  const projects = await Project.findAll({
+    where: { projectId },
+  });
+  return projects.map(toJSON);
+}
+
 export async function hasRelease(
   projectId: number,
   tagName: string

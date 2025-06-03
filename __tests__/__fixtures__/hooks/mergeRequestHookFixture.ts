@@ -91,7 +91,7 @@ export const mergeRequestHookFixture = {
     },
     work_in_progress: false,
     url: 'http://example.com/diaspora/merge_requests/1',
-    action: 'open',
+    action: 'create',
     assignee: {
       name: 'User1',
       username: 'user1',
