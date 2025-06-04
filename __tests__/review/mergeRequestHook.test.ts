@@ -1,10 +1,14 @@
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { addReviewToChannel } from '@/core/services/data';
+import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
-import { reviewMessageUpdateFixture } from '../__fixtures__/reviewMessage';
+import {
+  reviewMessagePostFixture,
+  reviewMessageUpdateFixture,
+} from '../__fixtures__/reviewMessage';
 import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
@@ -24,6 +28,9 @@ describe('review > mergeRequestHook', () => {
         });
       }
     );
+    (slackBotWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
+      ts: 'ts',
+    });
   });
 
   it.each([
@@ -247,6 +254,142 @@ describe('review > mergeRequestHook', () => {
         object_attributes: {
           ...object_attributes,
           action: 'approved',
+        },
+      },
+      headers: getGitlabHeaders(),
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  });
+
+  it('should create review message when merge request contains homer-review label', async () => {
+    // Given
+    const { object_attributes } = mergeRequestHookFixture;
+    const channelId = 'channelId';
+
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id,
+    });
+
+    mockBuildReviewMessageCalls();
+
+    // When
+    const response = await fetch('/api/v1/homer/gitlab', {
+      body: {
+        ...mergeRequestHookFixture,
+        labels: [{ title: 'homer-review' }],
+        object_attributes: {
+          ...object_attributes,
+          action: 'open',
+        },
+      },
+      headers: getGitlabHeaders(),
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      1,
+      reviewMessagePostFixture
+    );
+    expect(
+      await hasModelEntry('Review', {
+        channelId,
+        mergeRequestIid: object_attributes.iid,
+        ts: 'ts',
+      })
+    ).toEqual(true);
+  });
+
+  it('should answer ok status when merge request contains homer-review label and project is not linked to a channel', async () => {
+    // Given
+    const { object_attributes } = mergeRequestHookFixture;
+
+    // When
+    const response = await fetch('/api/v1/homer/gitlab', {
+      body: {
+        ...mergeRequestHookFixture,
+        labels: [{ title: 'homer-review' }],
+        object_attributes: {
+          ...object_attributes,
+          action: 'open',
+        },
+      },
+      headers: getGitlabHeaders(),
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+  });
+
+  it('should create review message when merge request contains homer-mergeable label and state is mergeable', async () => {
+    // Given
+    const { object_attributes } = mergeRequestHookFixture;
+    const channelId = 'channelId';
+
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id,
+    });
+
+    mockBuildReviewMessageCalls();
+    (slackBotWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
+      ts: 'ts',
+    });
+
+    // When
+    const response = await fetch('/api/v1/homer/gitlab', {
+      body: {
+        ...mergeRequestHookFixture,
+        labels: [{ title: 'homer-mergeable' }],
+        object_attributes: {
+          ...object_attributes,
+          detailed_merge_status: 'mergeable',
+          action: 'update',
+        },
+      },
+      headers: getGitlabHeaders(),
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      1,
+      reviewMessagePostFixture
+    );
+    expect(
+      await hasModelEntry('Review', {
+        channelId,
+        mergeRequestIid: object_attributes.iid,
+        ts: 'ts',
+      })
+    ).toEqual(true);
+  });
+
+  it('should answer no content status when merge request contains homer-mergeable label and state is not mergeable', async () => {
+    // Given
+    const { object_attributes } = mergeRequestHookFixture;
+    const channelId = 'channelId';
+
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id,
+    });
+
+    mockBuildReviewMessageCalls();
+
+    // When
+    const response = await fetch('/api/v1/homer/gitlab', {
+      body: {
+        ...mergeRequestHookFixture,
+        labels: [{ title: 'homer-mergeable' }],
+        object_attributes: {
+          ...object_attributes,
+          action: 'update',
         },
       },
       headers: getGitlabHeaders(),
