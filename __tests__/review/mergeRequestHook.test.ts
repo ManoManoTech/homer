@@ -304,6 +304,27 @@ describe('review > mergeRequestHook', () => {
     ).toEqual(true);
   });
 
+  it('should answer ok status when merge request contains homer-review label and project is not linked to a channel', async () => {
+    // Given
+    const { object_attributes } = mergeRequestHookFixture;
+
+    // When
+    const response = await fetch('/api/v1/homer/gitlab', {
+      body: {
+        ...mergeRequestHookFixture,
+        labels: [{ title: 'homer-review' }],
+        object_attributes: {
+          ...object_attributes,
+          action: 'open',
+        },
+      },
+      headers: getGitlabHeaders(),
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+  });
+
   it('should create review message when merge request contains homer-mergeable label and state is mergeable', async () => {
     // Given
     const { object_attributes } = mergeRequestHookFixture;
