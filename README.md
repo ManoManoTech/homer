@@ -253,9 +253,13 @@ the following variables:
 - `POSTGRES_PORT`: port where the database listens.
 - `POSTGRES_USER`: username used when connecting to the database.
 
-For debug purpose:
+For debug purposes:
 
-- `MONITORING_ENABLED`: expose monitoring under /api/monitoring/state. Default to `false`
+- `MONITORING_ENABLED`: expose monitoring at `/api/monitoring/state`. Defaults to `true`.
+
+  🔒 Monitoring is exposing sensitive data. Please be aware of it if you expose it publicly (see [this issue](https://github.com/ManoManoTech/homer/issues/89)).
+
+  ⚠️ We will move this value to `false` by default in a new breaking change version soon.
 
 ### 5. Install and run
 

@@ -33,11 +33,13 @@ export async function start(): Promise<() => Promise<void>> {
     app.use(express.urlencoded({ extended: true, verify }));
     app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
 
-    let enableMonitoring = false;
+    let enableMonitoring = true;
     try {
       enableMonitoring = getEnvVariable('MONITORING_ENABLED') === 'true';
     } catch (error) {
-      logger.warn(`${error}. Monitoring is disabled by default.`);
+      logger.warn(
+        `Monitoring is enabled by default. Not defining MONITORING_ENABLED is deprecated and will throw an error in 1.0.0`
+      );
     }
     if (enableMonitoring) {
       app.get(
