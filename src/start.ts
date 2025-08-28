@@ -32,10 +32,19 @@ export async function start(): Promise<() => Promise<void>> {
     );
     app.use(express.urlencoded({ extended: true, verify }));
     app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
-    app.get(
-      '/api/monitoring/state',
-      catchAsyncRouteErrors(stateRequestHandler)
-    );
+
+    let enableMonitoring = false;
+    try {
+      enableMonitoring = getEnvVariable('MONITORING_ENABLED') === 'true';
+    } catch (error) {
+      logger.warn(`${error}. Monitoring is disabled by default.`);
+    }
+    if (enableMonitoring) {
+      app.get(
+        '/api/monitoring/state',
+        catchAsyncRouteErrors(stateRequestHandler)
+      );
+    }
     app.use(securityMiddleware);
     app.use(getEnvVariable('API_BASE_PATH'), router);
     app.use(errorMiddleware);

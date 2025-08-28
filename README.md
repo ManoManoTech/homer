@@ -253,6 +253,10 @@ the following variables:
 - `POSTGRES_PORT`: port where the database listens.
 - `POSTGRES_USER`: username used when connecting to the database.
 
+For debug purpose:
+
+- `MONITORING_ENABLED`: expose monitoring under /api/monitoring/state. Default to `false`
+
 ### 5. Install and run
 
 ```bash
