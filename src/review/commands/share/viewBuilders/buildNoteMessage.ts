@@ -43,9 +43,11 @@ export async function buildNoteMessage(
         : []),
     ] as KnownBlock[],
     icon_emoji: ':speech_balloon_blue:',
-    text: noteAttributes
-      .map(({ note }) => `:speech_balloon_blue: ${slackifyNote(note)}`)
-      .join('\n\n'),
+    text: slackifyNote(
+      noteAttributes
+        .map(({ note }) => `:speech_balloon_blue: ${note}`)
+        .join('\n\n')
+    ),
     channel: channelId,
     thread_ts: reviewMessageTs,
     link_names: true,
@@ -60,5 +62,5 @@ function slackifyNote(note: string, url?: string): string {
     `${escapeText(note).replace(/\\_/g, '_')}`,
     '*⚠️ Note truncated due to Slack limitations.*',
     SLACK_CHARACTER_LIMIT - linkToView.length
-  )} ${linkToView}`;
+  )}${linkToView}`;
 }

@@ -67,7 +67,7 @@ describe('review > noteHook', () => {
         blocks: [
           {
             text: {
-              text: `This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
+              text: `This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
               type: 'mrkdwn',
             },
             type: 'section',
@@ -90,7 +90,7 @@ describe('review > noteHook', () => {
         channel: 'channelId',
         icon_emoji: ':speech_balloon_blue:',
         link_names: true,
-        text: ':speech_balloon_blue: This MR needs work.',
+        text: ':speech_balloon_blue: This MR needs work.\n',
         thread_ts: 'ts',
         unfurl_links: false,
       });
@@ -140,7 +140,7 @@ describe('review > noteHook', () => {
           {
             text: {
               text: `\
-This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
+This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
               type: 'mrkdwn',
             },
             type: 'section',
@@ -148,7 +148,7 @@ This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#
           {
             text: {
               text: `\
-This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
+This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
               type: 'mrkdwn',
             },
             type: 'section',
@@ -156,7 +156,7 @@ This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#
           {
             text: {
               text: `\
-This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
+This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
               type: 'mrkdwn',
             },
             type: 'section',
@@ -184,7 +184,7 @@ This MR needs work. <http://example.com/gitlab-org/gitlab-test/merge_requests/1#
 
 :speech_balloon_blue: This MR needs work.
 
-:speech_balloon_blue: This MR needs work.`,
+:speech_balloon_blue: This MR needs work.\n`,
         thread_ts: 'ts',
         unfurl_links: false,
       });
