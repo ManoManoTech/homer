@@ -124,7 +124,7 @@ If you want to get an overview of merge requests that are still being reviewed
 If you want to share a merge request in a Slack channel, you can add one of the following label to your merge request:
 
 - `homer-review`: Homer will share the merge request in the channel linked to the Gitlab project.
-- `homer-mergeable`: Homer will share the merge request in the channel linked to the Gitlab project, when it is mergeable.
+- `homer-mergeable`: Homer will share the merge request in the channel linked to the Gitlab project, when it is mergeable or waiting for an approval.
 
 More information about the labels can be found in the [Gitlab documentation](https://docs.gitlab.com/user/project/labels/).
 

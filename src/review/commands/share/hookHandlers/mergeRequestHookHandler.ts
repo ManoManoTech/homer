@@ -56,7 +56,7 @@ export async function mergeRequestHookHandler(
     const isMergeable =
       labels.some(
         (label: { title: string }) => label.title === LABELS.MERGEABLE
-      ) && detailed_merge_status === 'mergeable';
+      ) && ['mergeable', 'not_approved'].includes(detailed_merge_status);
 
     if (hasReviewLabel || isMergeable) {
       await handleNewReview(projectId, iid);
