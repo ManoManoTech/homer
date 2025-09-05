@@ -1,6 +1,5 @@
 import type { View } from '@slack/web-api';
 import type { generateChangelog } from '@/changelog/utils/generateChangelog';
-import type { slackifyChangelog } from '@/changelog/utils/slackifyChangelog';
 import type {
   fetchPipelineBridges,
   fetchPipelineJobs,
@@ -18,6 +17,7 @@ import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import type { cleanViewState } from '@/core/utils/cleanViewState';
+import type { slackifyChangelog } from '@/release/commands/create/utils/slackifyChangelog';
 import type { addLoaderToReleaseModal } from '../commands/create/utils/addLoaderToReleaseModal';
 import type { ReleaseStateUpdate } from './ReleaseStateUpdate';
 import type { ReleaseTagManager } from './ReleaseTagManager';

@@ -1,5 +1,4 @@
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
-import { slackifyChangelog } from '@/changelog/utils/slackifyChangelog';
 import ReleasePluginManager from '@/core/pluginManager/ReleasePluginManager';
 import {
   fetchPipelineBridges,
@@ -9,6 +8,7 @@ import {
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { cleanViewState } from '@/core/utils/cleanViewState';
+import { slackifyChangelog } from '@/release/commands/create/utils/slackifyChangelog';
 import { addLoaderToReleaseModal } from './commands/create/utils/addLoaderToReleaseModal';
 import type { ReleaseOptions } from './typings/ReleaseManager';
 

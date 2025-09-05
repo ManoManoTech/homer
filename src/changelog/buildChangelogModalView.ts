@@ -1,11 +1,11 @@
 import type { Block, KnownBlock, View } from '@slack/types';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
-import { slackifyChangelog } from '@/changelog/utils/slackifyChangelog';
 import { getProjectsByChannelId } from '@/core/services/data';
 import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
 import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type { SlackOption } from '@/core/typings/SlackOption';
+import { slackifyText } from '@/core/utils/slackifyText';
 
 interface ChangelogModalData {
   channelId?: string;
@@ -169,7 +169,10 @@ export async function buildChangelogModalView({
         text: {
           type: 'mrkdwn',
           text: changelog
-            ? slackifyChangelog(changelog)
+            ? slackifyText(
+                changelog,
+                '*⚠️ Changelog truncated due to Slack limitations.*'
+              )
             : 'No change has been found.',
         },
       },
