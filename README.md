@@ -124,7 +124,7 @@ If you want to get an overview of merge requests that are still being reviewed
 If you want to share a merge request in a Slack channel, you can add one of the following label to your merge request:
 
 - `homer-review`: Homer will share the merge request in the channel linked to the Gitlab project.
-- `homer-mergeable`: Homer will share the merge request in the channel linked to the Gitlab project, when it is mergeable.
+- `homer-mergeable`: Homer will share the merge request in the channel linked to the Gitlab project, when it is mergeable or waiting for an approval.
 
 More information about the labels can be found in the [Gitlab documentation](https://docs.gitlab.com/user/project/labels/).
 
@@ -252,6 +252,14 @@ the following variables:
 - `POSTGRES_PASSWORD`: password used when connecting to the database.
 - `POSTGRES_PORT`: port where the database listens.
 - `POSTGRES_USER`: username used when connecting to the database.
+
+For debug purposes:
+
+- `MONITORING_ENABLED`: expose monitoring at `/api/monitoring/state`. Defaults to `true`.
+
+  🔒 Monitoring is exposing sensitive data. Please be aware of it if you expose it publicly (see [this issue](https://github.com/ManoManoTech/homer/issues/89)).
+
+  ⚠️ We will move this value to `false` by default in a new breaking change version soon.
 
 ### 5. Install and run
 
