@@ -4,6 +4,7 @@ import {
   escapeText,
   fetchSlackUserFromGitlabUser,
 } from '@/core/services/slack';
+import { SLACK_CHARACTER_LIMIT, slackifyText } from '@/core/utils/slackifyText';
 
 export async function buildNoteMessage(
   channelId: string,
@@ -19,7 +20,7 @@ export async function buildNoteMessage(
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `${escapeText(note).replace(/\\_/g, '_')} <${url}|View>`,
+          text: slackifyNote(note, url),
         },
       })),
       ...(author !== undefined
@@ -42,15 +43,24 @@ export async function buildNoteMessage(
         : []),
     ] as KnownBlock[],
     icon_emoji: ':speech_balloon_blue:',
-    text: noteAttributes
-      .map(
-        ({ note }) =>
-          `:speech_balloon_blue: ${escapeText(note).replace(/\\_/g, '_')}`
-      )
-      .join('\n\n'),
+    text: slackifyNote(
+      noteAttributes
+        .map(({ note }) => `:speech_balloon_blue: ${note}`)
+        .join('\n\n')
+    ),
     channel: channelId,
     thread_ts: reviewMessageTs,
     link_names: true,
     unfurl_links: false,
   };
+}
+
+function slackifyNote(note: string, url?: string): string {
+  const linkToView = url ? `<${url}|View>` : '';
+
+  return `${slackifyText(
+    `${escapeText(note).replace(/\\_/g, '_')}`,
+    '*⚠️ Note truncated due to Slack limitations.*',
+    SLACK_CHARACTER_LIMIT - linkToView.length
+  )}${linkToView}`;
 }

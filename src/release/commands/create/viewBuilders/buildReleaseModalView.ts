@@ -9,9 +9,9 @@ import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
+import { slackifyText } from '@/core/utils/slackifyText';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
-import { slackifyChangelog } from '../utils/slackifyChangelog';
 
 interface ReleaseModalData {
   channelId?: string;
@@ -236,7 +236,10 @@ export async function buildReleaseModalView({
         text: {
           type: 'mrkdwn',
           text: changelog
-            ? slackifyChangelog(changelog)
+            ? slackifyText(
+                changelog,
+                '*⚠️ Changelog truncated due to Slack limitations.*'
+              )
             : 'No change has been found.',
         },
       },
