@@ -140,12 +140,6 @@ export async function getProjectReleases(
   ).map(formatRelease);
 }
 
-export async function getProjects(): Promise<DataProject[]> {
-  return (await Project.findAll({ order: [['createdAt', 'DESC']] })).map(
-    toJSON
-  );
-}
-
 export async function getProjectsByChannelId(
   channelId: string
 ): Promise<DataProject[]> {
@@ -161,10 +155,6 @@ export async function getReleases(
   return (
     await Release.findAll({ order: [['createdAt', 'DESC']], where: filter })
   ).map(formatRelease);
-}
-
-export async function getReviews(): Promise<DataReview[]> {
-  return (await Review.findAll({ order: [['createdAt', 'DESC']] })).map(toJSON);
 }
 
 export async function getReviewsByChannelId(

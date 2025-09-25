@@ -4,10 +4,8 @@ import helmet from 'helmet';
 import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { securityMiddleware } from '@/core/middlewares/securityMiddleware';
 import { healthCheckRequestHandler } from '@/core/requestHandlers/healthCheckRequestHandler';
-import { stateRequestHandler } from '@/core/requestHandlers/stateRequestHandler/stateRequestHandler';
 import { connectToDatabase } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
-import { catchAsyncRouteErrors } from '@/core/utils/catchAsyncRouteErrors';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { REQUEST_BODY_SIZE_LIMIT } from './constants';
 import { getEnvVariable } from './core/utils/getEnvVariable';
@@ -33,20 +31,6 @@ export async function start(): Promise<() => Promise<void>> {
     app.use(express.urlencoded({ extended: true, verify }));
     app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
 
-    let enableMonitoring = true;
-    try {
-      enableMonitoring = getEnvVariable('MONITORING_ENABLED') === 'true';
-    } catch (error) {
-      logger.warn(
-        `Monitoring is enabled by default. Not defining MONITORING_ENABLED is deprecated and will throw an error in 1.0.0`
-      );
-    }
-    if (enableMonitoring) {
-      app.get(
-        '/api/monitoring/state',
-        catchAsyncRouteErrors(stateRequestHandler)
-      );
-    }
     app.use(securityMiddleware);
     app.use(getEnvVariable('API_BASE_PATH'), router);
     app.use(errorMiddleware);
