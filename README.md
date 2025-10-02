@@ -169,7 +169,7 @@ Slack organisation.
 Be sure to have all those installed:
 
 - [Docker Compose](https://docs.docker.com/compose/install/).
-- [Node.js@20](https://nodejs.org/en/). You can use a version manager like
+- [Node.js@24](https://nodejs.org/en/). You can use a version manager like
   [nvm](https://github.com/nvm-sh/nvm).
 - [Yarn@1](https://classic.yarnpkg.com/lang/en/).
 
