@@ -6,17 +6,17 @@ import { getEnvVariable } from '@/core/utils/getEnvVariable';
 import { logger } from './logger';
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = getEnvVariable(
-  'SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN'
+  'SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN',
 );
 const EMAIL_DOMAINS = getEnvVariable('EMAIL_DOMAINS');
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
-  SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN
+  SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN,
 );
 
 export async function deleteEphemeralMessage(
-  response_url: string
+  response_url: string,
 ): Promise<void> {
   await fetch(response_url, {
     headers: { 'Content-Type': 'application/json' },
@@ -37,7 +37,7 @@ export function escapeText(input: string): string {
 
 export async function getPermalink(
   channelId: string,
-  messageTs: string
+  messageTs: string,
 ): Promise<string> {
   const { permalink } = await slackBotWebClient.chat.getPermalink({
     channel: channelId,
@@ -46,25 +46,25 @@ export async function getPermalink(
 
   if (permalink === undefined) {
     throw new Error(
-      `Failed to to get permalink with channel ${channelId} and message ${messageTs}`
+      `Failed to to get permalink with channel ${channelId} and message ${messageTs}`,
     );
   }
   return permalink;
 }
 
 export async function fetchSlackUserFromEmail(
-  email: string
+  email: string,
 ): Promise<SlackUser | undefined> {
   try {
     const response = await slackBotWebClient.users.lookupByEmail({ email });
     return response.user as SlackUser;
   } catch (error) {
-    logger.error(`Failed to to fetch slack user with email ${email}`);
+    logger.error(error, `Failed to to fetch slack user with email ${email}`);
   }
 }
 
 export async function fetchSlackUserFromEmails(
-  emails: string[]
+  emails: string[],
 ): Promise<SlackUser | undefined> {
   let user: SlackUser | undefined;
 
@@ -80,7 +80,7 @@ export async function fetchSlackUserFromEmails(
 
   if (user === undefined) {
     logger.error(
-      `Failed to to fetch slack user with emails ${emails.join(', ')}`
+      `Failed to to fetch slack user with emails ${emails.join(', ')}`,
     );
   }
   return user;
@@ -93,26 +93,26 @@ export async function fetchSlackUserFromGitlabUser({
 }
 
 export async function fetchSlackUserFromGitlabUsername(
-  username: string
+  username: string,
 ): Promise<SlackUser | undefined> {
   const emails = EMAIL_DOMAINS.split(',').map(
-    (emailDomain) => `${username}@${emailDomain}`
+    (emailDomain) => `${username}@${emailDomain}`,
   );
   return fetchSlackUserFromEmails(emails);
 }
 
 export async function fetchSlackUserFromId(
-  userId: string
+  userId: string,
 ): Promise<SlackUser | undefined> {
   const response = await slackBotWebClient.users.info({ user: userId });
   return response?.user as SlackUser | undefined;
 }
 
 export async function fetchSlackUsersFromGitlabUsers(
-  gitlabUsers: GitlabUser[]
+  gitlabUsers: GitlabUser[],
 ): Promise<SlackUser[]> {
   const slackUsers = await Promise.all(
-    gitlabUsers.map(fetchSlackUserFromGitlabUser)
+    gitlabUsers.map(fetchSlackUserFromGitlabUser),
   );
   return slackUsers.filter(Boolean) as SlackUser[];
 }

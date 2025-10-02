@@ -44,15 +44,11 @@
     "@types/node": "24.6.2",
     "@types/node-fetch": "2.6.2",
     "@types/pg": "8.15.5",
-    "@typescript-eslint/eslint-plugin": "5.62.0",
-    "@typescript-eslint/parser": "5.51.0",
     "concurrently": "9.2.1",
-    "eslint": "8.33.0",
-    "eslint-config-airbnb": "19.0.4",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-import-resolver-typescript": "3.5.3",
-    "eslint-plugin-import": "2.27.5",
-    "eslint-plugin-prettier": "4.2.1",
+    "eslint": "9.36.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "2.32.0",
     "husky": "9.1.7",
     "jest": "30.2.0",
     "nodemon": "3.1.10",
@@ -61,6 +57,7 @@
     "rimraf": "6.0.1",
     "ts-jest": "29.4.4",
     "typescript": "5.9.3",
+    "typescript-eslint": "^8.45.0",
     "wait-on": "9.0.1"
   }
 }
