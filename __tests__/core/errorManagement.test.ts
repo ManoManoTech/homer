@@ -111,7 +111,6 @@ describe('core > errorManagement', () => {
       expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
       expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
         channel: userChannelId,
-        user: userId,
         text: PRIVATE_CHANNEL_ERROR_MESSAGE,
       });
     });
