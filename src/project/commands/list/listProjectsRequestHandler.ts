@@ -15,7 +15,7 @@ const MAX_PROJECTS_BY_MESSAGE = 20;
 
 export async function listProjectsRequestHandler(
   req: SlackExpressRequest,
-  res: Response
+  res: Response,
 ) {
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
 
@@ -27,10 +27,10 @@ export async function listProjectsRequestHandler(
         try {
           return await fetchProjectById(projectId);
         } catch (error) {
-          logger.error(`Failed to fetch project ${projectId}:`, error);
+          logger.error(error, `Failed to fetch project ${projectId}:`);
           return null;
         }
-      })
+      }),
     )
   )
     .filter((project): project is GitlabProjectDetails => project !== null)
@@ -49,7 +49,7 @@ export async function listProjectsRequestHandler(
         displayTitle: projectsParts.indexOf(projectsPart) === 0,
         projects: projectsPart,
         userId: user_id,
-      })
+      }),
     );
   }
 }
