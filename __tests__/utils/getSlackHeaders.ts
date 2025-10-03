@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { CONFIG } from '@/config';
 
 export function getSlackHeaders(
   body: Record<string, unknown> = {},
@@ -6,7 +7,7 @@ export function getSlackHeaders(
 ): Record<string, string> {
   const requestTimestamp = Math.floor(timestamp / 1000).toString();
   const signature = `v0=${crypto
-    .createHmac('sha256', process.env.SLACK_SIGNING_SECRET as string)
+    .createHmac('sha256', CONFIG.slack.signingSecret)
     .update(`v0:${requestTimestamp}:${JSON.stringify(body)}`)
     .digest('hex')}`;
 
