@@ -108,7 +108,7 @@ async function handleNewReview(projectId: number, iid: number): Promise<void> {
     return;
   }
 
-  if (configuredChannels.length > CONFIG.slack.maximumChannelToNotify) {
+  if (configuredChannels.length > CONFIG.slack.channelNotificationThreshold) {
     logger.warn(`Too many channels linked to project ${projectId}`);
     return;
   }
