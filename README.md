@@ -177,7 +177,7 @@ Be sure to have all those installed:
 
 Create a `.env` file containing the following variables:
 
-- `API_BASE_PATH`
+- `API_BASE_PATH` (default value: `/api/v1/homer`)
 
   This is the base path that will be used to build the API URL to call homer, for example `https://homer.com<API_BASE_PATH>/command`.
 
@@ -251,11 +251,11 @@ Create a `.env` file containing the following variables:
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
-- `POSTGRES_DATABASE_NAME`: database name (like `homer`).
+- `POSTGRES_DATABASE_NAME`: database name. Default value is `homer`.
 - `POSTGRES_HOST`: host of the database.
 - `POSTGRES_PASSWORD`: password used when connecting to the database.
-- `POSTGRES_PORT`: port where the database listens.
-- `POSTGRES_USER`: username used when connecting to the database.
+- `POSTGRES_PORT`: port where the database listens. Default value is `5432`.
+- `POSTGRES_USER`: username used when connecting to the database. Default value is `homer`.
 
 ### 5. Install and run
 

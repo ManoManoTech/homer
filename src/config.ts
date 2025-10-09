@@ -4,9 +4,9 @@ export const CONFIG = {
   apiBasePath: getEnvVariable('API_BASE_PATH', '/api/v1/homer'),
   postgres: {
     host: getEnvVariable('POSTGRES_HOST'),
-    username: getEnvVariable('POSTGRES_USER'),
+    username: getEnvVariable('POSTGRES_USER', 'homer'),
     password: getEnvVariable('POSTGRES_PASSWORD'),
-    port: Number(getEnvVariable('POSTGRES_PORT')),
+    port: Number(getEnvVariable('POSTGRES_PORT', '5432')),
     databaseName: getEnvVariable('POSTGRES_DATABASE_NAME', 'homer'),
   },
   gitlab: {
