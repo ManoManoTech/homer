@@ -84,7 +84,6 @@ export async function addProjectToChannel({
   });
 }
 
-// Useless change
 export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
@@ -183,6 +182,14 @@ export async function getChannelsByProjectId(
     where: { projectId },
   });
   return projects.map(toJSON);
+}
+
+export async function countChannelsByProjectId(
+  projectId: number
+): Promise<number> {
+  return Project.count({
+    where: { projectId },
+  });
 }
 
 export async function hasRelease(

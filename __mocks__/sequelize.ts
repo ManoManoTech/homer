@@ -36,6 +36,16 @@ class ModelMock {
 
   async drop(): Promise<void> {}
 
+  async count({ where }: Options): Promise<number> {
+    return this.entries.filter(
+      (entry) =>
+        !where ||
+        Object.entries(where).every(
+          ([key, value]) => entry.values[key] === value
+        )
+    ).length;
+  }
+
   async findAll(): Promise<EntryMock[]> {
     return this.entries;
   }
