@@ -1,14 +1,12 @@
 import { WebClient } from '@slack/web-api';
 import fetch from 'node-fetch';
+import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 import { logger } from './logger';
 
-const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = getEnvVariable(
-  'SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN'
-);
-const EMAIL_DOMAINS = getEnvVariable('EMAIL_DOMAINS');
+const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
+const EMAIL_DOMAINS = CONFIG.slack.emailDomains;
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(

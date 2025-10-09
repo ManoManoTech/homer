@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import {
   addReviewToChannel,
@@ -6,6 +7,7 @@ import {
   getReviewsByMergeRequestIid,
   removeReviewsByMergeRequestIid,
 } from '@/core/services/data';
+import { logger } from '@/core/services/logger';
 import {
   fetchSlackUserFromGitlabUsername,
   slackBotWebClient,
@@ -103,6 +105,11 @@ async function handleNewReview(projectId: number, iid: number): Promise<void> {
   const configuredChannels = await getChannelsByProjectId(projectId);
 
   if (configuredChannels.length === 0) {
+    return;
+  }
+
+  if (configuredChannels.length > CONFIG.slack.channelNotificationThreshold) {
+    logger.warn(`Too many channels linked to project ${projectId}`);
     return;
   }
 

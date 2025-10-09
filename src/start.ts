@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import express from 'express';
 import helmet from 'helmet';
+import { CONFIG } from '@/config';
 import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { securityMiddleware } from '@/core/middlewares/securityMiddleware';
 import { healthCheckRequestHandler } from '@/core/requestHandlers/healthCheckRequestHandler';
@@ -8,7 +9,6 @@ import { connectToDatabase } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { REQUEST_BODY_SIZE_LIMIT } from './constants';
-import { getEnvVariable } from './core/utils/getEnvVariable';
 import { router } from './router';
 
 const PORT = 3000;
@@ -32,7 +32,7 @@ export async function start(): Promise<() => Promise<void>> {
     app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
 
     app.use(securityMiddleware);
-    app.use(getEnvVariable('API_BASE_PATH'), router);
+    app.use(CONFIG.apiBasePath, router);
     app.use(errorMiddleware);
 
     const server = app.listen(PORT, async () => {

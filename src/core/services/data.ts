@@ -5,6 +5,7 @@ import {
   type Model,
   type WhereOptions,
 } from 'sequelize';
+import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
 import type {
   DatabaseEntry,
@@ -13,20 +14,19 @@ import type {
   DataReleaseInternal,
   DataReview,
 } from '@/core/typings/Data';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
 const REVIEW_LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 
 const sequelize = new Sequelize({
-  database: getEnvVariable('POSTGRES_DATABASE_NAME'),
+  database: CONFIG.postgres.databaseName,
   dialect: 'postgres',
-  host: getEnvVariable('POSTGRES_HOST'),
+  host: CONFIG.postgres.host,
   logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
-  password: getEnvVariable('POSTGRES_PASSWORD'),
-  port: Number(getEnvVariable('POSTGRES_PORT')),
-  username: getEnvVariable('POSTGRES_USER'),
+  password: CONFIG.postgres.password,
+  port: CONFIG.postgres.port,
+  username: CONFIG.postgres.username,
 });
 
 const Project = sequelize.define<Model<DataProject>>('Project', {
@@ -84,7 +84,6 @@ export async function addProjectToChannel({
   });
 }
 
-// Useless change
 export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
@@ -183,6 +182,14 @@ export async function getChannelsByProjectId(
     where: { projectId },
   });
   return projects.map(toJSON);
+}
+
+export async function countChannelsByProjectId(
+  projectId: number
+): Promise<number> {
+  return Project.count({
+    where: { projectId },
+  });
 }
 
 export async function hasRelease(

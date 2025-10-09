@@ -1,3 +1,4 @@
+import { CONFIG } from '@/config';
 import {
   fetchMergeRequestByIid,
   fetchMergeRequestCommits,
@@ -8,7 +9,6 @@ import {
 } from '@/core/services/gitlab';
 import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 const DEFAULT_BRANCHES = ['main', 'master', 'release'];
 const TICKET_ID_MATCHER = '{ticketId}';
@@ -54,9 +54,10 @@ export async function generateChangelog(
 
         return `- ${title}${
           ticketId
-            ? ` - [${ticketId}](${getEnvVariable(
-                'TICKET_MANAGEMENT_URL_PATTERN'
-              ).replace(TICKET_ID_MATCHER, ticketId)})`
+            ? ` - [${ticketId}](${CONFIG.ticketManagementUrlPattern.replace(
+                TICKET_ID_MATCHER,
+                ticketId
+              )})`
             : ''
         }`;
       })
@@ -70,9 +71,10 @@ export async function generateChangelog(
 
       return `- [${mergeRequestCommit.title}](${mergeRequest.web_url})${
         ticketId
-          ? ` - [${ticketId}](${getEnvVariable(
-              'TICKET_MANAGEMENT_URL_PATTERN'
-            ).replace(TICKET_ID_MATCHER, ticketId)})`
+          ? ` - [${ticketId}](${CONFIG.ticketManagementUrlPattern.replace(
+              TICKET_ID_MATCHER,
+              ticketId
+            )})`
           : ''
       }`;
     })
