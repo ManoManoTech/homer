@@ -1,5 +1,4 @@
 import { WebClient } from '@slack/web-api';
-import fetch from 'node-fetch';
 import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';

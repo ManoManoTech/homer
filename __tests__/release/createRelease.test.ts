@@ -4,6 +4,8 @@ import type {
   StaticSelect,
   ViewsOpenArguments,
 } from '@slack/web-api';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
@@ -15,16 +17,14 @@ import { pipelineFixture } from '../__fixtures__/pipelineFixture';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { releaseFixture } from '../__fixtures__/releaseFixture';
 import { tagFixture } from '../__fixtures__/tagFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 import { waitFor } from '../utils/waitFor';
-
 describe('release > createRelease', () => {
   let releaseConfig: ProjectReleaseConfig;
   beforeAll(async () => {
     releaseConfig = await ConfigHelper.getProjectReleaseConfig(
-      projectFixture.id
+      projectFixture.id,
     );
   });
 
@@ -48,11 +48,11 @@ describe('release > createRelease', () => {
       [...Array(10)].map((_, i) => ({
         tagFixture,
         name: `${tagFixture.name.slice(0, -1)}${i}`,
-      }))
+      })),
     );
     mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
-      tagFixture
+      tagFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/repository/commits?since=2017-07-26T09:08:54.000Z&per_page=100`,
@@ -72,11 +72,11 @@ describe('release > createRelease', () => {
           title: 'Sanitize for network graph',
           message: 'Sanitize for network graph',
         },
-      ]
+      ],
     );
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestFixture.iid}`,
-      mergeRequestFixture
+      mergeRequestFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
@@ -90,7 +90,7 @@ describe('release > createRelease', () => {
             'feat(great): implement another great feature\n\nJIRA: SPAR-158',
           title: 'feat(great): implement another great feature',
         },
-      ]
+      ],
     );
 
     // We mock the loading view answer to define the viewId
@@ -108,10 +108,10 @@ describe('release > createRelease', () => {
     });
 
     // When
-    let response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    let response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -298,7 +298,7 @@ describe('release > createRelease', () => {
       .calls[0][0] as ViewsOpenArguments;
 
     const selectProjectBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-project-block'
+      (block) => block.block_id === 'release-project-block',
     ) as InputBlock;
     const selectProjectElement = selectProjectBlock.element as StaticSelect;
 
@@ -323,10 +323,10 @@ describe('release > createRelease', () => {
     };
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.views.update).toHaveBeenNthCalledWith(2, {
@@ -467,7 +467,7 @@ describe('release > createRelease', () => {
       .calls[2][0] as ViewsOpenArguments);
 
     const previousTagBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-previous-tag-block'
+      (block) => block.block_id === 'release-previous-tag-block',
     ) as InputBlock;
     const previousTagElement = previousTagBlock.element as StaticSelect;
 
@@ -497,10 +497,10 @@ describe('release > createRelease', () => {
     };
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -529,7 +529,7 @@ describe('release > createRelease', () => {
 
     // Given
     const releaseTagBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-tag-block'
+      (block) => block.block_id === 'release-tag-block',
     ) as InputBlock;
     const releaseTagElement = releaseTagBlock.element as PlainTextInput;
 
@@ -569,30 +569,30 @@ describe('release > createRelease', () => {
           profile: { image_72: 'image_72' },
           real_name: 'real_name',
         },
-      })
+      }),
     );
 
     const releaseCallMock = mockGitlabCall(
       `/projects/${projectId}/releases`,
-      releaseFixture
+      releaseFixture,
     );
     mockGitlabCall(`/projects/${projectId}/pipelines?ref=master`, [
       pipelineFixture,
     ]);
     mockGitlabCall(
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
-      [dockerBuildJobFixture, jobFixture]
+      [dockerBuildJobFixture, jobFixture],
     );
     mockGitlabCall(
       `/projects/${projectId}/pipelines?ref=${releaseTagName}`,
-      []
+      [],
     );
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -602,13 +602,13 @@ describe('release > createRelease', () => {
         slackAuthor:
           '{"id":"slackUserId","profile":{"image_72":"image_72"},"real_name":"real_name"}',
         tagName: releaseTagName,
-      })
+      }),
     ).toEqual(true);
     expect(releaseCallMock.called).toEqual(true);
     expect(releaseCallMock.calledWith?.[1]).toEqual({
       body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
       headers: { 'Content-Type': 'application/json' },
-      method: 'post',
+      method: 'POST',
     });
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
@@ -708,7 +708,7 @@ describe('release > createRelease', () => {
           profile: { image_72: 'image_72' },
           real_name: 'real_name',
         },
-      })
+      }),
     );
 
     mockGitlabCall(`/projects/${projectId}/releases`, releaseFixture);
@@ -717,11 +717,11 @@ describe('release > createRelease', () => {
     ]);
     mockGitlabCall(
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
-      [{ ...dockerBuildJobFixture, status: 'running' }]
+      [{ ...dockerBuildJobFixture, status: 'running' }],
     );
     mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
-      tagFixture
+      tagFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/repository/commits?since=2017-07-26T09:08:54.000Z&per_page=100`,
@@ -741,11 +741,11 @@ describe('release > createRelease', () => {
           title: 'Sanitize for network graph',
           message: 'Sanitize for network graph',
         },
-      ]
+      ],
     );
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestFixture.iid}`,
-      mergeRequestFixture
+      mergeRequestFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
@@ -759,15 +759,15 @@ describe('release > createRelease', () => {
             'feat(great): implement another great feature\n\nJIRA: SPAR-158',
           title: 'feat(great): implement another great feature',
         },
-      ]
+      ],
     );
     mockGitlabCall(`/projects/${projectId}`, projectFixture);
 
     // When
-    const response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -783,11 +783,11 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     // Given
     const releaseCallMock = mockGitlabCall(
       `/projects/${projectId}/releases`,
-      releaseFixture
+      releaseFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
-      [dockerBuildJobFixture, jobFixture]
+      [dockerBuildJobFixture, jobFixture],
     );
     mockGitlabCall(`/projects/${projectId}/pipelines?ref=${releaseTagName}`, [
       pipelineFixture,
@@ -803,7 +803,7 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
       expect(releaseCallMock.calledWith?.[1]).toEqual({
         body: `{"description":"- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)\\n- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)","tag_name":"${releaseTagName}","ref":"${pipelineFixture.sha}"}`,
         headers: { 'Content-Type': 'application/json' },
-        method: 'post',
+        method: 'POST',
       });
       expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(3);
       expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
@@ -828,15 +828,15 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(await response.text()).toMatch(
-      'The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <https://github.com/ManoManoTech/homer/#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:'
+    expect(response.text).toMatch(
+      'The release command cannot be used in this channel because it has not been set up (or not correctly) in the config file, please follow the <https://github.com/ManoManoTech/homer/#configure-homer-to-release-a-gitlab-project|corresponding documentation> :homer-donut:',
     );
   });
 });

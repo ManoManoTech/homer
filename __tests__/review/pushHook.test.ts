@@ -1,3 +1,5 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
@@ -6,7 +8,6 @@ import {
   pushHookFixtureFeatureBranch,
 } from '../__fixtures__/hooks/pushHookFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
-import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -22,7 +23,7 @@ describe('review > pushHook', () => {
             real_name: `${name}.real`,
           },
         });
-      }
+      },
     );
   });
 
@@ -33,11 +34,11 @@ describe('review > pushHook', () => {
 
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests?source_branch=${branchName}`,
-      [mergeRequestFixture]
+      [mergeRequestFixture],
     );
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
-      [{ id: pushHookFixture.commits[1].id }]
+      [{ id: pushHookFixture.commits[1].id }],
     );
     await addReviewToChannel({
       channelId,
@@ -47,10 +48,10 @@ describe('review > pushHook', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: pushHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(pushHookFixture);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -96,11 +97,11 @@ describe('review > pushHook', () => {
 
     mockGitlabCall(
       `/projects/${pushHookFixtureFeatureBranch.project_id}/merge_requests?source_branch=${branchName}`,
-      [mergeRequestFixture]
+      [mergeRequestFixture],
     );
     mockGitlabCall(
       `/projects/${pushHookFixtureFeatureBranch.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
-      [{ id: pushHookFixtureFeatureBranch.commits[1].id }]
+      [{ id: pushHookFixtureFeatureBranch.commits[1].id }],
     );
     await addReviewToChannel({
       channelId,
@@ -110,10 +111,10 @@ describe('review > pushHook', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: pushHookFixtureFeatureBranch,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(pushHookFixtureFeatureBranch);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -154,10 +155,10 @@ describe('review > pushHook', () => {
 
   it('should answer no content status whether there is no commit', async () => {
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: { ...pushHookFixture, commits: [] },
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({ ...pushHookFixture, commits: [] });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -169,18 +170,18 @@ describe('review > pushHook', () => {
 
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests?source_branch=${branchName}`,
-      [mergeRequestFixture]
+      [mergeRequestFixture],
     );
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
-      []
+      [],
     );
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: pushHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(pushHookFixture);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

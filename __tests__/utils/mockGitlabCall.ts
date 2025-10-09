@@ -1,14 +1,12 @@
 import { CONFIG } from '@/config';
-import type { HttpCallMock } from '../../__mocks__/node-fetch';
+import type { HttpCallMock } from '@root/__mocks__/fetch-mock';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 
 export function mockGitlabCall(url: string, response: unknown): HttpCallMock {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { mockUrl } = require('node-fetch') as any;
-
   return mockUrl(
     `${CONFIG.gitlab.url}/api/v4${url}${
       url.includes('?') ? '&' : '?'
     }private_token=${CONFIG.gitlab.token}`,
-    { json: () => Promise.resolve(response) },
+    response,
   );
 }

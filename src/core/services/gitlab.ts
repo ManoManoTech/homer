@@ -1,5 +1,3 @@
-import type { RequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import { CONFIG } from '@/config';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import type { DataProject } from '@/core/typings/Data';
@@ -34,7 +32,7 @@ export async function cancelPipeline(
 ): Promise<void> {
   const response = await callAPI<any>(
     `/projects/${projectId}/pipelines/${pipelineId}/cancel`,
-    { method: 'post' },
+    { method: 'POST' },
   );
 
   if (response?.id === undefined) {
@@ -60,7 +58,7 @@ export async function createRelease(
   const response = await callAPI<any>(`/projects/${projectId}/releases`, {
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-    method: 'post',
+    method: 'POST',
   });
 
   if (response?.name === undefined) {
@@ -288,7 +286,7 @@ export async function rebaseMergeRequest(
 ): Promise<void> {
   const response = await callAPI<any>(
     `/projects/${projectId}/merge_requests/${mergeRequestIid}/rebase`,
-    { method: 'put' },
+    { method: 'PUT' },
   );
 
   if (response?.rebase_in_progress !== true) {
@@ -312,7 +310,7 @@ export async function runPipeline(
   const response = await callAPI<any>(`/projects/${projectId}/pipeline`, {
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-    method: 'post',
+    method: 'POST',
   });
 
   if (response?.created_at === undefined) {
@@ -426,7 +424,7 @@ export async function updateReleaseName(
     {
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-      method: 'put',
+      method: 'PUT',
     },
   );
 

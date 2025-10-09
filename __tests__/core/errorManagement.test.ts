@@ -1,3 +1,5 @@
+import request from 'supertest';
+import { app } from '@/app';
 import {
   GENERIC_ERROR_MESSAGE,
   HTTP_STATUS_NO_CONTENT,
@@ -7,7 +9,6 @@ import {
 import { addProjectToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -18,10 +19,10 @@ describe('core > errorManagement', () => {
       const body = { text: 0 };
 
       // When
-      await fetch('/api/v1/homer/command', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(logger.error).toHaveBeenCalled();
@@ -32,14 +33,14 @@ describe('core > errorManagement', () => {
       const body = { text: 0 };
 
       // When
-      const response = await fetch('/api/v1/homer/command', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      const response = await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
-      expect(await response.text()).toEqual(GENERIC_ERROR_MESSAGE);
+      expect(response.text).toEqual(GENERIC_ERROR_MESSAGE);
     });
 
     it('should send generic error message in case of internal error (headers sent)', async () => {
@@ -56,17 +57,17 @@ describe('core > errorManagement', () => {
       await addProjectToChannel({ channelId, projectId });
       mockGitlabCall(
         `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
-        []
+        [],
       );
       (slackBotWebClient.chat.postEphemeral as jest.Mock).mockRejectedValueOnce(
-        new Error()
+        new Error(),
       );
 
       // When
-      const response = await fetch('/api/v1/homer/command', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      const response = await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -92,20 +93,20 @@ describe('core > errorManagement', () => {
       await addProjectToChannel({ channelId, projectId });
       mockGitlabCall(
         `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
-        []
+        [],
       );
       (slackBotWebClient.chat.postEphemeral as jest.Mock).mockRejectedValueOnce(
-        new Error('channel_not_found')
+        new Error('channel_not_found'),
       );
       (slackBotWebClient.conversations.open as jest.Mock).mockResolvedValue({
         channel: { id: userChannelId },
       });
 
       // When
-      const response = await fetch('/api/v1/homer/command', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      const response = await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

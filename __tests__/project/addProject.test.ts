@@ -1,10 +1,11 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
-import * as nodeFetch from 'node-fetch';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { projectFixture } from '../__fixtures__/projectFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -23,10 +24,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${search}`, [projectFixture]);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -60,10 +61,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${path}`, [projectFixture]);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -97,10 +98,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects/${projectId}`, projectFixture);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -128,11 +129,11 @@ describe('project > addProject', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-    const json = (await response.json()) as any;
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+    const json = (await response.body) as any;
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -154,10 +155,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${search}`, []);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -182,10 +183,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects/${projectId}`, {});
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -215,10 +216,10 @@ describe('project > addProject', () => {
     ]);
 
     // When
-    let response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    let response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -258,15 +259,13 @@ describe('project > addProject', () => {
         user: { id: userId },
       }),
     };
-    const nodeFetchSpy = jest.spyOn(nodeFetch, 'default');
-    const { mockUrl } = (await import('node-fetch')) as any;
-    mockUrl(responseUrl, { json: Promise.resolve('') });
+    const mockCall = mockUrl(responseUrl, { json: Promise.resolve('') });
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -277,10 +276,7 @@ describe('project > addProject', () => {
         projectId: projectFixture.id,
       }),
     ).toEqual(true);
-    expect(nodeFetchSpy).toHaveBeenLastCalledWith(
-      responseUrl,
-      expect.anything(),
-    ); // Deletes ephemeral message
+    expect(mockCall.called).toBeTruthy(); // Deletes ephemeral message
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
       channel: channelId,
       text: expect.stringContaining(
@@ -288,7 +284,6 @@ describe('project > addProject', () => {
       ),
       user: userId,
     });
-    nodeFetchSpy.mockRestore();
   });
 
   it('should display threshold warning message when project is in too many channels', async () => {
@@ -319,10 +314,10 @@ describe('project > addProject', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;

@@ -1,13 +1,14 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
-import * as nodeFetch from 'node-fetch';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { reviewMessagePostFixture } from '../__fixtures__/reviewMessage';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
@@ -27,7 +28,7 @@ describe('review > addReview', () => {
             real_name: `${name}.real`,
           },
         });
-      }
+      },
     );
   });
 
@@ -49,29 +50,29 @@ describe('review > addReview', () => {
     });
     mockGitlabCall(
       `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
-      [mergeRequestFixture]
+      [mergeRequestFixture],
     );
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: mergeRequestDetailsFixture.iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
   });
 
@@ -94,24 +95,24 @@ describe('review > addReview', () => {
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: mergeRequestDetailsFixture.iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
   });
 
@@ -133,24 +134,24 @@ describe('review > addReview', () => {
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: mergeRequestDetailsFixture.iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
   });
 
@@ -165,11 +166,11 @@ describe('review > addReview', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-    const json = (await response.json()) as any;
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+    const json = (await response.body) as any;
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -192,14 +193,14 @@ describe('review > addReview', () => {
     await addProjectToChannel({ channelId, projectId });
     mockGitlabCall(
       `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
-      []
+      [],
     );
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -228,14 +229,14 @@ describe('review > addReview', () => {
     });
     mockGitlabCall(
       `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
-      [mergeRequestFixture, mergeRequestFixture]
+      [mergeRequestFixture, mergeRequestFixture],
     );
 
     // When
-    let response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    let response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -245,17 +246,17 @@ describe('review > addReview', () => {
         blocks: expect.any(Array),
         channel: channelId,
         user: userId,
-      })
+      }),
     );
 
     const block = (slackBotWebClient.chat.postEphemeral as jest.Mock).mock
       .calls[0][0].blocks[0] as SectionBlock | undefined;
 
     expect(block?.text?.text).toContain(
-      `Multiple merge requests match \`${search}\``
+      `Multiple merge requests match \`${search}\``,
     );
     expect(
-      (block?.accessory as StaticSelect | undefined)?.options
+      (block?.accessory as StaticSelect | undefined)?.options,
     ).toHaveLength(2);
 
     // Given
@@ -275,36 +276,33 @@ describe('review > addReview', () => {
         user: { id: userId },
       }),
     };
-    const nodeFetchSpy = jest.spyOn(nodeFetch, 'default');
-    const { mockUrl } = (await import('node-fetch')) as any;
-    mockUrl(responseUrl, { json: Promise.resolve('') });
+    mockUrl(responseUrl, '');
     mockBuildReviewMessageCalls();
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(nodeFetchSpy).toHaveBeenNthCalledWith(
+    expect(global.fetch).toHaveBeenNthCalledWith(
       2,
       responseUrl,
-      expect.anything()
+      expect.anything(),
     ); // Deletes ephemeral message
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
-    nodeFetchSpy.mockRestore();
   });
 });

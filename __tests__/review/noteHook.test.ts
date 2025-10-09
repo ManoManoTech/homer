@@ -1,12 +1,12 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
-import { noteHookFixture } from '../__fixtures__/hooks/noteHookFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { mergeRequestNoteHookFixture } from '../__fixtures__/mergeRequestNoteBody';
 import { reviewMessageUpdateFixture } from '../__fixtures__/reviewMessage';
 import { userDetailsFixture } from '../__fixtures__/userDetailsFixture';
-import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
@@ -27,7 +27,7 @@ describe('review > noteHook', () => {
             real_name: `${name}.real`,
           },
         });
-      }
+      },
     );
   });
 
@@ -44,15 +44,15 @@ describe('review > noteHook', () => {
     mockBuildReviewMessageCalls();
     mockGitlabCall(
       `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
-      userDetailsFixture
+      userDetailsFixture,
     );
     jest.useFakeTimers();
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: mergeRequestNoteHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(mergeRequestNoteHookFixture);
     jest.runAllTimers();
     jest.useRealTimers();
 
@@ -60,7 +60,7 @@ describe('review > noteHook', () => {
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
       1,
-      reviewMessageUpdateFixture
+      reviewMessageUpdateFixture,
     );
     await waitFor(() => {
       expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
@@ -110,24 +110,24 @@ describe('review > noteHook', () => {
     mockBuildReviewMessageCalls();
     mockGitlabCall(
       `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
-      userDetailsFixture
+      userDetailsFixture,
     );
     jest.useFakeTimers();
 
     // When
     await Promise.all([
-      fetch('/api/v1/homer/gitlab', {
-        body: mergeRequestNoteHookFixture,
-        headers: getGitlabHeaders(),
-      }),
-      fetch('/api/v1/homer/gitlab', {
-        body: mergeRequestNoteHookFixture,
-        headers: getGitlabHeaders(),
-      }),
-      fetch('/api/v1/homer/gitlab', {
-        body: mergeRequestNoteHookFixture,
-        headers: getGitlabHeaders(),
-      }),
+      request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture),
+      request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture),
+      request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture),
     ]);
     jest.runAllTimers();
     jest.useRealTimers();
@@ -193,10 +193,10 @@ This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1
 
   it('should answer no content status whether comment is not on a merge request', async () => {
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: noteHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(mergeRequestNoteHookFixture);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -204,10 +204,10 @@ This MR needs work.\n<http://example.com/gitlab-org/gitlab-test/merge_requests/1
 
   it('should answer no content status whether no related review is found', async () => {
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: mergeRequestNoteHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(mergeRequestNoteHookFixture);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
