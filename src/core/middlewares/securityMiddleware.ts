@@ -1,10 +1,10 @@
 import crypto from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
+import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
-const GITLAB_SECRET = getEnvVariable('GITLAB_SECRET');
-const SLACK_SIGNING_SECRET = getEnvVariable('SLACK_SIGNING_SECRET');
+const GITLAB_SECRET = CONFIG.gitlab.secret;
+const SLACK_SIGNING_SECRET = CONFIG.slack.signingSecret;
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
 
 /**
@@ -24,7 +24,7 @@ function isValidGitlabRequest(req: Request): boolean {
 
     if (projectPath) {
       logger.error(
-        `Gitlab request received with wrong secret from '${projectPath}'`
+        `Gitlab request received with wrong secret from '${projectPath}'`,
       );
     }
     return false;
@@ -75,7 +75,7 @@ function isValidSlackRequest(req: Request): boolean {
 export function securityMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   if (!isValidGitlabRequest(req) && !isValidSlackRequest(req)) {
     logger.debug('Unauthorized request received');

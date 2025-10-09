@@ -5,6 +5,7 @@ import {
   type Model,
   type WhereOptions,
 } from 'sequelize';
+import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
 import type {
   DatabaseEntry,
@@ -13,20 +14,19 @@ import type {
   DataReleaseInternal,
   DataReview,
 } from '@/core/typings/Data';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
 const REVIEW_LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 
 const sequelize = new Sequelize({
-  database: getEnvVariable('POSTGRES_DATABASE_NAME'),
+  database: CONFIG.postgres.databaseName,
   dialect: 'postgres',
-  host: getEnvVariable('POSTGRES_HOST'),
+  host: CONFIG.postgres.host,
   logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
-  password: getEnvVariable('POSTGRES_PASSWORD'),
-  port: Number(getEnvVariable('POSTGRES_PORT')),
-  username: getEnvVariable('POSTGRES_USER'),
+  password: CONFIG.postgres.password,
+  port: CONFIG.postgres.port,
+  username: CONFIG.postgres.username,
 });
 
 const Project = sequelize.define<Model<DataProject>>('Project', {
@@ -64,7 +64,7 @@ export async function cleanOldEntries(): Promise<void> {
 }
 
 export async function cleanReleases(
-  filter: WhereOptions<DataReleaseInternal>
+  filter: WhereOptions<DataReleaseInternal>,
 ): Promise<void> {
   await Release.destroy({ where: filter });
 }
@@ -84,7 +84,6 @@ export async function addProjectToChannel({
   });
 }
 
-// Useless change
 export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
@@ -103,7 +102,7 @@ export async function addReviewToChannel({
 }
 
 export async function createRelease(
-  release: DataRelease
+  release: DataRelease,
 ): Promise<DataRelease> {
   const [releaseModel] = await Release.findOrCreate({
     where: {
@@ -119,7 +118,7 @@ export async function createRelease(
 
 export async function getProjectRelease(
   projectId: number,
-  tagName: string
+  tagName: string,
 ): Promise<DataRelease | undefined> {
   const releaseModel = await Release.findOne({
     where: { projectId, tagName },
@@ -131,7 +130,7 @@ export async function getProjectRelease(
 }
 
 export async function getProjectReleases(
-  projectId: number
+  projectId: number,
 ): Promise<DataRelease[]> {
   return (
     await Release.findAll({
@@ -141,7 +140,7 @@ export async function getProjectReleases(
 }
 
 export async function getProjectsByChannelId(
-  channelId: string
+  channelId: string,
 ): Promise<DataProject[]> {
   const projects = await Project.findAll({
     where: { channelId },
@@ -150,7 +149,7 @@ export async function getProjectsByChannelId(
 }
 
 export async function getReleases(
-  filter?: WhereOptions<DataReleaseInternal>
+  filter?: WhereOptions<DataReleaseInternal>,
 ): Promise<DataRelease[]> {
   return (
     await Release.findAll({ order: [['createdAt', 'DESC']], where: filter })
@@ -158,7 +157,7 @@ export async function getReleases(
 }
 
 export async function getReviewsByChannelId(
-  channelId: string
+  channelId: string,
 ): Promise<DataReview[]> {
   const reviews = await Review.findAll({
     where: { channelId },
@@ -168,7 +167,7 @@ export async function getReviewsByChannelId(
 
 export async function getReviewsByMergeRequestIid(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<DataReview[]> {
   const reviews = await Review.findAll({
     where: { mergeRequestIid, projectId },
@@ -177,7 +176,7 @@ export async function getReviewsByMergeRequestIid(
 }
 
 export async function getChannelsByProjectId(
-  projectId: number
+  projectId: number,
 ): Promise<DataProject[]> {
   const projects = await Project.findAll({
     where: { projectId },
@@ -185,16 +184,24 @@ export async function getChannelsByProjectId(
   return projects.map(toJSON);
 }
 
+export async function countChannelsByProjectId(
+  projectId: number,
+): Promise<number> {
+  return Project.count({
+    where: { projectId },
+  });
+}
+
 export async function hasRelease(
   projectId: number,
-  tagName: string
+  tagName: string,
 ): Promise<boolean> {
   return (await getProjectRelease(projectId, tagName)) !== undefined;
 }
 
 export async function removeProjectFromChannel(
   projectId: number,
-  channelId: string
+  channelId: string,
 ) {
   await Project.destroy({
     where: { channelId, projectId },
@@ -203,7 +210,7 @@ export async function removeProjectFromChannel(
 
 export async function removeRelease(
   projectId: number,
-  tagName: string
+  tagName: string,
 ): Promise<void> {
   await Release.destroy({
     where: { projectId, tagName },
@@ -217,7 +224,7 @@ export async function removeReview(ts: string): Promise<void> {
 }
 
 export async function removeReviewsByMergeRequestIid(
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<void> {
   await Review.destroy({
     where: { mergeRequestIid },
@@ -227,7 +234,7 @@ export async function removeReviewsByMergeRequestIid(
 export async function updateRelease(
   projectId: number,
   tagName: string,
-  updatedReleaseDataGetter: (release: DataRelease) => Partial<DataRelease>
+  updatedReleaseDataGetter: (release: DataRelease) => Partial<DataRelease>,
 ): Promise<DataRelease> {
   // The transaction prevents race conditions when multiple calls to updateRelease are made at the
   // same time.
@@ -250,21 +257,21 @@ export async function updateRelease(
           ...release,
           ...updatedReleaseData,
           failedDeployments: JSON.stringify(
-            updatedReleaseData.failedDeployments ?? release.failedDeployments
+            updatedReleaseData.failedDeployments ?? release.failedDeployments,
           ),
           startedDeployments: JSON.stringify(
-            updatedReleaseData.startedDeployments ?? release.startedDeployments
+            updatedReleaseData.startedDeployments ?? release.startedDeployments,
           ),
           slackAuthor: JSON.stringify(
-            updatedReleaseData.slackAuthor ?? release.slackAuthor
+            updatedReleaseData.slackAuthor ?? release.slackAuthor,
           ),
           successfulDeployments: JSON.stringify(
             updatedReleaseData.successfulDeployments ??
-              release.successfulDeployments
+              release.successfulDeployments,
           ),
         },
-        { transaction }
-      )
+        { transaction },
+      ),
     );
   });
 }
@@ -282,7 +289,7 @@ function formatRelease(releaseModel: Model<DataReleaseInternal>): DataRelease {
 }
 
 function toJSON<DataType extends object>(
-  model: Model<DataType>
+  model: Model<DataType>,
 ): DatabaseEntry<DataType> {
   return model.toJSON();
 }

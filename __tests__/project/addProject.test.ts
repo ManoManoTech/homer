@@ -1,6 +1,7 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
 import * as nodeFetch from 'node-fetch';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
+import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { fetch } from '../utils/fetch';
@@ -34,12 +35,12 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -71,12 +72,12 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -105,12 +106,12 @@ describe('project > addProject', () => {
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(await hasModelEntry('Project', { channelId, projectId })).toEqual(
-      true
+      true,
     );
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -191,7 +192,7 @@ describe('project > addProject', () => {
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `No project found with id \`${projectId}\``
+        `No project found with id \`${projectId}\``,
       ),
       user: userId,
     });
@@ -227,17 +228,17 @@ describe('project > addProject', () => {
         blocks: expect.arrayContaining([]),
         channel: channelId,
         user: userId,
-      })
+      }),
     );
 
     const block = (slackBotWebClient.chat.postEphemeral as jest.Mock).mock
       .calls[0][0].blocks[0] as SectionBlock | undefined;
 
     expect(block?.text?.text).toContain(
-      `Multiple projects match \`${search}\``
+      `Multiple projects match \`${search}\``,
     );
     expect(
-      (block?.accessory as StaticSelect | undefined)?.options
+      (block?.accessory as StaticSelect | undefined)?.options,
     ).toHaveLength(2);
 
     // Given
@@ -274,19 +275,84 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
     expect(nodeFetchSpy).toHaveBeenLastCalledWith(
       responseUrl,
-      expect.anything()
+      expect.anything(),
     ); // Deletes ephemeral message
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
     nodeFetchSpy.mockRestore();
+  });
+
+  it('should display threshold warning message when project is in too many channels', async () => {
+    // Given
+    const channelId = 'channelId';
+    const projectId = projectFixture.id;
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: `project add ${projectId}`,
+      user_id: userId,
+    };
+
+    mockGitlabCall(`/projects/${projectId}`, projectFixture);
+
+    // The project is already added to 3 channels
+    await addProjectToChannel({
+      channelId: `${channelId}1`,
+      projectId: projectFixture.id,
+    });
+    await addProjectToChannel({
+      channelId: `${channelId}2`,
+      projectId: projectFixture.id,
+    });
+    await addProjectToChannel({
+      channelId: `${channelId}3`,
+      projectId: projectFixture.id,
+    });
+
+    // When
+    const response = await fetch('/api/v1/homer/command', {
+      body,
+      headers: getSlackHeaders(body),
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(await hasModelEntry('Project', { channelId, projectId })).toEqual(
+      true,
+    );
+
+    // Verify success message was sent
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
+      channel: channelId,
+      text: expect.stringContaining(
+        `\`${projectFixture.path_with_namespace}\` added`,
+      ),
+      user: userId,
+    });
+
+    // Verify threshold warning message was sent
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
+      channel: channelId,
+      text: expect.stringContaining(
+        `D'oh! I've added \`${projectFixture.path_with_namespace}\` to this channel, but my brain is starting to hurt.`,
+      ),
+      user: userId,
+    });
+
+    // Verify the warning message contains the correct information
+    const warningMessage = (slackBotWebClient.chat.postEphemeral as jest.Mock)
+      .mock.calls[1][0].text;
+    expect(warningMessage).toContain(`This project is now in 4 channels`);
+    expect(warningMessage).toContain(`I've disabled automatic merge requests`);
   });
 });

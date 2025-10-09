@@ -1,5 +1,5 @@
 import type { ChatPostMessageArguments } from '@slack/web-api';
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
+import { CONFIG } from '@/config';
 
 export function buildHelpMessage(channelId: string): ChatPostMessageArguments {
   return {
@@ -15,9 +15,7 @@ Here are the available commands:
 - /homer review list - List ongoing reviews shared in a channel.
 - /homer release - Create a release for configured Gitlab project in a channel.
 
-Don't hesitate to join me on #${getEnvVariable(
-      'SLACK_SUPPORT_CHANNEL_NAME'
-    )} to take a beer!`,
+Don't hesitate to join me on #${CONFIG.slack.supportChannel.name} to take a beer!`,
     blocks: [
       {
         type: 'section',
@@ -34,9 +32,7 @@ Here are the available commands:
 •   \`/homer review list\` List ongoing reviews shared in a channel.
 •   \`/homer release\` Create a release for configured Gitlab project in a channel.
 
-Don't hesitate to join me on <#${getEnvVariable(
-            'SLACK_SUPPORT_CHANNEL_ID'
-          )}> to take a :beer:!`,
+Don't hesitate to join me on <#${CONFIG.slack.supportChannel.id}> to take a :beer:!`,
         },
       },
     ],

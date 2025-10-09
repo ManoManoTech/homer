@@ -1,4 +1,4 @@
-import { getEnvVariable } from '@/core/utils/getEnvVariable';
+import { CONFIG } from '@/config';
 import type { HttpCallMock } from '../../__mocks__/node-fetch';
 
 export function mockGitlabCall(url: string, response: unknown): HttpCallMock {
@@ -6,9 +6,9 @@ export function mockGitlabCall(url: string, response: unknown): HttpCallMock {
   const { mockUrl } = require('node-fetch') as any;
 
   return mockUrl(
-    `${getEnvVariable('GITLAB_URL')}/api/v4${url}${
+    `${CONFIG.gitlab.url}/api/v4${url}${
       url.includes('?') ? '&' : '?'
-    }private_token=${process.env.GITLAB_TOKEN}`,
+    }private_token=${CONFIG.gitlab.token}`,
     { json: () => Promise.resolve(response) },
   );
 }
