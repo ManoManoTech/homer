@@ -21,7 +21,7 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@slack/web-api": "7.10.0",
+    "@slack/web-api": "7.11.0",
     "ajv": "^8.17.1",
     "dayjs": "1.11.18",
     "dd-trace": "5.68.0",
