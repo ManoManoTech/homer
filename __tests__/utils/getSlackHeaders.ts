@@ -3,7 +3,7 @@ import { CONFIG } from '@/config';
 
 export function getSlackHeaders(
   body: Record<string, unknown> = {},
-  timestamp: number = Date.now()
+  timestamp: number = Date.now(),
 ): Record<string, string> {
   const requestTimestamp = Math.floor(timestamp / 1000).toString();
   const signature = `v0=${crypto

@@ -1,5 +1,6 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 
 describe('help', () => {
@@ -14,17 +15,17 @@ describe('help', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-    const slackMessage = await response.json();
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+    const slackMessage = await response.body;
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackMessage.text).toContain('Here are the available commands:');
     expect(slackMessage.text).toContain(
-      "Don't hesitate to join me on #support-homer to take a beer!"
+      "Don't hesitate to join me on #support-homer to take a beer!",
     );
   });
 });

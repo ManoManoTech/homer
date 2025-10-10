@@ -84,7 +84,6 @@ request:
 
 - Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
   `Developer` role in your project:
-
   - Go to the `Projects members` page:
 
     ![Members menu](docs/assets/gitlab/members-menu.png)
@@ -169,7 +168,7 @@ Slack organisation.
 Be sure to have all those installed:
 
 - [Docker Compose](https://docs.docker.com/compose/install/).
-- [Node.js@20](https://nodejs.org/en/). You can use a version manager like
+- [Node.js@24](https://nodejs.org/en/). You can use a version manager like
   [nvm](https://github.com/nvm-sh/nvm).
 - [Yarn@1](https://classic.yarnpkg.com/lang/en/).
 
@@ -197,7 +196,6 @@ Create a `.env` file containing the following variables:
   This token allows Homer to use the Gitlab API.
 
 - `SLACK_SIGNING_SECRET`
-
   - Go to the [Slack apps page](https://api.slack.com/apps/) of your
     organisation.
   - Click on your app.
@@ -208,7 +206,6 @@ Create a `.env` file containing the following variables:
   This secret allows Homer to verify that Slack→Homer calls are authentic.
 
 - `SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN`
-
   - Go to the [Slack apps page](https://api.slack.com/apps/) of your
     organisation.
   - Click on your app.

@@ -1,9 +1,10 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { pipelineFixture } from '../__fixtures__/pipelineFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -36,21 +37,21 @@ describe('review > createPipeline', () => {
 
     const pipelineCallMock = mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/pipeline`,
-      pipelineFixture
+      pipelineFixture,
     );
 
     // When
-    const response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(pipelineCallMock.calledWith?.[1]).toEqual(
       expect.objectContaining({
         body: JSON.stringify({ ref: 'test1', variables: [] }),
-      })
+      }),
     );
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
@@ -87,14 +88,14 @@ describe('review > createPipeline', () => {
 
     const pipelineCallMock = mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/pipeline`,
-      pipelineFixture
+      pipelineFixture,
     );
 
     // When
-    const response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -106,7 +107,7 @@ describe('review > createPipeline', () => {
             { key: 'AUTO_DEPLOY', value: 'fr-b2c', variable_type: 'env_var' },
           ],
         }),
-      })
+      }),
     );
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,

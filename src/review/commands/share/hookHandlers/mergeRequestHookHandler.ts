@@ -35,7 +35,7 @@ interface ThreadMessage {
 
 export async function mergeRequestHookHandler(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   const {
     object_attributes: { detailed_merge_status, action, iid },
@@ -53,11 +53,11 @@ export async function mergeRequestHookHandler(
 
   if (reviews.length === 0) {
     const hasReviewLabel = labels.some(
-      (label: { title: string }) => label.title === LABELS.REVIEW
+      (label: { title: string }) => label.title === LABELS.REVIEW,
     );
     const isMergeable =
       labels.some(
-        (label: { title: string }) => label.title === LABELS.MERGEABLE
+        (label: { title: string }) => label.title === LABELS.MERGEABLE,
       ) && ['mergeable', 'not_approved'].includes(detailed_merge_status);
 
     if (hasReviewLabel || isMergeable) {
@@ -83,7 +83,7 @@ export async function mergeRequestHookHandler(
     reviews.map(async ({ channelId, ts }) => {
       const updates = [
         buildReviewMessage(channelId, projectId, iid, ts).then(
-          slackBotWebClient.chat.update
+          slackBotWebClient.chat.update,
         ),
         threadMessage &&
           slackBotWebClient.chat.postMessage({
@@ -93,7 +93,7 @@ export async function mergeRequestHookHandler(
           }),
       ].filter(Boolean);
       return Promise.all(updates);
-    })
+    }),
   );
 
   if (['close', 'merge'].includes(action)) {
@@ -116,7 +116,7 @@ async function handleNewReview(projectId: number, iid: number): Promise<void> {
   await Promise.all(
     configuredChannels.map(async ({ channelId }) => {
       const { ts } = await slackBotWebClient.chat.postMessage(
-        await buildReviewMessage(channelId, projectId, iid)
+        await buildReviewMessage(channelId, projectId, iid),
       );
       await addReviewToChannel({
         channelId,
@@ -124,13 +124,13 @@ async function handleNewReview(projectId: number, iid: number): Promise<void> {
         projectId,
         ts: ts as string,
       });
-    })
+    }),
   );
 }
 
 function getThreadMessage(
   action: string,
-  userName: string
+  userName: string,
 ): ThreadMessage | undefined {
   const messages: Record<string, ThreadMessage> = {
     approved: {

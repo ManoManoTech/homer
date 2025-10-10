@@ -48,7 +48,6 @@ export async function errorMiddleware(
 
       await slackBotWebClient.chat.postMessage({
         channel: channel.id,
-        user: user_id,
         text: errorMessage,
       });
     } else {

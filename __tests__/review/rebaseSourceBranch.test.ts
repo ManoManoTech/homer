@@ -1,8 +1,9 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -35,14 +36,14 @@ describe('review > rebaseSourceBranch', () => {
 
     mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/rebase`,
-      { rebase_in_progress: true }
+      { rebase_in_progress: true },
     );
 
     // When
-    const response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);

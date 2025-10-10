@@ -1,3 +1,5 @@
+import { clearFetchMocks, createFetchMock } from '@root/__mocks__/fetch-mock';
+
 jest.mock('@slack/web-api', () => {
   const chatDelete = jest.fn();
   const info = jest.fn();
@@ -27,7 +29,6 @@ jest.mock('@slack/web-api', () => {
   };
 });
 jest.mock('dd-trace', () => ({}));
-jest.mock('node-fetch');
 jest.mock('sequelize');
 
 // ⚠️ The pino logger is not compatible with Jest, please use the console
@@ -43,16 +44,19 @@ jest.mock('@/core/services/logger', () => ({
 
 let stopServer = () => Promise.resolve();
 
+const originalFetch = global.fetch;
+
 beforeAll(async () => {
   const { start } = await import('@/start');
   stopServer = await start();
 });
 
 beforeEach(async () => {
-  const { clearNodeFetchMock } = (await import('node-fetch')) as any;
   const { clearSequelizeMock } = (await import('sequelize')) as any;
-  clearNodeFetchMock();
   clearSequelizeMock();
+
+  clearFetchMocks();
+  global.fetch = jest.fn().mockImplementation(createFetchMock(originalFetch));
 });
 
 afterAll(async () => {

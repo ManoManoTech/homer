@@ -23,7 +23,7 @@ export const CONFIG = {
       name: getEnvVariable('SLACK_SUPPORT_CHANNEL_NAME'),
     },
     channelNotificationThreshold: Number(
-      getEnvVariable('SLACK_CHANNEL_NOTIFICATION_THRESHOLD', '3')
+      getEnvVariable('SLACK_CHANNEL_NOTIFICATION_THRESHOLD', '3'),
     ),
   },
   ticketManagementUrlPattern: getEnvVariable('TICKET_MANAGEMENT_URL_PATTERN'),

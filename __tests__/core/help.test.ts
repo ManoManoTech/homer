@@ -1,5 +1,6 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 
 describe('core > help', () => {
@@ -13,11 +14,11 @@ describe('core > help', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-    const json = (await response.json()) as any;
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+    const json = (await response.body) as any;
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);

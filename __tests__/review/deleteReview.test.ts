@@ -1,7 +1,8 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 
 describe('review > deleteReview', () => {
@@ -27,14 +28,14 @@ describe('review > deleteReview', () => {
 
     await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
     (slackBotWebClient.chat.delete as jest.Mock).mockResolvedValueOnce(
-      undefined
+      undefined,
     );
 
     // When
-    const response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -44,7 +45,7 @@ describe('review > deleteReview', () => {
       ts,
     });
     expect(
-      await hasModelEntry('Review', { channelId, mergeRequestIid, ts })
+      await hasModelEntry('Review', { channelId, mergeRequestIid, ts }),
     ).toEqual(false);
   });
 });
