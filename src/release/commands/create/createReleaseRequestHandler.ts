@@ -21,7 +21,7 @@ export async function createReleaseRequestHandler(
     view: await buildReleaseModalLoadingView(),
   });
 
-  if (loadingView.view) {
+  if (loadingView.view && loadingView.view.id) {
     await slackBotWebClient.views.update({
       view_id: loadingView.view.id,
       view: await buildReleaseModalView({ channelId: channel_id }),

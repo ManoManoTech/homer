@@ -1,3 +1,5 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
@@ -9,7 +11,6 @@ import {
   reviewMessagePostFixture,
   reviewMessageUpdateFixture,
 } from '../__fixtures__/reviewMessage';
-import { fetch } from '../utils/fetch';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
@@ -26,7 +27,7 @@ describe('review > mergeRequestHook', () => {
             real_name: `${name}.real`,
           },
         });
-      }
+      },
     );
     (slackBotWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
       ts: 'ts',
@@ -66,22 +67,22 @@ describe('review > mergeRequestHook', () => {
       mockBuildReviewMessageCalls();
 
       // When
-      const response = await fetch('/api/v1/homer/gitlab', {
-        body: {
+      const response = await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send({
           ...mergeRequestHookFixture,
           object_attributes: {
             ...object_attributes,
             action,
           },
-        },
-        headers: getGitlabHeaders(),
-      });
+        });
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
       expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
         1,
-        reviewMessageUpdateFixture
+        reviewMessageUpdateFixture,
       );
       expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
         channel: channelId,
@@ -89,7 +90,7 @@ describe('review > mergeRequestHook', () => {
         text,
         thread_ts: 'ts',
       });
-    }
+    },
   );
 
   it('should display closed status in review message', async () => {
@@ -111,22 +112,22 @@ describe('review > mergeRequestHook', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         object_attributes: {
           ...object_attributes,
           action: 'merge',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(
       (slackBotWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]
-        ?.blocks?.[0]?.text?.text
+        ?.blocks?.[0]?.text?.text,
     ).toContain('~merge request title~ (closed)');
   });
 
@@ -149,22 +150,22 @@ describe('review > mergeRequestHook', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         object_attributes: {
           ...object_attributes,
           action: 'merge',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(
       (slackBotWebClient.chat.update as jest.Mock).mock.calls[0]?.[0]
-        ?.blocks?.[0]?.text?.text
+        ?.blocks?.[0]?.text?.text,
     ).toContain('~merge request title~ (merged)');
   });
 
@@ -182,32 +183,32 @@ describe('review > mergeRequestHook', () => {
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         object_attributes: {
           ...object_attributes,
           action: 'update',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
       1,
-      reviewMessageUpdateFixture
+      reviewMessageUpdateFixture,
     );
     expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
   it('should answer no content status whether the action is not managed', async () => {
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: mergeRequestHookFixture,
-      headers: getGitlabHeaders(),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send(mergeRequestHookFixture);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -218,16 +219,16 @@ describe('review > mergeRequestHook', () => {
     const { object_attributes } = mergeRequestHookFixture;
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         object_attributes: {
           ...object_attributes,
           action: 'approved',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -244,20 +245,20 @@ describe('review > mergeRequestHook', () => {
       ts: 'ts',
     });
     (slackBotWebClient.users.lookupByEmail as jest.Mock).mockResolvedValue(
-      undefined
+      undefined,
     );
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         object_attributes: {
           ...object_attributes,
           action: 'approved',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -276,31 +277,31 @@ describe('review > mergeRequestHook', () => {
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         labels: [{ title: 'homer-review' }],
         object_attributes: {
           ...object_attributes,
           action: 'open',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: object_attributes.iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
   });
 
@@ -309,17 +310,17 @@ describe('review > mergeRequestHook', () => {
     const { object_attributes } = mergeRequestHookFixture;
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         labels: [{ title: 'homer-review' }],
         object_attributes: {
           ...object_attributes,
           action: 'open',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -341,8 +342,10 @@ describe('review > mergeRequestHook', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         labels: [{ title: 'homer-mergeable' }],
         object_attributes: {
@@ -350,23 +353,21 @@ describe('review > mergeRequestHook', () => {
           detailed_merge_status: 'mergeable',
           action: 'update',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
       1,
-      reviewMessagePostFixture
+      reviewMessagePostFixture,
     );
     expect(
       await hasModelEntry('Review', {
         channelId,
         mergeRequestIid: object_attributes.iid,
         ts: 'ts',
-      })
+      }),
     ).toEqual(true);
   });
 
@@ -383,17 +384,17 @@ describe('review > mergeRequestHook', () => {
     mockBuildReviewMessageCalls();
 
     // When
-    const response = await fetch('/api/v1/homer/gitlab', {
-      body: {
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
         ...mergeRequestHookFixture,
         labels: [{ title: 'homer-mergeable' }],
         object_attributes: {
           ...object_attributes,
           action: 'update',
         },
-      },
-      headers: getGitlabHeaders(),
-    });
+      });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

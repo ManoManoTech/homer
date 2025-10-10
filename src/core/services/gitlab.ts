@@ -1,5 +1,3 @@
-import type { RequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import { CONFIG } from '@/config';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import type { DataProject } from '@/core/typings/Data';
@@ -30,18 +28,18 @@ const MERGE_REQUEST_URL_REGEX = /^http.*\/merge_requests\/(\d+)$/;
 
 export async function cancelPipeline(
   projectId: number,
-  pipelineId: number
+  pipelineId: number,
 ): Promise<void> {
   const response = await callAPI<any>(
     `/projects/${projectId}/pipelines/${pipelineId}/cancel`,
-    { method: 'post' }
+    { method: 'POST' },
   );
 
   if (response?.id === undefined) {
     throw new Error(
       `Unable to cancel the pipeline ${pipelineId} of project ${projectId}: ${JSON.stringify(
-        response
-      )}`
+        response,
+      )}`,
     );
   }
 }
@@ -50,7 +48,7 @@ export async function createRelease(
   projectId: number,
   commitId: string,
   tagName: string,
-  description: string
+  description: string,
 ): Promise<void> {
   const body = {
     description,
@@ -60,7 +58,7 @@ export async function createRelease(
   const response = await callAPI<any>(`/projects/${projectId}/releases`, {
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-    method: 'post',
+    method: 'POST',
   });
 
   if (response?.name === undefined) {
@@ -69,32 +67,32 @@ export async function createRelease(
         {
           body,
           response,
-        }
-      )}`
+        },
+      )}`,
     );
   }
 }
 
 export async function fetchBranchPipelines(
   projectId: number,
-  branchName: string
+  branchName: string,
 ): Promise<GitlabPipeline[]> {
   return callAPI(`/projects/${projectId}/pipelines?ref=${branchName}`);
 }
 
 export async function fetchDeploymentById(
   projectId: number,
-  id: number
+  id: number,
 ): Promise<GitlabDeployment> {
   const deployment = await callAPI<GitlabDeployment>(
-    `/projects/${projectId}/deployments/${id}`
+    `/projects/${projectId}/deployments/${id}`,
   );
 
   if (deployment.id === undefined) {
     throw new Error(
       `Unable to find deployment with id ${id} on project ${projectId}: ${JSON.stringify(
-        deployment
-      )}`
+        deployment,
+      )}`,
     );
   }
   return deployment;
@@ -102,37 +100,37 @@ export async function fetchDeploymentById(
 
 export async function fetchMergeRequestApprovers(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<GitlabUser[]> {
   return (
     await callAPI<GitlabApprovalsResponse>(
-      `/projects/${projectId}/merge_requests/${mergeRequestIid}/approvals`
+      `/projects/${projectId}/merge_requests/${mergeRequestIid}/approvals`,
     )
   ).approved_by.map(({ user }) => user);
 }
 
 export async function fetchMergeRequestCommits(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<GitlabCommit[]> {
   return callAPI(
-    `/projects/${projectId}/merge_requests/${mergeRequestIid}/commits?per_page=100`
+    `/projects/${projectId}/merge_requests/${mergeRequestIid}/commits?per_page=100`,
   );
 }
 
 export async function fetchMergeRequestByIid(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<GitlabMergeRequestDetails> {
   const mergeRequest = await callAPI<GitlabMergeRequestDetails>(
-    `/projects/${projectId}/merge_requests/${mergeRequestIid}`
+    `/projects/${projectId}/merge_requests/${mergeRequestIid}`,
   );
 
   if (mergeRequest.iid === undefined) {
     throw new Error(
       `Unable to find merge request with iid ${mergeRequestIid}: ${JSON.stringify(
-        mergeRequest
-      )}`
+        mergeRequest,
+      )}`,
     );
   }
   return mergeRequest;
@@ -140,26 +138,26 @@ export async function fetchMergeRequestByIid(
 
 export async function fetchMergeRequestsByBranchName(
   projectId: number,
-  branchName: string
+  branchName: string,
 ): Promise<GitlabMergeRequest[]> {
   return callAPI(
-    `/projects/${projectId}/merge_requests?source_branch=${branchName}`
+    `/projects/${projectId}/merge_requests?source_branch=${branchName}`,
   );
 }
 
 export async function fetchPipelineBridges(
   projectId: number,
-  pipelineId: number
+  pipelineId: number,
 ): Promise<GitlabBridge[]> {
   const bridges = await callAPI(
-    `/projects/${projectId}/pipelines/${pipelineId}/bridges?per_page=100`
+    `/projects/${projectId}/pipelines/${pipelineId}/bridges?per_page=100`,
   );
 
   if (!Array.isArray(bridges)) {
     throw new Error(
       `Unable to get bridges for pipeline ${pipelineId} of project ${projectId}: ${JSON.stringify(
-        bridges
-      )}`
+        bridges,
+      )}`,
     );
   }
   return bridges;
@@ -167,15 +165,15 @@ export async function fetchPipelineBridges(
 
 export async function fetchPipelinesByRef(
   projectId: number,
-  ref: string
+  ref: string,
 ): Promise<GitlabPipeline[]> {
   const pipelines = await callAPI<GitlabProjectDetails>(
-    `/projects/${projectId}/pipelines?ref=${ref}`
+    `/projects/${projectId}/pipelines?ref=${ref}`,
   );
 
   if (!Array.isArray(pipelines)) {
     throw new Error(
-      `Unable to find pipelines with ref ${ref}: ${JSON.stringify(pipelines)}`
+      `Unable to find pipelines with ref ${ref}: ${JSON.stringify(pipelines)}`,
     );
   }
   return pipelines;
@@ -183,21 +181,21 @@ export async function fetchPipelinesByRef(
 
 export async function fetchPipelineJobs(
   projectId: number,
-  pipelineId: number
+  pipelineId: number,
 ): Promise<GitlabJob[]> {
   return callAPI(
-    `/projects/${projectId}/pipelines/${pipelineId}/jobs?per_page=100`
+    `/projects/${projectId}/pipelines/${pipelineId}/jobs?per_page=100`,
   );
 }
 
 export async function fetchProjectById(
-  id: number
+  id: number,
 ): Promise<GitlabProjectDetails> {
   const project = await callAPI<GitlabProjectDetails>(`/projects/${id}`);
 
   if (project.id === undefined) {
     throw new Error(
-      `Unable to find project with id ${id}: ${JSON.stringify(project)}`
+      `Unable to find project with id ${id}: ${JSON.stringify(project)}`,
     );
   }
   return project;
@@ -205,34 +203,34 @@ export async function fetchProjectById(
 
 export async function fetchProjectCommit(
   projectId: number,
-  commitId: string
+  commitId: string,
 ): Promise<GitlabCommit> {
   return callAPI(`/projects/${projectId}/repository/commits/${commitId}`);
 }
 
 export async function fetchProjectCommits(
-  projectId: number
+  projectId: number,
 ): Promise<GitlabCommit[]> {
   return callAPI(`/projects/${projectId}/repository/commits?per_page=100`);
 }
 
 export async function fetchProjectCommitsSince(
   projectId: number,
-  since: string
+  since: string,
 ): Promise<GitlabCommit[]> {
   return callAPI(
     `/projects/${projectId}/repository/commits?since=${new Date(
-      since
-    ).toISOString()}&per_page=100`
+      since,
+    ).toISOString()}&per_page=100`,
   );
 }
 
 export async function fetchProjectTag(
   projectId: number,
-  tagName: string
+  tagName: string,
 ): Promise<GitlabTag> {
   const tag = await callAPI<GitlabTag>(
-    `/projects/${projectId}/repository/tags/${tagName}`
+    `/projects/${projectId}/repository/tags/${tagName}`,
   );
 
   if (tag.name === undefined) {
@@ -242,24 +240,24 @@ export async function fetchProjectTag(
 }
 
 export async function fetchProjectTags(
-  projectId: number
+  projectId: number,
 ): Promise<GitlabTag[]> {
   return callAPI(`/projects/${projectId}/repository/tags?per_page=100`);
 }
 
 export async function fetchReleaseByTagName(
   projectId: number,
-  tagName: string
+  tagName: string,
 ): Promise<GitlabRelease> {
   const release = await callAPI<GitlabRelease>(
-    `/projects/${projectId}/releases/${tagName}`
+    `/projects/${projectId}/releases/${tagName}`,
   );
 
   if (release.tag_name === undefined) {
     throw new Error(
       `Unable to find release with tag name ${tagName}: ${JSON.stringify(
-        release
-      )}`
+        release,
+      )}`,
     );
   }
   return release;
@@ -267,35 +265,35 @@ export async function fetchReleaseByTagName(
 
 export async function fetchReviewers(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<GitlabUser[]> {
   return (
     await callAPI<{ user: GitlabUser }[]>(
-      `/projects/${projectId}/merge_requests/${mergeRequestIid}/reviewers`
+      `/projects/${projectId}/merge_requests/${mergeRequestIid}/reviewers`,
     )
   ).map(({ user }) => user);
 }
 
 export async function fetchUserById(
-  id: number
+  id: number,
 ): Promise<GitlabUserDetails | undefined> {
   return callAPI(`/users/${id}`);
 }
 
 export async function rebaseMergeRequest(
   projectId: number,
-  mergeRequestIid: number
+  mergeRequestIid: number,
 ): Promise<void> {
   const response = await callAPI<any>(
     `/projects/${projectId}/merge_requests/${mergeRequestIid}/rebase`,
-    { method: 'put' }
+    { method: 'PUT' },
   );
 
   if (response?.rebase_in_progress !== true) {
     throw new Error(
       `Unable to rebase merge request ${mergeRequestIid} of project ${projectId}: ${JSON.stringify(
-        response
-      )}`
+        response,
+      )}`,
     );
   }
 }
@@ -303,7 +301,7 @@ export async function rebaseMergeRequest(
 export async function runPipeline(
   projectId: number,
   branchName: string,
-  variables: GitlabCiVariable[] = []
+  variables: GitlabCiVariable[] = [],
 ): Promise<void> {
   const body = {
     ref: branchName,
@@ -312,34 +310,34 @@ export async function runPipeline(
   const response = await callAPI<any>(`/projects/${projectId}/pipeline`, {
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-    method: 'post',
+    method: 'POST',
   });
 
   if (response?.created_at === undefined) {
     throw new Error(
       `Unable to create a pipeline on branch ${branchName} of project ${projectId}: ${JSON.stringify(
-        response
-      )}`
+        response,
+      )}`,
     );
   }
 }
 
 export async function searchMergeRequests(
   search: string,
-  projects: DataProject[]
+  projects: DataProject[],
 ): Promise<GitlabMergeRequest[]> {
   const mergeRequests = await fetchMergeRequests(search, projects);
 
   return mergeRequests
     .flat()
     .filter((mr) =>
-      MERGE_REQUEST_OPEN_STATES.includes(mr?.state)
+      MERGE_REQUEST_OPEN_STATES.includes(mr?.state),
     ) as GitlabMergeRequest[];
 }
 
 async function fetchMergeRequests(
   search: string,
-  projects: DataProject[]
+  projects: DataProject[],
 ): Promise<GitlabMergeRequest[]> {
   if (MERGE_REQUEST_ID_REGEX.test(search)) {
     return searchMergeRequestsById(search, projects);
@@ -354,21 +352,21 @@ async function fetchMergeRequests(
 
 async function searchMergeRequestsById(
   search: string,
-  projects: DataProject[]
+  projects: DataProject[],
 ): Promise<GitlabMergeRequest[]> {
   const iid = search.replace('!', '');
   return Promise.all(
     projects.map(
       ({ projectId }) =>
         callAPI(
-          `/projects/${projectId}/merge_requests/${iid}`
-        ) as Promise<GitlabMergeRequest>
-    )
+          `/projects/${projectId}/merge_requests/${iid}`,
+        ) as Promise<GitlabMergeRequest>,
+    ),
   );
 }
 
 async function searchMergeRequestsByUrl(
-  search: string
+  search: string,
 ): Promise<GitlabMergeRequest[]> {
   const iid = search.match(MERGE_REQUEST_URL_REGEX)![1];
   const url = new URL(search);
@@ -380,24 +378,24 @@ async function searchMergeRequestsByUrl(
 
   return Promise.all([
     callAPI(
-      `/projects/${encodeURIComponent(projectPath)}/merge_requests/${iid}`
+      `/projects/${encodeURIComponent(projectPath)}/merge_requests/${iid}`,
     ) as Promise<GitlabMergeRequest>,
   ]);
 }
 
 async function searchMergeRequestsByText(
   search: string,
-  projects: DataProject[]
+  projects: DataProject[],
 ): Promise<GitlabMergeRequest[]> {
   return Promise.all(
     projects.map(
       ({ projectId }) =>
         callAPI(
           `/projects/${projectId}/merge_requests?state=opened&search=${encodeURIComponent(
-            search
-          )}`
-        ) as Promise<GitlabMergeRequest>
-    )
+            search,
+          )}`,
+        ) as Promise<GitlabMergeRequest>,
+    ),
   );
 }
 
@@ -405,7 +403,7 @@ export async function searchProjects(search: string): Promise<GitlabProject[]> {
   if (search.startsWith(GITLAB_URL)) {
     const projectName = search.replace(`${GITLAB_URL}/`, '').split('/').pop();
     return callAPI(
-      `/projects?search=${encodeURIComponent(projectName || search)}`
+      `/projects?search=${encodeURIComponent(projectName || search)}`,
     );
   }
   return callAPI(`/projects?search=${encodeURIComponent(search)}`);
@@ -414,7 +412,7 @@ export async function searchProjects(search: string): Promise<GitlabProject[]> {
 export async function updateReleaseName(
   projectId: number,
   tagName: string,
-  name: string
+  name: string,
 ): Promise<void> {
   const body = {
     id: projectId,
@@ -426,8 +424,8 @@ export async function updateReleaseName(
     {
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-      method: 'put',
-    }
+      method: 'PUT',
+    },
   );
 
   if (response?.tag_name === undefined) {
@@ -436,8 +434,8 @@ export async function updateReleaseName(
         {
           body,
           response,
-        }
-      )}`
+        },
+      )}`,
     );
   }
 }
@@ -446,7 +444,7 @@ async function callAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const separator = path.includes('?') ? '&' : '?';
   const response = await fetch(
     `${BASE_API_URL}${path}${separator}private_token=${GITLAB_TOKEN}`,
-    options
+    options,
   );
   return response.json() as Promise<T>;
 }

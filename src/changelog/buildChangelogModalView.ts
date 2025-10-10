@@ -29,18 +29,18 @@ export async function buildChangelogModalView({
             return await fetchProjectById(Number(dataProject.projectId));
           } catch (error) {
             logger.error(
+              error,
               `Failed to fetch project ${dataProject.projectId}:`,
-              error
             );
             return null;
           }
-        })
+        }),
       )
     ).filter((project): project is GitlabProjectDetails => project !== null);
 
     projectOptions = projects
       .sort((a, b) =>
-        a.path_with_namespace.localeCompare(b.path_with_namespace)
+        a.path_with_namespace.localeCompare(b.path_with_namespace),
       )
       .map((project) => ({
         text: {
@@ -53,7 +53,7 @@ export async function buildChangelogModalView({
 
   if (!projectOptions || projectOptions.length === 0) {
     throw new Error(
-      'No Gitlab project has been found on this channel :homer-stressed:'
+      'No Gitlab project has been found on this channel :homer-stressed:',
     );
   }
 
@@ -171,7 +171,7 @@ export async function buildChangelogModalView({
           text: changelog
             ? slackifyText(
                 changelog,
-                '*⚠️ Changelog truncated due to Slack limitations.*'
+                '*⚠️ Changelog truncated due to Slack limitations.*',
               )
             : 'No change has been found.',
         },

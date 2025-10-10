@@ -16,21 +16,21 @@ const TICKET_ID_MATCHER = '{ticketId}';
 export async function generateChangelog(
   projectId: number,
   previousReleaseTagName: string | undefined,
-  filter: (commit: GitlabCommit) => boolean = () => true
+  filter: (commit: GitlabCommit) => boolean = () => true,
 ): Promise<string> {
   let commits: GitlabCommit[];
 
   if (previousReleaseTagName !== undefined) {
     const previousReleaseTag = await fetchProjectTag(
       projectId,
-      previousReleaseTagName
+      previousReleaseTagName,
     );
 
     commits = await fetchProjectCommitsSince(
       projectId,
       new Date(
-        new Date(previousReleaseTag.commit.created_at).getTime() + 1000
-      ).toISOString()
+        new Date(previousReleaseTag.commit.created_at).getTime() + 1000,
+      ).toISOString(),
     );
   } else {
     commits = await fetchProjectCommits(projectId);
@@ -41,8 +41,8 @@ export async function generateChangelog(
       commits
         .filter(filterDefaultBranchMergeCommits)
         .map(async (mergeCommit) =>
-          generateMergeRequestCommitsMap(projectId, mergeCommit)
-        )
+          generateMergeRequestCommitsMap(projectId, mergeCommit),
+        ),
     )
   ).flat();
 
@@ -56,7 +56,7 @@ export async function generateChangelog(
           ticketId
             ? ` - [${ticketId}](${CONFIG.ticketManagementUrlPattern.replace(
                 TICKET_ID_MATCHER,
-                ticketId
+                ticketId,
               )})`
             : ''
         }`;
@@ -73,7 +73,7 @@ export async function generateChangelog(
         ticketId
           ? ` - [${ticketId}](${CONFIG.ticketManagementUrlPattern.replace(
               TICKET_ID_MATCHER,
-              ticketId
+              ticketId,
             )})`
           : ''
       }`;
@@ -95,17 +95,17 @@ function filterDefaultBranchMergeCommits({ message }: GitlabCommit): boolean {
 
 async function generateMergeRequestCommitsMap(
   projectId: number,
-  mergeCommit: GitlabCommit
+  mergeCommit: GitlabCommit,
 ): Promise<MergeRequestCommitMap[]> {
   const { message } = mergeCommit;
   const mergeRequestIid = parseInt(
     message.match(/See merge request.*!(\d+)/)?.[1] ?? '',
-    10
+    10,
   );
 
   if (!Number.isInteger(mergeRequestIid)) {
     throw new Error(
-      `Unable to retrieve merge request iid of merge commit ${message}`
+      `Unable to retrieve merge request iid of merge commit ${message}`,
     );
   }
 
@@ -114,7 +114,7 @@ async function generateMergeRequestCommitsMap(
 
   if (squash && !squash_commit_sha) {
     throw new Error(
-      `Gitlab API did not provide squash_commit_sha for merge request ${mergeRequestIid} of project ${projectId}`
+      `Gitlab API did not provide squash_commit_sha for merge request ${mergeRequestIid} of project ${projectId}`,
     );
   }
 
@@ -124,7 +124,7 @@ async function generateMergeRequestCommitsMap(
         mergeRequest,
         mergeRequestCommit: await fetchProjectCommit(
           projectId,
-          squash_commit_sha
+          squash_commit_sha,
         ),
       },
     ];
@@ -132,7 +132,7 @@ async function generateMergeRequestCommitsMap(
 
   const mergeRequestCommits = await fetchMergeRequestCommits(
     projectId,
-    mergeRequestIid
+    mergeRequestIid,
   );
 
   return (
@@ -145,7 +145,7 @@ async function generateMergeRequestCommitsMap(
           mergeRequest,
           mergeRequestCommit: commit,
         };
-      })
+      }),
     )
   ).flat();
 }
@@ -163,7 +163,7 @@ function getTicketId(commitMessage: string): string | undefined {
  * oldest one.
  */
 function removeDuplicatedCommits(
-  mergeRequestCommitsMaps: MergeRequestCommitMap[]
+  mergeRequestCommitsMaps: MergeRequestCommitMap[],
 ): MergeRequestCommitMap[] {
   //
   return mergeRequestCommitsMaps.filter((mergeRequestCommitsMap) => {
@@ -171,7 +171,7 @@ function removeDuplicatedCommits(
     const duplicatedMaps = mergeRequestCommitsMaps.filter(
       (map) =>
         map.mergeRequestCommit.message ===
-        mergeRequestCommitsMap.mergeRequestCommit.message
+        mergeRequestCommitsMap.mergeRequestCommit.message,
     );
 
     // We pick the oldest one
@@ -179,7 +179,7 @@ function removeDuplicatedCommits(
       new Date(map.mergeRequestCommit.created_at).getTime() <
       new Date(mapToKeep.mergeRequestCommit.created_at).getTime()
         ? map
-        : mapToKeep
+        : mapToKeep,
     );
 
     // We keep only the oldest mergeRequestCommitsMap with this commit

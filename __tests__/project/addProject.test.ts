@@ -1,10 +1,11 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
-import * as nodeFetch from 'node-fetch';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { projectFixture } from '../__fixtures__/projectFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -23,10 +24,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${search}`, [projectFixture]);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -35,12 +36,12 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -60,10 +61,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${path}`, [projectFixture]);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -72,12 +73,12 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -97,21 +98,21 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects/${projectId}`, projectFixture);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(await hasModelEntry('Project', { channelId, projectId })).toEqual(
-      true
+      true,
     );
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -128,11 +129,11 @@ describe('project > addProject', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
-    const json = (await response.json()) as any;
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+    const json = (await response.body) as any;
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -154,10 +155,10 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects?search=${search}`, []);
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -182,17 +183,17 @@ describe('project > addProject', () => {
     mockGitlabCall(`/projects/${projectId}`, {});
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `No project found with id \`${projectId}\``
+        `No project found with id \`${projectId}\``,
       ),
       user: userId,
     });
@@ -215,10 +216,10 @@ describe('project > addProject', () => {
     ]);
 
     // When
-    let response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    let response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -228,17 +229,17 @@ describe('project > addProject', () => {
         blocks: expect.arrayContaining([]),
         channel: channelId,
         user: userId,
-      })
+      }),
     );
 
     const block = (slackBotWebClient.chat.postEphemeral as jest.Mock).mock
       .calls[0][0].blocks[0] as SectionBlock | undefined;
 
     expect(block?.text?.text).toContain(
-      `Multiple projects match \`${search}\``
+      `Multiple projects match \`${search}\``,
     );
     expect(
-      (block?.accessory as StaticSelect | undefined)?.options
+      (block?.accessory as StaticSelect | undefined)?.options,
     ).toHaveLength(2);
 
     // Given
@@ -258,15 +259,13 @@ describe('project > addProject', () => {
         user: { id: userId },
       }),
     };
-    const nodeFetchSpy = jest.spyOn(nodeFetch, 'default');
-    const { mockUrl } = (await import('node-fetch')) as any;
-    mockUrl(responseUrl, { json: Promise.resolve('') });
+    const mockCall = mockUrl(responseUrl, { json: Promise.resolve('') });
 
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -275,20 +274,16 @@ describe('project > addProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(true);
-    expect(nodeFetchSpy).toHaveBeenLastCalledWith(
-      responseUrl,
-      expect.anything()
-    ); // Deletes ephemeral message
+    expect(mockCall.called).toBeTruthy(); // Deletes ephemeral message
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
-    nodeFetchSpy.mockRestore();
   });
 
   it('should display threshold warning message when project is in too many channels', async () => {
@@ -319,23 +314,23 @@ describe('project > addProject', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(await hasModelEntry('Project', { channelId, projectId })).toEqual(
-      true
+      true,
     );
 
     // Verify success message was sent
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`
+        `\`${projectFixture.path_with_namespace}\` added`,
       ),
       user: userId,
     });
@@ -344,7 +339,7 @@ describe('project > addProject', () => {
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
       channel: channelId,
       text: expect.stringContaining(
-        `D'oh! I've added \`${projectFixture.path_with_namespace}\` to this channel, but my brain is starting to hurt.`
+        `D'oh! I've added \`${projectFixture.path_with_namespace}\` to this channel, but my brain is starting to hurt.`,
       ),
       user: userId,
     });

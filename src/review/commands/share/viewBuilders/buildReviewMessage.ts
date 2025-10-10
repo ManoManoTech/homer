@@ -189,7 +189,7 @@ export async function buildReviewMessage(
   }
 
   if (ts !== undefined) {
-    message.ts = ts;
+    (message as ChatUpdateArguments).ts = ts;
     return message as ChatUpdateArguments;
   }
   return message as ChatPostMessageArguments;

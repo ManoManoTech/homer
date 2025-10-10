@@ -24,7 +24,7 @@ function isValidGitlabRequest(req: Request): boolean {
 
     if (projectPath) {
       logger.error(
-        `Gitlab request received with wrong secret from '${projectPath}'`
+        `Gitlab request received with wrong secret from '${projectPath}'`,
       );
     }
     return false;
@@ -75,7 +75,7 @@ function isValidSlackRequest(req: Request): boolean {
 export function securityMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   if (!isValidGitlabRequest(req) && !isValidSlackRequest(req)) {
     logger.debug('Unauthorized request received');

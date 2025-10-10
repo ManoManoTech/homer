@@ -1,6 +1,7 @@
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 
 describe('home > appHome', () => {
@@ -19,14 +20,14 @@ describe('home > appHome', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/event', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/event')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(await response.text()).toEqual(body.challenge);
+    expect(response.text).toEqual(body.challenge);
     expect(slackBotWebClient.views.publish).toHaveBeenNthCalledWith(1, {
       user_id: 'userId',
       view: {

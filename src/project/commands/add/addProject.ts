@@ -10,12 +10,11 @@ export async function addProject(
   projectId: number,
   channelId: string,
   userId: string,
-  projectPath: string
+  projectPath: string,
 ): Promise<void> {
   await addProjectToChannel({ projectId, channelId });
-  const numberOfChannelsLinkedToProject = await countChannelsByProjectId(
-    projectId
-  );
+  const numberOfChannelsLinkedToProject =
+    await countChannelsByProjectId(projectId);
 
   await sendSuccessMessage(channelId, userId, projectPath);
 
@@ -26,7 +25,7 @@ export async function addProject(
       channelId,
       userId,
       projectPath,
-      numberOfChannelsLinkedToProject
+      numberOfChannelsLinkedToProject,
     );
   }
 }
@@ -34,7 +33,7 @@ export async function addProject(
 async function sendSuccessMessage(
   channelId: string,
   userId: string,
-  projectPath: string
+  projectPath: string,
 ): Promise<void> {
   await slackBotWebClient.chat.postEphemeral({
     channel: channelId,
@@ -53,7 +52,7 @@ async function sendThresholdWarningMessage(
   channelId: string,
   userId: string,
   projectPath: string,
-  numberOfChannelsLinkedToProject: number
+  numberOfChannelsLinkedToProject: number,
 ): Promise<void> {
   await slackBotWebClient.chat.postEphemeral({
     channel: channelId,

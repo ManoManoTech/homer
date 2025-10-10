@@ -1,13 +1,15 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { createRelease } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import ConfigHelper from '@/release/utils/ConfigHelper';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { pipelineFixture } from '@root/__tests__/__fixtures__/pipelineFixture';
 import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
 import { releaseFixture } from '@root/__tests__/__fixtures__/releaseFixture';
-import { fetch } from '@root/__tests__/utils/fetch';
 import { getSlackHeaders } from '@root/__tests__/utils/getSlackHeaders';
 import { mockGitlabCall } from '@root/__tests__/utils/mockGitlabCall';
 
@@ -16,9 +18,8 @@ describe('release > endRelease', () => {
     it('should end a release in monitoring state', async () => {
       // Given
       const projectId = projectFixture.id;
-      const releaseConfig = await ConfigHelper.getProjectReleaseConfig(
-        projectId
-      );
+      const releaseConfig =
+        await ConfigHelper.getProjectReleaseConfig(projectId);
       const channelId = releaseConfig.releaseChannelId;
       const userId = 'userId';
       let body: any = {
@@ -45,10 +46,10 @@ describe('release > endRelease', () => {
       mockGitlabCall(`/projects/${projectId}`, projectFixture);
 
       // When
-      let response = await fetch('/api/v1/homer/command', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      let response = await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -58,7 +59,7 @@ describe('release > endRelease', () => {
           blocks: expect.any(Array),
           channel: channelId,
           user: userId,
-        })
+        }),
       );
 
       const block = (slackBotWebClient.chat.postEphemeral as jest.Mock).mock
@@ -66,7 +67,7 @@ describe('release > endRelease', () => {
 
       expect(block?.text?.text).toContain('Choose a release to end:');
       expect(
-        (block?.accessory as StaticSelect | undefined)?.option_groups
+        (block?.accessory as StaticSelect | undefined)?.option_groups,
       ).toHaveLength(1);
 
       // Given
@@ -86,19 +87,18 @@ describe('release > endRelease', () => {
           user: { id: userId },
         }),
       };
-      const { mockUrl } = (await import('node-fetch')) as any;
       mockUrl(responseUrl, { json: Promise.resolve('') });
 
       mockGitlabCall(
         `/projects/${projectId}/pipelines?ref=${releaseFixture.tag_name}`,
-        [pipelineFixture]
+        [pipelineFixture],
       );
 
       // When
-      response = await fetch('/api/v1/homer/interactive', {
-        body,
-        headers: getSlackHeaders(body),
-      });
+      response = await request(app)
+        .post('/api/v1/homer/interactive')
+        .set(getSlackHeaders(body))
+        .send(body);
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -122,13 +122,13 @@ describe('release > endRelease', () => {
               link_names: true,
               text: ':ccheck: diaspora-project-site PRD',
               username: 'real_name',
-            }
+            },
           );
-        }
+        },
       );
       const { hasModelEntry } = (await import('sequelize')) as any;
       expect(
-        await hasModelEntry('Release', { tagName: releaseFixture.tag_name })
+        await hasModelEntry('Release', { tagName: releaseFixture.tag_name }),
       ).toEqual(false);
     });
   });

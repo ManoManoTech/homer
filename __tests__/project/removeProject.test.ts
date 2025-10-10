@@ -1,10 +1,11 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
-import * as nodeFetch from 'node-fetch';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { projectFixture } from '../__fixtures__/projectFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -31,10 +32,10 @@ describe('project > removeProject', () => {
     mockGitlabCall(`/projects/${projectFixture.id + 1}`, projectFixture);
 
     // When
-    let response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    let response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -44,7 +45,7 @@ describe('project > removeProject', () => {
         blocks: expect.arrayContaining([]),
         channel: channelId,
         user: userId,
-      })
+      }),
     );
 
     const block = (slackBotWebClient.chat.postEphemeral as jest.Mock).mock
@@ -52,7 +53,7 @@ describe('project > removeProject', () => {
 
     expect(block?.text?.text).toEqual('Choose the project to remove:');
     expect(
-      (block?.accessory as StaticSelect | undefined)?.options
+      (block?.accessory as StaticSelect | undefined)?.options,
     ).toHaveLength(2);
 
     // Given
@@ -72,15 +73,12 @@ describe('project > removeProject', () => {
         user: { id: userId },
       }),
     };
-    const nodeFetchSpy = jest.spyOn(nodeFetch, 'default');
-    const { mockUrl } = (await import('node-fetch')) as any;
-    mockUrl(responseUrl, { json: Promise.resolve('') });
-
+    const mockCall = mockUrl(responseUrl, { json: Promise.resolve('') });
     // When
-    response = await fetch('/api/v1/homer/interactive', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    response = await request(app)
+      .post('/api/v1/homer/interactive')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -89,20 +87,16 @@ describe('project > removeProject', () => {
       await hasModelEntry('Project', {
         channelId,
         projectId: projectFixture.id,
-      })
+      }),
     ).toEqual(false);
-    expect(nodeFetchSpy).toHaveBeenLastCalledWith(
-      responseUrl,
-      expect.anything()
-    ); // Deletes ephemeral message
+    expect(mockCall.called).toBeTruthy(); // Deletes ephemeral message
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
       channel: channelId,
       text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` removed`
+        `\`${projectFixture.path_with_namespace}\` removed`,
       ),
       user: userId,
     });
-    nodeFetchSpy.mockRestore();
   });
 
   it('should notify user whether there is no project to remove', async () => {
@@ -116,10 +110,10 @@ describe('project > removeProject', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -129,7 +123,7 @@ describe('project > removeProject', () => {
         channel: channelId,
         text: 'This channel does not have any project.',
         user: userId,
-      })
+      }),
     );
   });
 });

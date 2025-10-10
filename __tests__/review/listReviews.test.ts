@@ -1,9 +1,10 @@
 import slackifyMarkdown from 'slackify-markdown';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -37,11 +38,11 @@ describe('review > listReviews', () => {
 
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestIid1}`,
-      mergeRequestDetailsFixture
+      mergeRequestDetailsFixture,
     );
     mockGitlabCall(
       `/projects/${projectId}/merge_requests/${mergeRequestIid2}`,
-      mergeRequestDetailsFixture
+      mergeRequestDetailsFixture,
     );
     (slackBotWebClient.chat.getPermalink as jest.Mock).mockReturnValue({
       permalink:
@@ -49,10 +50,10 @@ describe('review > listReviews', () => {
     });
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -86,10 +87,10 @@ describe('review > listReviews', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

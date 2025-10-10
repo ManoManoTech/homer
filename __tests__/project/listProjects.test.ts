@@ -1,9 +1,10 @@
 import slackifyMarkdown from 'slackify-markdown';
+import request from 'supertest';
+import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { projectFixture } from '../__fixtures__/projectFixture';
-import { fetch } from '../utils/fetch';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -37,10 +38,10 @@ describe('project > listProjects', () => {
     mockGitlabCall(`/projects/${projectFixture.id + 2}`, {});
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -74,10 +75,10 @@ describe('project > listProjects', () => {
     };
 
     // When
-    const response = await fetch('/api/v1/homer/command', {
-      body,
-      headers: getSlackHeaders(body),
-    });
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

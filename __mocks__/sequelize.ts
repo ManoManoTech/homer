@@ -41,8 +41,8 @@ class ModelMock {
       (entry) =>
         !where ||
         Object.entries(where).every(
-          ([key, value]) => entry.values[key] === value
-        )
+          ([key, value]) => entry.values[key] === value,
+        ),
     ).length;
   }
 
@@ -56,8 +56,8 @@ class ModelMock {
         (entry) =>
           !where ||
           Object.entries(where).every(
-            ([key, value]) => entry.values[key] === value
-          )
+            ([key, value]) => entry.values[key] === value,
+          ),
       ) || null
     );
   }
@@ -99,7 +99,7 @@ class SequelizeMock {
 
 async function hasModelEntry(
   modelName: string,
-  where: EntryValues
+  where: EntryValues,
 ): Promise<boolean> {
   return !!(await SequelizeMock.models[modelName]?.findOne({ where }));
 }
