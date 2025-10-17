@@ -30,7 +30,7 @@
     "helmet": "8.1.0",
     "pg": "8.16.3",
     "pg-hstore": "2.3.4",
-    "pino": "9.13.0",
+    "pino": "10.0.0",
     "sequelize": "6.37.7",
     "slackify-markdown": "4.5.0",
     "source-map-support": "0.5.21",
