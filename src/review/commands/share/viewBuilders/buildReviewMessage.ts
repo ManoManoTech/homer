@@ -167,6 +167,7 @@ function buildContextBlock(
   const getPipelineStatus = (status?: GitlabPipelineStatus) => {
     const emojiMap: Record<string, string> = {
       success: '✅',
+      manual: '⚙️',
       failed: '❌',
       running: '⏳',
       pending: '⏳',
