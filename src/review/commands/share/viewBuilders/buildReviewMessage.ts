@@ -48,10 +48,10 @@ export async function buildReviewMessage(
 ) {
   const mergeRequest = await fetchMergeRequestByIid(projectId, mergeRequestIid);
   const [
-    rawAssignees,
+    slackAssignees,
     approvalInfo,
     mergeRequestAuthor,
-    rawReviewers,
+    slackReviewers,
     project,
   ] = await Promise.all([
     fetchSlackUsersFromGitlabUsers(mergeRequest.assignees),
@@ -87,8 +87,8 @@ export async function buildReviewMessage(
   ] as KnownBlock[];
 
   const peopleSection = buildPeopleSection(
-    rawAssignees,
-    rawReviewers,
+    slackAssignees,
+    slackReviewers,
     approvalInfo,
   );
   if (peopleSection) {
@@ -212,8 +212,8 @@ function buildContextBlock(
 }
 
 function buildPeopleSection(
-  rawAssignees: SlackUser[],
-  rawReviewers: SlackUser[],
+  slackAssignees: SlackUser[],
+  slackReviewers: SlackUser[],
   approvalInfo: ApprovalInfo,
 ): SectionBlock | null {
   const formatUsers = (users: SlackUser[]) =>
@@ -221,8 +221,8 @@ function buildPeopleSection(
 
   const fields: MrkdwnElement[] = [];
   const approvers = formatUsers(approvalInfo.approvers);
-  const assignees = formatUsers(rawAssignees);
-  const reviewers = formatUsers(rawReviewers);
+  const assignees = formatUsers(slackAssignees);
+  const reviewers = formatUsers(slackReviewers);
 
   const participants = [...new Set([...assignees, ...reviewers])].filter(
     (user) => !approvers.includes(user),
