@@ -105,4 +105,9 @@ export const mergeRequestDetailsFixture: GitlabMergeRequestDetails = {
   },
   has_conflicts: false,
   blocking_discussions_resolved: true,
+  head_pipeline: {
+    id: 12345,
+    status: 'success',
+    web_url: 'https://gitlab.example.com/my-group/my-project/pipeline/12345',
+  },
 };
