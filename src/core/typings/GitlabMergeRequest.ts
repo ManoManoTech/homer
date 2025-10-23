@@ -1,3 +1,4 @@
+import type { GitlabPipelineStatus } from './GitlabPipeline';
 import type { GitlabUser } from './GitlabUser';
 
 export type GitlabMergeRequestState =
@@ -91,6 +92,11 @@ export interface GitlabMergeRequestDetails extends GitlabMergeRequest {
   first_contribution: boolean;
   first_deployed_to_production_at: string | null;
   has_conflicts: boolean;
+  head_pipeline: {
+    id: number;
+    status: GitlabPipelineStatus;
+    web_url: string;
+  } | null;
   latest_build_finished_at: string;
   latest_build_started_at: string;
   merge_error: string | null;

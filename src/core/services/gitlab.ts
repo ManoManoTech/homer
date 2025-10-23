@@ -11,6 +11,7 @@ import type {
   GitlabMergeRequest,
   GitlabMergeRequestDetails,
 } from '@/core/typings/GitlabMergeRequest';
+import type { GitlabMergeRequestApprovalInfo } from '@/core/typings/GitlabMergeRequestApprovalInfo';
 import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
 import type {
   GitlabProject,
@@ -101,12 +102,16 @@ export async function fetchDeploymentById(
 export async function fetchMergeRequestApprovers(
   projectId: number,
   mergeRequestIid: number,
-): Promise<GitlabUser[]> {
-  return (
-    await callAPI<GitlabApprovalsResponse>(
-      `/projects/${projectId}/merge_requests/${mergeRequestIid}/approvals`,
-    )
-  ).approved_by.map(({ user }) => user);
+): Promise<GitlabMergeRequestApprovalInfo> {
+  const response = await callAPI<GitlabApprovalsResponse>(
+    `/projects/${projectId}/merge_requests/${mergeRequestIid}/approvals`,
+  );
+
+  return {
+    approvers: response.approved_by.map(({ user }) => user),
+    approvals_required: response.approvals_required,
+    approvals_left: response.approvals_left,
+  };
 }
 
 export async function fetchMergeRequestCommits(

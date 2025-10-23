@@ -58,6 +58,14 @@ export const reviewMessagePostFixture = {
           text: `Changes: \`${mergeRequestDetailsFixture.changes_count}\``,
           type: 'mrkdwn',
         },
+        {
+          text: `Pipeline: ✅ success`,
+          type: 'mrkdwn',
+        },
+        {
+          text: `Mergeable: ✅ Yes`,
+          type: 'mrkdwn',
+        },
       ],
       type: 'context',
     },
@@ -65,6 +73,10 @@ export const reviewMessagePostFixture = {
       fields: [
         {
           text: `*Participants*\n @${mergeRequestDetailsFixture.assignees[0].username} @${mergeRequestReviewersFixture[0].user.username}`,
+          type: 'mrkdwn',
+        },
+        {
+          text: `*Approvals*\n 1/${mergeRequestApprovalsFixture.approvals_required} required ✅⬜️`,
           type: 'mrkdwn',
         },
         {
