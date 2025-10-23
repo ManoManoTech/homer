@@ -15,7 +15,7 @@ jobs:
     name: Build from source to dist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -44,7 +44,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ↙️ Download dist
         uses: actions/download-artifact@v5
