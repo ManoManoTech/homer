@@ -235,22 +235,14 @@ function buildPeopleSection(
     });
   }
 
-  const approvedCount = Math.min(
-    approvers.length,
-    approvalInfo.approvals_required,
-  );
-  const remainingCount = Math.max(
-    0,
-    approvalInfo.approvals_required - approvedCount,
-  );
+  const approvedCount = approvers.length;
+  const remainingCount = approvalInfo.approvals_left;
 
-  const approvedEmojis = Array(approvedCount).fill('✅').join('');
-  const remainingEmojis = Array(remainingCount).fill('⬜️').join('');
-  const emojiIndicators = approvedEmojis + remainingEmojis;
+  const emojiIndicators = remainingCount == 0 ? '✅' : '⏳';
 
   fields.push({
     type: 'mrkdwn',
-    text: `*Approvals*\n ${approvers.length}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
+    text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
   });
 
   if (approvers.length > 0) {
@@ -268,4 +260,5 @@ function buildPeopleSection(
 interface ApprovalInfo {
   approvers: SlackUser[];
   approvals_required: number;
+  approvals_left: number;
 }

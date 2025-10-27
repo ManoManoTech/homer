@@ -424,6 +424,6 @@ describe('review > addReview', () => {
     const approvalField = peopleSection.fields?.find(
       (field) => field.type === 'mrkdwn' && field.text.includes('Approvals'),
     ) as MrkdwnElement;
-    expect(approvalField.text).toContain('1/3 required ✅⬜️⬜️');
+    expect(approvalField.text).toContain('1/3 required ⏳');
   });
 });
