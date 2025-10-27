@@ -76,7 +76,7 @@ export const reviewMessagePostFixture = {
           type: 'mrkdwn',
         },
         {
-          text: `*Approvals*\n 1/${mergeRequestApprovalsFixture.approvals_required} required ✅⬜️`,
+          text: `*Approvals*\n 1/${mergeRequestApprovalsFixture.approvals_required} required ⏳`,
           type: 'mrkdwn',
         },
         {

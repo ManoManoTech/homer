@@ -239,14 +239,9 @@ function buildPeopleSection(
     approvers.length,
     approvalInfo.approvals_required,
   );
-  const remainingCount = Math.max(
-    0,
-    approvalInfo.approvals_required - approvedCount,
-  );
+  const remainingCount = Math.max(0, approvalInfo.approvals_left);
 
-  const approvedEmojis = Array(approvedCount).fill('✅').join('');
-  const remainingEmojis = Array(remainingCount).fill('⬜️').join('');
-  const emojiIndicators = approvedEmojis + remainingEmojis;
+  const emojiIndicators = approvedCount > remainingCount ? '✅' : '⏳';
 
   fields.push({
     type: 'mrkdwn',
@@ -268,4 +263,5 @@ function buildPeopleSection(
 interface ApprovalInfo {
   approvers: SlackUser[];
   approvals_required: number;
+  approvals_left: number;
 }
