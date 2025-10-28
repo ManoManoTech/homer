@@ -19,14 +19,14 @@ const READINESS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
 
 export async function waitForReadinessAndStartRelease(
   release: DataRelease,
-  notifyUserIfNotReady = true
+  notifyUserIfNotReady = true,
 ): Promise<void> {
-  const { createdAt, description, projectId, slackAuthor, tagName } =
+  const { createdAt, projectId, slackAuthor, tagName } =
     release as DatabaseEntry<DataRelease>;
 
   if (Date.now() - new Date(createdAt).getTime() > READINESS_TIMEOUT_DELAY_MS) {
     logger.error(
-      `The release ${tagName} of project ${projectId} is obsolete because it has already reached timeout so it will be removed.`
+      `The release ${tagName} of project ${projectId} is obsolete because it has already reached timeout so it will be removed.`,
     );
     await removeRelease(projectId, tagName);
     return;
@@ -39,14 +39,14 @@ export async function waitForReadinessAndStartRelease(
 
   const mainBranchPipeline = await getBranchLastPipeline(
     projectId,
-    project.default_branch
+    project.default_branch,
   );
 
   let hasReachedTimeout = false;
   let isReady = await releaseManager.isReadyToRelease(
     release,
     mainBranchPipeline.id,
-    getReleaseOptions()
+    getReleaseOptions(),
   );
 
   if (!isReady) {
@@ -66,26 +66,23 @@ wait for them and start the release automatically (<${mainBranchPipeline.web_url
 
     if (releaseState !== 'notYetReady') {
       logger.error(
-        `Potential concurrency issue detected for release ${tagName} of project ${projectId}.`
+        `Potential concurrency issue detected for release ${tagName} of project ${projectId}.`,
       );
       return;
     }
   }
 
   if (isReady) {
-    await Promise.all([
-      startRelease({
-        commitId: mainBranchPipeline.sha,
-        description,
-        project,
-        releaseCreator: slackAuthor,
-        releaseTagName: tagName,
-        hasReleasePipeline,
-      }),
-      updateRelease(project.id, tagName, () => ({
-        state: 'created',
-      })),
-    ]);
+    const ts = await startRelease({
+      project,
+      commitId: mainBranchPipeline.sha,
+      release,
+      hasReleasePipeline,
+    });
+    await updateRelease(project.id, tagName, () => ({
+      state: 'created',
+      ts,
+    }));
   } else if (hasReachedTimeout) {
     await Promise.all([
       removeRelease(projectId, tagName),
@@ -101,7 +98,7 @@ wait for them and start the release automatically (<${mainBranchPipeline.web_url
 async function waitForReadiness(
   releaseManager: ReleaseManager,
   release: DataRelease,
-  mainBranchPipelineId: number
+  mainBranchPipelineId: number,
 ): Promise<{ hasReachedTimeout: boolean; isReady: boolean }> {
   const { projectId, tagName } = release;
   let hasReachedTimeout = false;
@@ -109,7 +106,7 @@ async function waitForReadiness(
 
   const timeout = setTimeout(() => {
     logger.error(
-      `Readiness timeout reached for release ${tagName} of project ${projectId}`
+      `Readiness timeout reached for release ${tagName} of project ${projectId}`,
     );
     hasReachedTimeout = true;
   }, READINESS_TIMEOUT_DELAY_MS);
@@ -125,7 +122,7 @@ async function waitForReadiness(
     isReady = await releaseManager.isReadyToRelease(
       release,
       mainBranchPipelineId,
-      getReleaseOptions()
+      getReleaseOptions(),
     );
 
     if (isReady) {
