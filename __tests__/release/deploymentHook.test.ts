@@ -9,7 +9,10 @@ import type { GitlabDeploymentStatus } from '@/core/typings/GitlabDeployment';
 import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
 import type { ReleaseStateUpdate } from '@/release/typings/ReleaseStateUpdate';
 import ConfigHelper from '@/release/utils/ConfigHelper';
-import { getReleaseUpdateMessageFixture } from '@root/__tests__/__fixtures__/releaseMessage';
+import {
+  getReleaseCompletedMessageFixture,
+  getReleaseUpdateMessageFixture,
+} from '@root/__tests__/__fixtures__/releaseMessage';
 import { getGitlabHeaders } from '@root/__tests__/utils/getGitlabHeaders';
 import { deploymentFixture } from '../__fixtures__/deploymentFixture';
 import { deploymentHookFixture } from '../__fixtures__/hooks/deploymentHookFixture';
@@ -228,6 +231,60 @@ describe('release > deploymentHookHandler', () => {
     ).toEqual(true);
   });
 
+  it('integration release state is deploying > should update notification', async () => {
+    const releaseStateUpdates: ReleaseStateUpdate[] = [
+      { environment: 'integration', deploymentState: 'deploying' },
+    ];
+
+    mockProjectReleaseConfig(releaseStateUpdates);
+
+    // When
+    const response = await triggerGitlabDeploymentHook({
+      ...deploymentHookFixture,
+      status: 'running',
+      environment: 'integration',
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith({
+      channel: 'notification-channel-1',
+      icon_url: slackUserFixture.profile.image_72,
+      username: slackUserFixture.real_name,
+      link_names: true,
+      text: `:rocket: ${deploymentHookFixture.project.name} INT`,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:rocket: ${deploymentHookFixture.project.name} INT - <${deploymentFixture.deployable.pipeline.web_url}|pipeline> - <${deploymentHookFixture.project.web_url}/-/releases/${deploymentFixture.ref}|release notes>`,
+          },
+        },
+      ],
+    });
+    expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1); // For the release channel
+    expect(slackBotWebClient.chat.update).toHaveBeenCalledWith(
+      getReleaseUpdateMessageFixture(
+        'release-channel',
+        deploymentFixture.ref,
+        initialMockRelease.ts!,
+        [
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: '⏳ *Integration:* Deployment started <!date^1619639400^at {time} on {date_short_pretty}|now>',
+              },
+            ],
+          },
+        ],
+      ),
+    );
+  });
+
   it('staging release state is deploying > should update notification', async () => {
     const releaseStateUpdates: ReleaseStateUpdate[] = [
       { environment: 'staging', deploymentState: 'deploying' },
@@ -290,6 +347,10 @@ describe('release > deploymentHookHandler', () => {
       () => ({
         startedDeployments: [
           { environment: 'staging', date: '2021-04-28 21:50:00 +0200' },
+        ],
+        failedDeployments: [
+          { environment: 'integration', date: '2021-04-28 21:51:00 +0200' },
+          { environment: 'staging', date: '2021-04-28 21:51:00 +0200' },
         ],
       }),
     );
@@ -677,6 +738,75 @@ describe('release > deploymentHookHandler', () => {
                   text: 'Validate & End Release',
                   emoji: true,
                 },
+              },
+            ],
+          },
+        ],
+      ),
+    );
+  });
+
+  it('support release state is completed  > should update notification', async () => {
+    // Given
+    await updateRelease(
+      initialMockRelease.projectId,
+      initialMockRelease.tagName,
+      () => ({
+        startedDeployments: [
+          { environment: 'staging', date: '2021-04-28 21:45:00 +0200' },
+          { environment: 'support', date: '2021-04-28 21:52:00 +0200' },
+        ],
+        successfulDeployments: [
+          { environment: 'staging', date: '2021-04-28 21:50:00 +0200' },
+        ],
+      }),
+    );
+
+    const releaseStateUpdates: ReleaseStateUpdate[] = [
+      { environment: 'support', deploymentState: 'completed' },
+    ];
+    mockProjectReleaseConfig(releaseStateUpdates);
+
+    // When
+    const response = await triggerGitlabDeploymentHook({
+      ...deploymentHookFixture,
+      environment: 'support',
+      status: 'success',
+      status_changed_at: '2021-04-28 21:55:30 +0200',
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith({
+      channel: 'notification-channel-1',
+      icon_url: slackUserFixture.profile.image_72,
+      username: slackUserFixture.real_name,
+      link_names: true,
+      text: `:ccheck: ${deploymentHookFixture.project.name} SUP`,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:ccheck: ${deploymentHookFixture.project.name} SUP - <${deploymentFixture.deployable.pipeline.web_url}|pipeline> - <${deploymentHookFixture.project.web_url}/-/releases/${deploymentFixture.ref}|release notes>`,
+          },
+        },
+      ],
+    });
+    expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.update).toHaveBeenCalledWith(
+      getReleaseCompletedMessageFixture(
+        'release-channel',
+        deploymentFixture.ref,
+        initialMockRelease.ts!,
+        [
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `✅ *Support:* Deployed successfully — started <!date^1619639520^at {time}|earlier>, finished <!date^1619639730^at {time}|now> (*took 3m 30s*)`,
               },
             ],
           },
