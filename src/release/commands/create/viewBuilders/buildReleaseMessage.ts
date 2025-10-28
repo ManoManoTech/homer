@@ -228,10 +228,44 @@ function buildDeploymentBlock(
 ): KnownBlock[] {
   const blocks: KnownBlock[] = [{ type: 'divider' }];
 
+  const environmentStateMap = new Map<string, ReleaseStateUpdate>();
   for (const update of releaseStateUpdates) {
-    const { environment, deploymentState } = update;
-    const environmentName = capitalizeFirstLetter(environment);
+    environmentStateMap.set(update.environment, update);
+  }
 
+  const allEnvironments: ReleaseEnvironment[] = [
+    'integration',
+    'staging',
+    'production',
+    'support',
+  ];
+
+  for (const environment of allEnvironments) {
+    // Get the state update if it exists, otherwise determine state from deployment arrays
+    const update = environmentStateMap.get(environment);
+    let deploymentState: DeploymentState;
+
+    if (update) {
+      deploymentState = update.deploymentState;
+    } else {
+      if (
+        release.successfulDeployments.some((d) => d.environment === environment)
+      ) {
+        deploymentState = 'completed';
+      } else if (
+        release.failedDeployments.some((d) => d.environment === environment)
+      ) {
+        deploymentState = 'failed';
+      } else if (
+        release.startedDeployments.some((d) => d.environment === environment)
+      ) {
+        deploymentState = 'deploying';
+      } else {
+        continue;
+      }
+    }
+
+    const environmentName = capitalizeFirstLetter(environment);
     const stateInfo =
       DEPLOYMENT_STATE_INFO[deploymentState] || DEPLOYMENT_STATE_INFO.default;
 
@@ -276,7 +310,9 @@ function buildDeploymentBlock(
           },
         ],
       });
-      if (FINAL_RELEASE_ENVIRONMENTS.includes(environment)) {
+      if (
+        FINAL_RELEASE_ENVIRONMENTS.includes(environment as ReleaseEnvironment)
+      ) {
         blocks.push({
           type: 'actions',
           elements: [

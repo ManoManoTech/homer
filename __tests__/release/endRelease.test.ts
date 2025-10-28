@@ -23,13 +23,13 @@ const initialMockRelease: DataRelease = {
   projectId: projectFixture.id,
   slackAuthor: slackUserFixture,
   startedDeployments: [
-    { environment: 'int', date: '2021-04-28 21:50:00 +0200' },
+    { environment: 'integration', date: '2021-04-28 21:50:00 +0200' },
     { environment: 'staging', date: '2021-04-28 21:55:00 +0200' },
     { environment: 'production', date: '2021-04-28 21:58:00 +0200' },
   ],
   state: 'monitoring',
   successfulDeployments: [
-    { environment: 'int', date: '2021-04-28 21:55:00 +0200' },
+    { environment: 'integration', date: '2021-04-28 21:55:00 +0200' },
     { environment: 'staging', date: '2021-04-28 21:58:00 +0200' },
     { environment: 'production', date: '2021-04-28 22:03:00 +0200' },
   ],
@@ -221,6 +221,24 @@ describe('release > endRelease', () => {
         deploymentFixture.ref,
         'timestamp',
         [
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `✅ *Integration:* Deployed successfully — started <!date^1619639400^at {time}|earlier>, finished <!date^1619639700^at {time}|now> (*took 5m 0s*)`,
+              },
+            ],
+          },
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `✅ *Staging:* Deployed successfully — started <!date^1619639700^at {time}|earlier>, finished <!date^1619639880^at {time}|now> (*took 3m 0s*)`,
+              },
+            ],
+          },
           {
             type: 'context',
             elements: [

@@ -1,3 +1,4 @@
+import type { SectionBlock } from '@slack/types/dist/block-kit/blocks';
 import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
@@ -346,6 +347,7 @@ describe('release > deploymentHookHandler', () => {
       initialMockRelease.tagName,
       () => ({
         startedDeployments: [
+          { environment: 'integration', date: '2021-04-28 21:50:00 +0200' },
           { environment: 'staging', date: '2021-04-28 21:50:00 +0200' },
         ],
         failedDeployments: [
@@ -393,6 +395,15 @@ describe('release > deploymentHookHandler', () => {
         deploymentFixture.ref,
         initialMockRelease.ts!,
         [
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `❌ *Integration:* Deployment failed — started <!date^1619639400^at {time}|earlier>, failed <!date^1619639460^at {time}|now>`,
+              },
+            ],
+          },
           {
             type: 'context',
             elements: [
@@ -746,12 +757,17 @@ describe('release > deploymentHookHandler', () => {
     );
   });
 
-  it('support release state is completed  > should update notification', async () => {
+  it('support release state is completed > should update notification', async () => {
     // Given
     await updateRelease(
       initialMockRelease.projectId,
       initialMockRelease.tagName,
       () => ({
+        description: `\
+- [feat(great): implement great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-156](https://my-ticket-management.com/view/SPAR-156)
+- [feat(great): implement another great feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-158](https://my-ticket-management.com/view/SPAR-158)
+- [feat(great-3): implement great 3 feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-159](https://my-ticket-management.com/view/SPAR-159)
+- [feat(great-4): implement great 4 feature](http://gitlab.example.com/my-group/my-project/-/merge_requests/1) - [SPAR-160](https://my-ticket-management.com/view/SPAR-160)`,
         startedDeployments: [
           { environment: 'staging', date: '2021-04-28 21:45:00 +0200' },
           { environment: 'support', date: '2021-04-28 21:52:00 +0200' },
@@ -776,6 +792,41 @@ describe('release > deploymentHookHandler', () => {
     });
 
     // Then
+    const expectedReleaseMessage = getReleaseCompletedMessageFixture(
+      'release-channel',
+      deploymentFixture.ref,
+      initialMockRelease.ts!,
+      [
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `✅ *Staging:* Deployed successfully — started <!date^1619639100^at {time}|earlier>, finished <!date^1619639400^at {time}|now> (*took 5m 0s*)`,
+            },
+          ],
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `✅ *Support:* Deployed successfully — started <!date^1619639520^at {time}|earlier>, finished <!date^1619639730^at {time}|now> (*took 3m 30s*)`,
+            },
+          ],
+        },
+      ],
+    );
+    (expectedReleaseMessage.blocks[2] as SectionBlock).text!.text =
+      `\​*Changes (4 total):*​
+
+> •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>
+> •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>
+> •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great-3): implement great 3 feature> - <https://my-ticket-management.com/view/SPAR-159|SPAR-159>
+
+​_... and 1 more._​
+`;
+
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith({
@@ -796,22 +847,7 @@ describe('release > deploymentHookHandler', () => {
     });
     expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
     expect(slackBotWebClient.chat.update).toHaveBeenCalledWith(
-      getReleaseCompletedMessageFixture(
-        'release-channel',
-        deploymentFixture.ref,
-        initialMockRelease.ts!,
-        [
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'mrkdwn',
-                text: `✅ *Support:* Deployed successfully — started <!date^1619639520^at {time}|earlier>, finished <!date^1619639730^at {time}|now> (*took 3m 30s*)`,
-              },
-            ],
-          },
-        ],
-      ),
+      expectedReleaseMessage,
     );
   });
 });
