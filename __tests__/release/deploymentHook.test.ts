@@ -487,6 +487,40 @@ describe('release > deploymentHookHandler', () => {
               },
             ],
           },
+          {
+            type: 'actions',
+            elements: [
+              {
+                type: 'button',
+                style: 'danger',
+                action_id: 'release-button-cancel-action',
+                value: 'release~~1148~~stable-20200101-1000',
+                text: {
+                  type: 'plain_text',
+                  text: 'Cancel Release',
+                  emoji: true,
+                },
+                confirm: {
+                  title: {
+                    type: 'plain_text',
+                    text: 'Are you sure?',
+                  },
+                  text: {
+                    type: 'mrkdwn',
+                    text: 'This will cancel the release. You will not be able to undo this action.',
+                  },
+                  confirm: {
+                    type: 'plain_text',
+                    text: 'Yes, Cancel',
+                  },
+                  deny: {
+                    type: 'plain_text',
+                    text: 'No',
+                  },
+                },
+              },
+            ],
+          },
         ],
       ),
     );
@@ -651,6 +685,35 @@ describe('release > deploymentHookHandler', () => {
             elements: [
               {
                 type: 'button',
+                style: 'danger',
+                action_id: 'release-button-cancel-action',
+                value: 'release~~1148~~stable-20200101-1000',
+                text: {
+                  type: 'plain_text',
+                  text: 'Cancel Release',
+                  emoji: true,
+                },
+                confirm: {
+                  title: {
+                    type: 'plain_text',
+                    text: 'Are you sure?',
+                  },
+                  text: {
+                    type: 'mrkdwn',
+                    text: 'This will cancel the release. You will not be able to undo this action.',
+                  },
+                  confirm: {
+                    type: 'plain_text',
+                    text: 'Yes, Cancel',
+                  },
+                  deny: {
+                    type: 'plain_text',
+                    text: 'No',
+                  },
+                },
+              },
+              {
+                type: 'button',
                 style: 'primary',
                 action_id: 'release-button-end-action',
                 value: 'release~~1148~~stable-20200101-1000',
@@ -739,6 +802,35 @@ describe('release > deploymentHookHandler', () => {
           {
             type: 'actions',
             elements: [
+              {
+                type: 'button',
+                style: 'danger',
+                action_id: 'release-button-cancel-action',
+                value: 'release~~1148~~stable-20200101-1000',
+                text: {
+                  type: 'plain_text',
+                  text: 'Cancel Release',
+                  emoji: true,
+                },
+                confirm: {
+                  title: {
+                    type: 'plain_text',
+                    text: 'Are you sure?',
+                  },
+                  text: {
+                    type: 'mrkdwn',
+                    text: 'This will cancel the release. You will not be able to undo this action.',
+                  },
+                  confirm: {
+                    type: 'plain_text',
+                    text: 'Yes, Cancel',
+                  },
+                  deny: {
+                    type: 'plain_text',
+                    text: 'No',
+                  },
+                },
+              },
               {
                 type: 'button',
                 style: 'primary',

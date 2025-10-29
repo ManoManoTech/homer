@@ -29,7 +29,7 @@ export async function endRelease(projectId: number, tagName: string) {
       fetchPipelinesByRef(projectId, release.tagName),
     ]);
 
-    const isLegacyRelease = release.ts === null;
+    const isLegacyRelease = release.ts === undefined || release.ts === null;
 
     await Promise.all(
       notificationChannelIds

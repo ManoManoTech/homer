@@ -1,7 +1,9 @@
 import type { KnownBlock } from '@slack/types';
 import type {
+  ActionsBlockElement,
   ChatPostMessageArguments,
   ChatUpdateArguments,
+  TextObject,
 } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
 import type { DataRelease } from '@/core/typings/Data';
@@ -25,6 +27,10 @@ interface ReleaseMessageData {
 interface ReleaseMessageProjectData {
   path_with_namespace: string;
   web_url: string;
+}
+
+interface ReleaseCanceledMessageData extends ReleaseMessageData {
+  canceledBy: SlackUser;
 }
 
 const CHANGELOG_SUMMARY_DISPLAY_COUNT = 3;
@@ -63,6 +69,44 @@ export function buildReleaseMessage({
   };
 }
 
+export function buildReleaseCanceledMessage({
+  releaseChannelId,
+  release,
+  project,
+  canceledBy,
+}: ReleaseCanceledMessageData): ChatUpdateArguments {
+  const { description, tagName, slackAuthor } = release;
+  const { path_with_namespace, web_url } = project;
+
+  const projectDisplayName =
+    path_with_namespace.split('/').pop() ?? path_with_namespace;
+
+  const blocks = [
+    {
+      type: 'header',
+      text: {
+        type: 'plain_text',
+        text: `❌ Release Canceled: ${projectDisplayName}`,
+        emoji: true,
+      },
+    },
+    ...buildReleaseDataBlocks(
+      web_url,
+      slackAuthor,
+      tagName,
+      description,
+      canceledBy,
+    ),
+  ];
+
+  return {
+    channel: releaseChannelId,
+    ts: release.ts!,
+    link_names: true,
+    blocks: blocks,
+  };
+}
+
 function buildHeaderBlock(
   projectPathWithNamespace: string,
   releaseStateUpdates: ReleaseStateUpdate[],
@@ -97,6 +141,7 @@ function buildReleaseDataBlocks(
   releaseCreator: SlackUser,
   releaseTagName: string,
   releaseDescription: string,
+  canceledBy?: SlackUser,
 ): KnownBlock[] {
   return [
     {
@@ -110,6 +155,14 @@ function buildReleaseDataBlocks(
           type: 'mrkdwn',
           text: `*Initiated by:*\n@${releaseCreator.name}`,
         },
+        ...(canceledBy
+          ? [
+              {
+                type: 'mrkdwn',
+                text: `*Canceled by:*\n@${canceledBy.name}`,
+              } as TextObject,
+            ]
+          : []),
       ],
     },
     {
@@ -310,28 +363,65 @@ function buildDeploymentBlock(
           },
         ],
       });
+      const actionsElements: ActionsBlockElement[] = [];
+      if (release.state !== 'monitoring') {
+        actionsElements.push({
+          type: 'button',
+          style: 'danger',
+          action_id: 'release-button-cancel-action',
+          value: injectActionsParameters(
+            'release',
+            release.projectId,
+            release.tagName,
+          ),
+          text: {
+            type: 'plain_text',
+            text: 'Cancel Release',
+            emoji: true,
+          },
+          confirm: {
+            title: {
+              type: 'plain_text',
+              text: 'Are you sure?',
+            },
+            text: {
+              type: 'mrkdwn',
+              text: 'This will cancel the release. You will not be able to undo this action.',
+            },
+            confirm: {
+              type: 'plain_text',
+              text: 'Yes, Cancel',
+            },
+            deny: {
+              type: 'plain_text',
+              text: 'No',
+            },
+          },
+        });
+      }
       if (
         FINAL_RELEASE_ENVIRONMENTS.includes(environment as ReleaseEnvironment)
       ) {
+        actionsElements.push({
+          type: 'button',
+          style: 'primary',
+          action_id: 'release-button-end-action',
+          value: injectActionsParameters(
+            'release',
+            release.projectId,
+            release.tagName,
+          ),
+          text: {
+            type: 'plain_text',
+            text: 'Validate & End Release',
+            emoji: true,
+          },
+        });
+      }
+      if (actionsElements.length > 0) {
         blocks.push({
           type: 'actions',
-          elements: [
-            {
-              type: 'button',
-              style: 'primary',
-              action_id: 'release-button-end-action',
-              value: injectActionsParameters(
-                'release',
-                release.projectId,
-                release.tagName,
-              ),
-              text: {
-                type: 'plain_text',
-                text: 'Validate & End Release',
-                emoji: true,
-              },
-            },
-          ],
+          elements: actionsElements,
         });
       }
     }

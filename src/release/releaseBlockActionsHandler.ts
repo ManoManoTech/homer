@@ -2,6 +2,7 @@ import { logger } from '@/core/services/logger';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { cancelReleaseButtonHandler } from '@/release/commands/cancel/cancelReleaseButtonHandler';
 import { displayReleaseChangelog } from '@/release/commands/changelog/displayReleaseChangelog';
 import { endReleaseButtonHandler } from '@/release/commands/end/endReleaseButtonHandler';
 import { selectReleaseToCancel } from './commands/cancel/selectReleaseToCancel';
@@ -36,6 +37,9 @@ export async function releaseBlockActionsHandler(
 
         case 'release-button-end-action':
           return endReleaseButtonHandler(action as ButtonAction);
+
+        case 'release-button-cancel-action':
+          return cancelReleaseButtonHandler(payload, action as ButtonAction);
 
         default: {
           const { state } = payload.view;

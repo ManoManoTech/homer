@@ -104,7 +104,7 @@ export async function deploymentHookHandler(
   );
 
   if (releaseStateUpdates.length > 0) {
-    const isLegacyRelease = release.ts === null;
+    const isLegacyRelease = release.ts === undefined || release.ts === null;
 
     await Promise.all(
       notificationChannelIds

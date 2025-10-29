@@ -115,3 +115,36 @@ export function getReleaseCompletedMessageFixture(
     ts: ts,
   };
 }
+
+export function getReleaseCanceledMessageFixture(
+  releaseChannelId: string,
+  releaseTagName: string,
+  ts: string,
+  canceledBy = slackUserFixture,
+) {
+  const releaseMessage = getReleaseMessageFixture(
+    releaseChannelId,
+    releaseTagName,
+  );
+
+  // Update header to show canceled status
+  (releaseMessage.blocks[0] as HeaderBlock).text.text =
+    '❌ Release Canceled: diaspora-project-site';
+
+  // Add canceled by field
+  const sectionBlock = releaseMessage.blocks[1] as any;
+  sectionBlock.fields.push({
+    type: 'mrkdwn',
+    text: `*Canceled by:*\n@${canceledBy.name}`,
+  });
+
+  // Remove action buttons
+  releaseMessage.blocks.pop();
+
+  return {
+    channel: releaseMessage.channel,
+    blocks: releaseMessage.blocks,
+    link_names: releaseMessage.link_names,
+    ts: ts,
+  };
+}
