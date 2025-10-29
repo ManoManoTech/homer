@@ -52,11 +52,20 @@ export function buildReleaseMessage({
   const blocks = [
     buildHeaderBlock(path_with_namespace, releaseStateUpdates),
     ...buildReleaseDataBlocks(web_url, slackAuthor, tagName, description),
-    buildActionBlock(release, pipelineUrl),
+    buildInformationActionBlock(release, pipelineUrl),
   ] as KnownBlock[];
 
-  if (releaseStateUpdates.length > 0) {
-    blocks.push(...buildDeploymentBlock(release, releaseStateUpdates));
+  const deploymentBlocks = buildDeploymentBlock(release, releaseStateUpdates);
+  const deploymentActionBlock = buildDeploymentActionBlock(
+    release,
+    releaseStateUpdates,
+  );
+  if (deploymentBlocks.length > 0 || deploymentActionBlock) {
+    blocks.push({ type: 'divider' });
+    blocks.push(...deploymentBlocks);
+    if (deploymentActionBlock) {
+      blocks.push(deploymentActionBlock);
+    }
   }
 
   return {
@@ -175,7 +184,7 @@ function buildReleaseDataBlocks(
   ];
 }
 
-function buildActionBlock(
+function buildInformationActionBlock(
   release: DataRelease,
   pipelineUrl?: string,
 ): KnownBlock {
@@ -279,7 +288,7 @@ function buildDeploymentBlock(
   release: DataRelease,
   releaseStateUpdates: ReleaseStateUpdate[],
 ): KnownBlock[] {
-  const blocks: KnownBlock[] = [{ type: 'divider' }];
+  const blocks: KnownBlock[] = [];
 
   const environmentStateMap = new Map<string, ReleaseStateUpdate>();
   for (const update of releaseStateUpdates) {
@@ -352,7 +361,6 @@ function buildDeploymentBlock(
         },
       ],
     });
-
     if (deploymentState === 'monitoring') {
       blocks.push({
         type: 'context',
@@ -363,71 +371,83 @@ function buildDeploymentBlock(
           },
         ],
       });
-      const actionsElements: ActionsBlockElement[] = [];
-      if (release.state !== 'monitoring') {
-        actionsElements.push({
-          type: 'button',
-          style: 'danger',
-          action_id: 'release-button-cancel-action',
-          value: injectActionsParameters(
-            'release',
-            release.projectId,
-            release.tagName,
-          ),
-          text: {
-            type: 'plain_text',
-            text: 'Cancel Release',
-            emoji: true,
-          },
-          confirm: {
-            title: {
-              type: 'plain_text',
-              text: 'Are you sure?',
-            },
-            text: {
-              type: 'mrkdwn',
-              text: 'This will cancel the release. You will not be able to undo this action.',
-            },
-            confirm: {
-              type: 'plain_text',
-              text: 'Yes, Cancel',
-            },
-            deny: {
-              type: 'plain_text',
-              text: 'No',
-            },
-          },
-        });
-      }
-      if (
-        FINAL_RELEASE_ENVIRONMENTS.includes(environment as ReleaseEnvironment)
-      ) {
-        actionsElements.push({
-          type: 'button',
-          style: 'primary',
-          action_id: 'release-button-end-action',
-          value: injectActionsParameters(
-            'release',
-            release.projectId,
-            release.tagName,
-          ),
-          text: {
-            type: 'plain_text',
-            text: 'Validate & End Release',
-            emoji: true,
-          },
-        });
-      }
-      if (actionsElements.length > 0) {
-        blocks.push({
-          type: 'actions',
-          elements: actionsElements,
-        });
-      }
     }
   }
 
   return blocks;
+}
+
+function buildDeploymentActionBlock(
+  release: DataRelease,
+  releaseStateUpdates: ReleaseStateUpdate[],
+): KnownBlock | undefined {
+  const actionElements: ActionsBlockElement[] = [];
+  if (release.state !== 'monitoring') {
+    actionElements.push({
+      type: 'button',
+      style: 'danger',
+      action_id: 'release-button-cancel-action',
+      value: injectActionsParameters(
+        'release',
+        release.projectId,
+        release.tagName,
+      ),
+      text: {
+        type: 'plain_text',
+        text: 'Cancel Release',
+        emoji: true,
+      },
+      confirm: {
+        title: {
+          type: 'plain_text',
+          text: 'Are you sure?',
+        },
+        text: {
+          type: 'mrkdwn',
+          text: 'This will cancel the release. You will not be able to undo this action.',
+        },
+        confirm: {
+          type: 'plain_text',
+          text: 'Yes, Cancel',
+        },
+        deny: {
+          type: 'plain_text',
+          text: 'No',
+        },
+      },
+    });
+  }
+
+  const finalReleaseState = releaseStateUpdates.findLast(
+    (update) =>
+      update.deploymentState === 'monitoring' &&
+      FINAL_RELEASE_ENVIRONMENTS.includes(update.environment),
+  );
+
+  if (finalReleaseState) {
+    actionElements.push({
+      type: 'button',
+      style: 'primary',
+      action_id: 'release-button-end-action',
+      value: injectActionsParameters(
+        'release',
+        release.projectId,
+        release.tagName,
+      ),
+      text: {
+        type: 'plain_text',
+        text: 'Validate & End Release',
+        emoji: true,
+      },
+    });
+  }
+  if (actionElements.length > 0) {
+    return {
+      type: 'actions',
+      elements: actionElements,
+    };
+  }
+  return undefined;
 }
 
 function createChangelogSummary(rawChangelog: string): string {

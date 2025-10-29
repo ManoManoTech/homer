@@ -11,6 +11,7 @@ import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
 import type { ReleaseStateUpdate } from '@/release/typings/ReleaseStateUpdate';
 import ConfigHelper from '@/release/utils/ConfigHelper';
 import {
+  cancelReleaseButton,
   getReleaseCompletedMessageFixture,
   getReleaseUpdateMessageFixture,
 } from '@root/__tests__/__fixtures__/releaseMessage';
@@ -281,6 +282,10 @@ describe('release > deploymentHookHandler', () => {
               },
             ],
           },
+          cancelReleaseButton(
+            initialMockRelease.projectId,
+            initialMockRelease.tagName,
+          ),
         ],
       ),
     );
@@ -334,6 +339,10 @@ describe('release > deploymentHookHandler', () => {
               },
             ],
           },
+          cancelReleaseButton(
+            initialMockRelease.projectId,
+            initialMockRelease.tagName,
+          ),
         ],
       ),
     );
@@ -413,6 +422,10 @@ describe('release > deploymentHookHandler', () => {
               },
             ],
           },
+          cancelReleaseButton(
+            initialMockRelease.projectId,
+            initialMockRelease.tagName,
+          ),
         ],
       ),
     );
@@ -606,6 +619,10 @@ describe('release > deploymentHookHandler', () => {
               },
             ],
           },
+          cancelReleaseButton(
+            initialMockRelease.projectId,
+            initialMockRelease.tagName,
+          ),
         ],
       ),
     );
@@ -907,6 +924,10 @@ describe('release > deploymentHookHandler', () => {
             },
           ],
         },
+        cancelReleaseButton(
+          initialMockRelease.projectId,
+          initialMockRelease.tagName,
+        ),
       ],
     );
     (expectedReleaseMessage.blocks[2] as SectionBlock).text!.text =

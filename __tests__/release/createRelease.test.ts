@@ -10,7 +10,10 @@ import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
 import ConfigHelper from '@/release/utils/ConfigHelper';
-import { getReleaseMessageFixture } from '@root/__tests__/__fixtures__/releaseMessage';
+import {
+  cancelReleaseButton,
+  getReleaseMessageFixture,
+} from '@root/__tests__/__fixtures__/releaseMessage';
 import { slackUserFixture } from '@root/__tests__/__fixtures__/slackUserFixture';
 import { dockerBuildJobFixture } from '../__fixtures__/dockerBuildJobFixture';
 import { jobFixture } from '../__fixtures__/jobFixture';
@@ -625,10 +628,18 @@ describe('release > createRelease', () => {
       setTimeout(resolve, 0);
     }); // execute pending tasks in the event loop
 
+    const expectedReleaseMessage = getReleaseMessageFixture(
+      releaseConfig.releaseChannelId,
+      releaseTagName,
+    );
+    expectedReleaseMessage.blocks.push({ type: 'divider' });
+    expectedReleaseMessage.blocks.push(
+      cancelReleaseButton(projectId, releaseTagName),
+    );
     // Then
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
-      getReleaseMessageFixture(releaseConfig.releaseChannelId, releaseTagName),
+      expectedReleaseMessage,
     );
     expect(
       await hasModelEntry('Release', {
@@ -771,6 +782,15 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     jest.advanceTimersByTime(30000);
     jest.useRealTimers();
 
+    const expectedReleaseMessage = getReleaseMessageFixture(
+      releaseConfig.releaseChannelId,
+      releaseTagName,
+    );
+    expectedReleaseMessage.blocks.push({ type: 'divider' });
+    expectedReleaseMessage.blocks.push(
+      cancelReleaseButton(projectId, releaseTagName),
+    );
+
     // Then
     await waitFor(() => {
       expect(releaseCallMock.called).toEqual(true);
@@ -780,12 +800,8 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
         method: 'POST',
       });
       expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
-      expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
-        1,
-        getReleaseMessageFixture(
-          releaseConfig.releaseChannelId,
-          releaseTagName,
-        ),
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
+        expectedReleaseMessage,
       );
     });
   });

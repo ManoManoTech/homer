@@ -148,3 +148,43 @@ export function getReleaseCanceledMessageFixture(
     ts: ts,
   };
 }
+
+export function cancelReleaseButton(
+  projectId: number,
+  tagName: string,
+): KnownBlock {
+  return {
+    type: 'actions',
+    elements: [
+      {
+        type: 'button',
+        style: 'danger',
+        action_id: 'release-button-cancel-action',
+        value: `release~~${projectId}~~${tagName}`,
+        text: {
+          type: 'plain_text',
+          text: 'Cancel Release',
+          emoji: true,
+        },
+        confirm: {
+          title: {
+            type: 'plain_text',
+            text: 'Are you sure?',
+          },
+          text: {
+            type: 'mrkdwn',
+            text: 'This will cancel the release. You will not be able to undo this action.',
+          },
+          confirm: {
+            type: 'plain_text',
+            text: 'Yes, Cancel',
+          },
+          deny: {
+            type: 'plain_text',
+            text: 'No',
+          },
+        },
+      },
+    ],
+  };
+}
