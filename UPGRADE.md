@@ -1,4 +1,4 @@
-# Upgrade to 1.1.x
+# Upgrade to 2.x.x
 
 ## Database
 
