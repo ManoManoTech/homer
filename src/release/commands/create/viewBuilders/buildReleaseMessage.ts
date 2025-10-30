@@ -158,7 +158,7 @@ function buildReleaseDataBlocks(
       fields: [
         {
           type: 'mrkdwn',
-          text: `*Version:*\n\`<${projectWebUrl}/-/releases/${releaseTagName}|${releaseTagName}>\``,
+          text: `*Version:*\n<${projectWebUrl}/-/releases/${releaseTagName}|${releaseTagName}>`,
         },
         {
           type: 'mrkdwn',

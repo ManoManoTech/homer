@@ -24,7 +24,7 @@ export function getReleaseMessageFixture(
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Version:*\n\`<${projectFixture.web_url}/-/releases/${releaseTagName}|${releaseTagName}>\``,
+            text: `*Version:*\n<${projectFixture.web_url}/-/releases/${releaseTagName}|${releaseTagName}>`,
           },
           {
             type: 'mrkdwn',
