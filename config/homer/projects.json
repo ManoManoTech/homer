@@ -2,7 +2,7 @@
   "projects": [
     {
       "description": "project_example",
-      "notificationChannelIds": ["C0XXXXXXXXX"],
+      "notificationChannelIds": ["C1XXXXXXXXX"],
       "projectId": 1148,
       "releaseChannelId": "C0XXXXXXXXX",
       "releaseManager": "defaultReleaseManager",

@@ -3,8 +3,8 @@ import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
 import type {
   ReleaseManager,
   ReleaseOptions,
-} from '../../src/release/typings/ReleaseManager';
-import type { ReleaseStateUpdate } from '../../src/release/typings/ReleaseStateUpdate';
+} from '@/release/typings/ReleaseManager';
+import type { ReleaseStateUpdate } from '@/release/typings/ReleaseStateUpdate';
 
 const dockerBuildJobNames = [
   'Build Image',
@@ -16,11 +16,11 @@ const dockerBuildJobNames = [
 
 async function getReleaseStateUpdate(
   { failedDeployments, state, successfulDeployments }: DataRelease,
-  deploymentHook?: GitlabDeploymentHook
+  deploymentHook?: GitlabDeploymentHook,
 ): Promise<ReleaseStateUpdate[]> {
   if (deploymentHook === undefined) {
     const isProductionEnvironment = successfulDeployments.some((env) =>
-      env.startsWith('production')
+      env.environment.startsWith('production'),
     );
     return isProductionEnvironment && state === 'monitoring'
       ? [{ deploymentState: 'completed', environment: 'production' }]
@@ -83,14 +83,14 @@ async function getReleaseStateUpdate(
 async function isReadyToRelease(
   { projectId }: DataRelease,
   mainBranchPipelineId: number,
-  { gitlab: { fetchPipelineJobs } }: ReleaseOptions
+  { gitlab: { fetchPipelineJobs } }: ReleaseOptions,
 ) {
   const pipelinesJobs = await fetchPipelineJobs(
     projectId,
-    mainBranchPipelineId
+    mainBranchPipelineId,
   );
   const dockerBuildJob = pipelinesJobs.find((job) =>
-    dockerBuildJobNames.includes(job.name)
+    dockerBuildJobNames.includes(job.name),
   );
   return dockerBuildJob?.status === 'success';
 }

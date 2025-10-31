@@ -10,7 +10,7 @@ import { reviewBlockActionsHandler } from '@/review/reviewBlockActionsHandler';
 export async function blockActionsRequestHandler(
   req: Request,
   res: Response,
-  payload: BlockActionsPayloadWithChannel
+  payload: BlockActionsPayloadWithChannel,
 ): Promise<void> {
   res.sendStatus(HTTP_STATUS_OK);
 
@@ -35,9 +35,14 @@ export async function blockActionsRequestHandler(
         case action_id.startsWith('review'):
           return reviewBlockActionsHandler(payload);
 
+        case action_id == 'not-interactive':
+          // In slack all the buttons are interactive even if you don't want it.
+          // We use this action id to avoid irrelevant error logs
+          return;
+
         default:
           logger.error(new Error(`Unknown block action: ${action_id}`));
       }
-    })
+    }),
   );
 }
