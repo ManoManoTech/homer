@@ -211,30 +211,29 @@ describe('release > cancelRelease', () => {
     expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(0);
 
     // Check that notification was sent
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(
-      releaseConfig.notificationChannelIds.length,
-    );
-    releaseConfig.notificationChannelIds.forEach(
-      (notificationChannelId, index) => {
-        expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
-          index + 1,
-          {
-            blocks: [
-              {
-                text: {
-                  text: `:homer: Release <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|${releaseFixture.tag_name}> canceled and marked as not deployed :homer-donut:`,
-                  type: 'mrkdwn',
-                },
-                type: 'section',
-              },
-            ],
-            channel: notificationChannelId,
-            icon_url: 'image_72',
-            text: `Release <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|${releaseFixture.tag_name}> canceled and marked as not deployed.`,
-            username: 'real_name',
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(2);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+      blocks: [
+        {
+          text: {
+            text: `:homer: Release <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|${releaseFixture.tag_name}> canceled and marked as not deployed :homer-donut:`,
+            type: 'mrkdwn',
           },
-        );
-      },
+          type: 'section',
+        },
+      ],
+      channel: 'C1XXXXXXXXX',
+      icon_url: 'image_72',
+      text: `Release <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|${releaseFixture.tag_name}> canceled and marked as not deployed.`,
+      username: 'real_name',
+    });
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      2,
+      getReleaseCanceledMessageFixture(
+        releaseConfig.releaseChannelId,
+        createdRelease.tagName,
+        undefined,
+      ),
     );
   });
 
@@ -352,12 +351,14 @@ describe('release > cancelRelease', () => {
 
     // Check that the UI was not updated
     expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(0);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      channel: channelId,
-      user: userId,
-      text: 'Release canceled :homer-donut:',
-    });
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
+      getReleaseCanceledMessageFixture(
+        releaseConfig.releaseChannelId,
+        notYetReadyRelease.tagName,
+        undefined,
+      ),
+    );
   });
 
   it('should not cancel a release in monitoring state', async () => {

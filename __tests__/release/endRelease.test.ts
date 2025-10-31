@@ -110,30 +110,61 @@ describe('release > endRelease', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
-    releaseConfig.notificationChannelIds.forEach(
-      (notificationChannelId, index) => {
-        expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
-          index + 1,
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(2);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+      blocks: [
+        {
+          text: {
+            text: `:ccheck: ${projectFixture.path} PRD - <${pipelineFixture.web_url}|pipeline> - <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|release notes>`,
+            type: 'mrkdwn',
+          },
+          type: 'section',
+        },
+      ],
+      channel: 'C1XXXXXXXXX',
+      icon_url: 'image_72',
+      link_names: true,
+      text: ':ccheck: diaspora-project-site PRD',
+      username: 'real_name',
+    });
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      2,
+      getReleaseCompletedMessageFixture(
+        channelId,
+        deploymentFixture.ref,
+        undefined,
+        [
           {
-            blocks: [
+            type: 'context',
+            elements: [
               {
-                text: {
-                  text: `:ccheck: ${projectFixture.path} PRD - <${pipelineFixture.web_url}|pipeline> - <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|release notes>`,
-                  type: 'mrkdwn',
-                },
-                type: 'section',
+                type: 'mrkdwn',
+                text: `✅ *Integration:* Deployed successfully — started <!date^1619639400^at {time}|earlier>, finished <!date^1619639700^at {time}|now> (*took 5m 0s*)`,
               },
             ],
-            channel: notificationChannelId,
-            icon_url: 'image_72',
-            link_names: true,
-            text: ':ccheck: diaspora-project-site PRD',
-            username: 'real_name',
           },
-        );
-      },
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `✅ *Staging:* Deployed successfully — started <!date^1619639700^at {time}|earlier>, finished <!date^1619639880^at {time}|now> (*took 3m 0s*)`,
+              },
+            ],
+          },
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `✅ *Production:* Deployed successfully — started <!date^1619639880^at {time}|earlier>, finished <!date^1619640180^at {time}|now> (*took 5m 0s*)`,
+              },
+            ],
+          },
+        ],
+      ),
     );
+
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(
       await hasModelEntry('Release', { tagName: releaseFixture.tag_name }),

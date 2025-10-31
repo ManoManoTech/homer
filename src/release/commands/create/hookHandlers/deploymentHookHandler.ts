@@ -1,4 +1,7 @@
-import type { ChatUpdateArguments } from '@slack/web-api';
+import type {
+  ChatPostMessageArguments,
+  ChatUpdateArguments,
+} from '@slack/web-api';
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { hasRelease, removeRelease, updateRelease } from '@/core/services/data';
@@ -104,13 +107,9 @@ export async function deploymentHookHandler(
   );
 
   if (releaseStateUpdates.length > 0) {
-    const isLegacyRelease = release.ts === undefined || release.ts === null;
-
     await Promise.all(
       notificationChannelIds
-        .filter(
-          (channelId) => isLegacyRelease || channelId !== releaseChannelId,
-        )
+        .filter((channelId) => channelId !== releaseChannelId)
         .map(async (channelId) =>
           slackBotWebClient.chat.postMessage(
             buildReleaseStateNotificationMessage({
@@ -126,15 +125,22 @@ export async function deploymentHookHandler(
         ),
     );
 
-    if (!isLegacyRelease) {
+    const releaseMessage = buildReleaseMessage({
+      releaseChannelId,
+      release,
+      releaseStateUpdates,
+      project,
+      pipelineUrl: deployment.deployable.pipeline.web_url,
+    });
+
+    if (release.ts === undefined || release.ts === null) {
+      const { ts } = await slackBotWebClient.chat.postMessage(
+        releaseMessage as ChatPostMessageArguments,
+      );
+      await updateRelease(projectId, releaseTagName, () => ({ ts }));
+    } else {
       await slackBotWebClient.chat.update(
-        buildReleaseMessage({
-          releaseChannelId,
-          release,
-          releaseStateUpdates,
-          project,
-          pipelineUrl: deployment.deployable.pipeline.web_url,
-        }) as ChatUpdateArguments,
+        releaseMessage as ChatUpdateArguments,
       );
     }
 

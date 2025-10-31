@@ -1,4 +1,7 @@
-import type { ChatUpdateArguments } from '@slack/web-api';
+import type {
+  ChatPostMessageArguments,
+  ChatUpdateArguments,
+} from '@slack/web-api';
 import { getProjectRelease, removeRelease } from '@/core/services/data';
 import {
   cancelPipeline,
@@ -24,7 +27,6 @@ export async function cancelRelease(
     throw new Error('Release to cancel not found');
   }
 
-  const isLegacyRelease = release.ts === undefined || release.ts === null;
   const { notificationChannelIds, releaseChannelId } =
     await ConfigHelper.getProjectReleaseConfig(projectId);
 
@@ -35,24 +37,6 @@ export async function cancelRelease(
   switch (release.state) {
     case 'notYetReady':
       await removeRelease(projectId, tagName);
-
-      if (isLegacyRelease) {
-        await slackBotWebClient.chat.postEphemeral({
-          channel: channelId,
-          user: userId,
-          text: 'Release canceled :homer-donut:',
-        });
-      } else {
-        await slackBotWebClient.chat.update(
-          buildReleaseCanceledMessage({
-            releaseChannelId,
-            release,
-            project,
-            canceledBy,
-            releaseStateUpdates: [],
-          }) as ChatUpdateArguments,
-        );
-      }
       break;
 
     case 'created': {
@@ -70,7 +54,7 @@ export async function cancelRelease(
         notificationChannelIds
           .filter(
             (notificationChannelId) =>
-              isLegacyRelease || notificationChannelId !== releaseChannelId,
+              notificationChannelId !== releaseChannelId,
           )
           .map(async (notificationChannelId) =>
             slackBotWebClient.chat.postMessage({
@@ -91,18 +75,6 @@ export async function cancelRelease(
           ),
       );
 
-      if (!isLegacyRelease) {
-        await slackBotWebClient.chat.update(
-          buildReleaseCanceledMessage({
-            releaseChannelId,
-            release,
-            project,
-            canceledBy,
-            releaseStateUpdates: [],
-          }) as ChatUpdateArguments,
-        );
-      }
-
       break;
     }
 
@@ -112,9 +84,28 @@ export async function cancelRelease(
         user: userId,
         text: 'It is too late to cancel that release :homer-stressed:',
       });
-      break;
+      return;
 
     default:
       logger.error(new Error(`Unknown release state: ${release.state}`));
+      return;
+  }
+
+  const releaseCanceledMessage = buildReleaseCanceledMessage({
+    releaseChannelId,
+    release,
+    project,
+    canceledBy,
+    releaseStateUpdates: [],
+  });
+
+  if (release.ts === undefined || release.ts === null) {
+    await slackBotWebClient.chat.postMessage(
+      releaseCanceledMessage as ChatPostMessageArguments,
+    );
+  } else {
+    await slackBotWebClient.chat.update(
+      releaseCanceledMessage as ChatUpdateArguments,
+    );
   }
 }

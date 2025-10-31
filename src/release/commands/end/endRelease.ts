@@ -1,4 +1,7 @@
-import type { ChatUpdateArguments } from '@slack/web-api';
+import type {
+  ChatPostMessageArguments,
+  ChatUpdateArguments,
+} from '@slack/web-api';
 import { getProjectRelease, removeRelease } from '@/core/services/data';
 import { fetchPipelinesByRef, fetchProjectById } from '@/core/services/gitlab';
 import { slackBotWebClient } from '@/core/services/slack';
@@ -29,13 +32,9 @@ export async function endRelease(projectId: number, tagName: string) {
       fetchPipelinesByRef(projectId, release.tagName),
     ]);
 
-    const isLegacyRelease = release.ts === undefined || release.ts === null;
-
     await Promise.all(
       notificationChannelIds
-        .filter(
-          (channelId) => isLegacyRelease || channelId !== releaseChannelId,
-        )
+        .filter((channelId) => channelId !== releaseChannelId)
         .map(async (channelId) =>
           slackBotWebClient.chat.postMessage(
             buildReleaseStateNotificationMessage({
@@ -51,15 +50,21 @@ export async function endRelease(projectId: number, tagName: string) {
         ),
     );
 
-    if (!isLegacyRelease) {
+    const releaseMessage = buildReleaseMessage({
+      releaseChannelId,
+      release,
+      releaseStateUpdates,
+      project,
+      pipelineUrl: pipeline.web_url,
+    });
+
+    if (release.ts === undefined || release.ts === null) {
+      await slackBotWebClient.chat.postMessage(
+        releaseMessage as ChatPostMessageArguments,
+      );
+    } else {
       await slackBotWebClient.chat.update(
-        buildReleaseMessage({
-          releaseChannelId,
-          release,
-          releaseStateUpdates,
-          project,
-          pipelineUrl: pipeline.web_url,
-        }) as ChatUpdateArguments,
+        releaseMessage as ChatUpdateArguments,
       );
     }
   }

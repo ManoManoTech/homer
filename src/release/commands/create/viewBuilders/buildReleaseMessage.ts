@@ -83,7 +83,7 @@ export function buildReleaseCanceledMessage({
   release,
   project,
   canceledBy,
-}: ReleaseCanceledMessageData): ChatUpdateArguments {
+}: ReleaseCanceledMessageData): ChatPostMessageArguments | ChatUpdateArguments {
   const { description, tagName, slackAuthor } = release;
   const { path_with_namespace, web_url } = project;
 
@@ -110,8 +110,10 @@ export function buildReleaseCanceledMessage({
 
   return {
     channel: releaseChannelId,
-    ts: release.ts!,
+    ts: release.ts,
     link_names: true,
+    icon_url: slackAuthor.profile.image_72,
+    username: slackAuthor.real_name,
     blocks: blocks,
   };
 }

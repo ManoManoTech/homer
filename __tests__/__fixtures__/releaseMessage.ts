@@ -97,7 +97,7 @@ export function getReleaseUpdateMessageFixture(
 export function getReleaseCompletedMessageFixture(
   releaseChannelId: string,
   releaseTagName: string,
-  ts: string,
+  ts: string | undefined,
   additionalBlocks: KnownBlock[],
 ) {
   const releaseMessage = getReleaseMessageFixture(
@@ -119,7 +119,7 @@ export function getReleaseCompletedMessageFixture(
 export function getReleaseCanceledMessageFixture(
   releaseChannelId: string,
   releaseTagName: string,
-  ts: string,
+  ts: string | undefined,
   canceledBy = slackUserFixture,
 ) {
   const releaseMessage = getReleaseMessageFixture(
@@ -145,6 +145,8 @@ export function getReleaseCanceledMessageFixture(
     channel: releaseMessage.channel,
     blocks: releaseMessage.blocks,
     link_names: releaseMessage.link_names,
+    icon_url: slackUserFixture.profile.image_72,
+    username: slackUserFixture.real_name,
     ts: ts,
   };
 }
