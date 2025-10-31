@@ -1,9 +1,9 @@
 import type { View } from '@slack/types';
-import type { DataRelease } from '@/core/typings/Data';
 import { slackifyChangelog } from '@/release/commands/create/utils/slackifyChangelog';
 
 export async function buildReleaseChangelogModalView(
-  release: DataRelease,
+  tagName: string,
+  description: string,
 ): Promise<View> {
   return {
     type: 'modal',
@@ -22,7 +22,7 @@ export async function buildReleaseChangelogModalView(
         type: 'header',
         text: {
           type: 'plain_text',
-          text: `Release ${release.tagName}`,
+          text: `Release ${tagName}`,
         },
       },
       {
@@ -40,8 +40,8 @@ export async function buildReleaseChangelogModalView(
         block_id: 'changelog-preview-block',
         text: {
           type: 'mrkdwn',
-          text: release.description
-            ? slackifyChangelog(release.description)
+          text: description
+            ? slackifyChangelog(description)
             : 'No change has been found.',
         },
       },
