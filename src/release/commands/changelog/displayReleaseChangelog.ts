@@ -1,5 +1,6 @@
 import { GENERIC_ERROR_MESSAGE } from '@/constants';
 import { getProjectRelease } from '@/core/services/data';
+import { fetchReleaseByTagName } from '@/core/services/gitlab';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
@@ -14,16 +15,25 @@ export async function displayReleaseChangelog(
   const [projectIdAsString, tagName] = extractActionParameters(action.value);
   const projectId = parseInt(projectIdAsString, 10);
 
-  const release = await getProjectRelease(projectId, tagName);
+  let description: string | undefined;
 
-  if (release === undefined) {
+  const databaseRelease = await getProjectRelease(projectId, tagName);
+
+  if (databaseRelease) {
+    description = databaseRelease.description;
+  } else {
+    const gitlabRelease = await fetchReleaseByTagName(projectId, tagName);
+    description = gitlabRelease.description;
+  }
+
+  if (description === undefined) {
     throw new Error('Release not found');
   }
 
   try {
     await slackBotWebClient.views.open({
       trigger_id,
-      view: await buildReleaseChangelogModalView(release),
+      view: await buildReleaseChangelogModalView(tagName, description),
     });
   } catch (error) {
     await slackBotWebClient.chat.postEphemeral({
