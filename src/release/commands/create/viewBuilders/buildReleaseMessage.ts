@@ -1,4 +1,5 @@
 import type { KnownBlock } from '@slack/types';
+import type { HeaderBlock } from '@slack/types/dist/block-kit/blocks';
 import type {
   ActionsBlockElement,
   ChatPostMessageArguments,
@@ -49,8 +50,13 @@ export function buildReleaseMessage({
   const { description, tagName, slackAuthor } = release;
   const { path_with_namespace, web_url } = project;
 
+  const headerBlock = buildHeaderBlock(
+    path_with_namespace,
+    releaseStateUpdates,
+  );
+
   const blocks = [
-    buildHeaderBlock(path_with_namespace, releaseStateUpdates),
+    headerBlock,
     ...buildReleaseDataBlocks(web_url, slackAuthor, tagName, description),
     buildInformationActionBlock(release, pipelineUrl),
   ] as KnownBlock[];
@@ -69,6 +75,7 @@ export function buildReleaseMessage({
   }
 
   return {
+    text: headerBlock.text.text,
     channel: releaseChannelId,
     ts: release.ts,
     link_names: true,
@@ -90,15 +97,17 @@ export function buildReleaseCanceledMessage({
   const projectDisplayName =
     path_with_namespace.split('/').pop() ?? path_with_namespace;
 
-  const blocks = [
-    {
-      type: 'header',
-      text: {
-        type: 'plain_text',
-        text: `❌ Release Canceled: ${projectDisplayName}`,
-        emoji: true,
-      },
+  const headerBlock: HeaderBlock = {
+    type: 'header',
+    text: {
+      type: 'plain_text',
+      text: `❌ Release Canceled: ${projectDisplayName}`,
+      emoji: true,
     },
+  };
+
+  const blocks = [
+    headerBlock,
     ...buildReleaseDataBlocks(
       web_url,
       slackAuthor,
@@ -110,6 +119,7 @@ export function buildReleaseCanceledMessage({
 
   return {
     channel: releaseChannelId,
+    text: headerBlock.text.text,
     ts: release.ts,
     link_names: true,
     icon_url: slackAuthor.profile.image_72,
@@ -121,7 +131,7 @@ export function buildReleaseCanceledMessage({
 function buildHeaderBlock(
   projectPathWithNamespace: string,
   releaseStateUpdates: ReleaseStateUpdate[],
-): KnownBlock {
+): HeaderBlock {
   const DEPLOYMENT_STATE_COMPLETED: DeploymentState = 'completed';
 
   const projectDisplayName =
