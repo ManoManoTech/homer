@@ -132,18 +132,10 @@ function buildHeaderBlock(
   projectPathWithNamespace: string,
   releaseStateUpdates: ReleaseStateUpdate[],
 ): HeaderBlock {
-  const DEPLOYMENT_STATE_COMPLETED: DeploymentState = 'completed';
-
   const projectDisplayName =
     projectPathWithNamespace.split('/').pop() ?? projectPathWithNamespace;
 
-  const isReleaseCompleted = releaseStateUpdates.some(
-    (update) =>
-      update.deploymentState === DEPLOYMENT_STATE_COMPLETED &&
-      FINAL_RELEASE_ENVIRONMENTS.includes(update.environment),
-  );
-
-  const releaseInfo = isReleaseCompleted
+  const releaseInfo = isReleaseCompleted(releaseStateUpdates)
     ? { status: 'Completed', emoji: '✅' }
     : { status: 'In Progress', emoji: '🚀' };
 
@@ -394,7 +386,11 @@ function buildDeploymentActionBlock(
   releaseStateUpdates: ReleaseStateUpdate[],
 ): KnownBlock | undefined {
   const actionElements: ActionsBlockElement[] = [];
-  if (release.state !== 'monitoring') {
+
+  if (
+    release.state !== 'monitoring' ||
+    !isReleaseCompleted(releaseStateUpdates)
+  ) {
     actionElements.push({
       type: 'button',
       style: 'danger',
@@ -486,4 +482,15 @@ function createChangelogSummary(rawChangelog: string): string {
   }
 
   return slackifyMarkdown(summary);
+}
+
+function isReleaseCompleted(
+  releaseStateUpdates: ReleaseStateUpdate[],
+): boolean {
+  const DEPLOYMENT_STATE_COMPLETED: DeploymentState = 'completed';
+  return releaseStateUpdates.some(
+    (update) =>
+      update.deploymentState === DEPLOYMENT_STATE_COMPLETED &&
+      FINAL_RELEASE_ENVIRONMENTS.includes(update.environment),
+  );
 }
