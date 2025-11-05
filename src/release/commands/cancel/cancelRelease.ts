@@ -51,28 +51,23 @@ export async function cancelRelease(
       const releaseNotesUrl = `${project.web_url}/-/releases/${tagName}`;
 
       await Promise.all(
-        notificationChannelIds
-          .filter(
-            (notificationChannelId) =>
-              notificationChannelId !== releaseChannelId,
-          )
-          .map(async (notificationChannelId) =>
-            slackBotWebClient.chat.postMessage({
-              channel: notificationChannelId,
-              blocks: [
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `:homer: Release <${releaseNotesUrl}|${tagName}> canceled and marked as not deployed :homer-donut:`,
-                  },
+        notificationChannelIds.map(async (notificationChannelId) =>
+          slackBotWebClient.chat.postMessage({
+            channel: notificationChannelId,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `:homer: Release <${releaseNotesUrl}|${tagName}> canceled and marked as not deployed :homer-donut:`,
                 },
-              ],
-              icon_url: canceledBy?.profile.image_72,
-              text: `Release <${releaseNotesUrl}|${tagName}> canceled and marked as not deployed.`,
-              username: canceledBy?.real_name,
-            }),
-          ),
+              },
+            ],
+            icon_url: canceledBy?.profile.image_72,
+            text: `Release <${releaseNotesUrl}|${tagName}> canceled and marked as not deployed.`,
+            username: canceledBy?.real_name,
+          }),
+        ),
       );
 
       break;

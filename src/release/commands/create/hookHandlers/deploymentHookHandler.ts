@@ -108,21 +108,19 @@ export async function deploymentHookHandler(
 
   if (releaseStateUpdates.length > 0) {
     await Promise.all(
-      notificationChannelIds
-        .filter((channelId) => channelId !== releaseChannelId)
-        .map(async (channelId) =>
-          slackBotWebClient.chat.postMessage(
-            buildReleaseStateNotificationMessage({
-              channelId,
-              pipelineUrl: deployment.deployable.pipeline.web_url,
-              projectPathWithNamespace: project.path_with_namespace,
-              projectWebUrl: project.web_url,
-              releaseCreator: release.slackAuthor,
-              releaseStateUpdates,
-              releaseTagName: deployment.ref,
-            }),
-          ),
+      notificationChannelIds.map(async (channelId) =>
+        slackBotWebClient.chat.postMessage(
+          buildReleaseStateNotificationMessage({
+            channelId,
+            pipelineUrl: deployment.deployable.pipeline.web_url,
+            projectPathWithNamespace: project.path_with_namespace,
+            projectWebUrl: project.web_url,
+            releaseCreator: release.slackAuthor,
+            releaseStateUpdates,
+            releaseTagName: deployment.ref,
+          }),
         ),
+      ),
     );
 
     const releaseMessage = buildReleaseMessage({
