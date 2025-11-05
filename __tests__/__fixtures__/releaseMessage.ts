@@ -9,6 +9,7 @@ export function getReleaseMessageFixture(
   releaseTagName: string,
 ) {
   return {
+    text: '🚀 Release In Progress: diaspora-project-site',
     channel: releaseChannelId,
     blocks: [
       {
@@ -112,6 +113,7 @@ export function getReleaseCompletedMessageFixture(
 
   return {
     ...releaseMessage,
+    text: '✅ Release Completed: diaspora-project-site',
     ts: ts,
   };
 }
@@ -142,6 +144,7 @@ export function getReleaseCanceledMessageFixture(
   releaseMessage.blocks.pop();
 
   return {
+    text: '❌ Release Canceled: diaspora-project-site',
     channel: releaseMessage.channel,
     blocks: releaseMessage.blocks,
     link_names: releaseMessage.link_names,
