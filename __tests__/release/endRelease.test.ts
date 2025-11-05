@@ -121,7 +121,7 @@ describe('release > endRelease', () => {
           type: 'section',
         },
       ],
-      channel: 'C1XXXXXXXXX',
+      channel: 'C0XXXXXXXXX',
       icon_url: 'image_72',
       link_names: true,
       text: ':ccheck: diaspora-project-site PRD',

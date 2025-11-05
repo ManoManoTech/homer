@@ -33,21 +33,19 @@ export async function endRelease(projectId: number, tagName: string) {
     ]);
 
     await Promise.all(
-      notificationChannelIds
-        .filter((channelId) => channelId !== releaseChannelId)
-        .map(async (channelId) =>
-          slackBotWebClient.chat.postMessage(
-            buildReleaseStateNotificationMessage({
-              channelId,
-              pipelineUrl: pipeline.web_url,
-              projectPathWithNamespace: project.path_with_namespace,
-              projectWebUrl: project.web_url,
-              releaseCreator: release.slackAuthor,
-              releaseStateUpdates,
-              releaseTagName: release.tagName,
-            }),
-          ),
+      notificationChannelIds.map(async (channelId) =>
+        slackBotWebClient.chat.postMessage(
+          buildReleaseStateNotificationMessage({
+            channelId,
+            pipelineUrl: pipeline.web_url,
+            projectPathWithNamespace: project.path_with_namespace,
+            projectWebUrl: project.web_url,
+            releaseCreator: release.slackAuthor,
+            releaseStateUpdates,
+            releaseTagName: release.tagName,
+          }),
         ),
+      ),
     );
 
     const releaseMessage = buildReleaseMessage({

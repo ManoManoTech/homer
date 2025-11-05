@@ -222,7 +222,7 @@ describe('release > cancelRelease', () => {
           type: 'section',
         },
       ],
-      channel: 'C1XXXXXXXXX',
+      channel: 'C0XXXXXXXXX',
       icon_url: 'image_72',
       text: `Release <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|${releaseFixture.tag_name}> canceled and marked as not deployed.`,
       username: 'real_name',
