@@ -6,7 +6,8 @@ export const projectFixture: GitlabProjectDetails = {
   default_branch: 'master',
   visibility: 'private',
   ssh_url_to_repo: 'git@example.com:diaspora/diaspora-project-site.git',
-  http_url_to_repo: 'http://example.com/diaspora/diaspora-project-site.git',
+  http_url_to_repo:
+    'https://my-git.domain.com/diaspora/diaspora-project-site.git',
   web_url: 'https://my-git.domain.com/diaspora/diaspora-project-site',
   readme_url:
     'https://my-git.domain.com/diaspora/diaspora-project-site/blob/master/README.md',

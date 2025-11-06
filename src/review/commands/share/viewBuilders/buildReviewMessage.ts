@@ -235,10 +235,9 @@ function buildPeopleSection(
     });
   }
 
-  const approvedCount = approvers.length;
-  const remainingCount = approvalInfo.approvals_left;
-
-  const emojiIndicators = remainingCount == 0 ? '✅' : '⏳';
+  const approvedCount =
+    approvalInfo.approvals_required - approvalInfo.approvals_left;
+  const emojiIndicators = approvalInfo.approvals_left == 0 ? '✅' : '⏳';
 
   fields.push({
     type: 'mrkdwn',
