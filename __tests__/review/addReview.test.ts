@@ -345,7 +345,7 @@ describe('review > addReview', () => {
     const modifiedMergeRequestApprovals = {
       ...mergeRequestApprovalsFixture,
       approvals_required: 3,
-      approvals_left: 2,
+      approvals_left: 1,
       approved_by: [
         {
           user: {
@@ -424,6 +424,6 @@ describe('review > addReview', () => {
     const approvalField = peopleSection.fields?.find(
       (field) => field.type === 'mrkdwn' && field.text.includes('Approvals'),
     ) as MrkdwnElement;
-    expect(approvalField.text).toContain('1/3 required ⏳');
+    expect(approvalField.text).toContain('2/3 required ⏳');
   });
 });
