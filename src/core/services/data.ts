@@ -1,8 +1,8 @@
 import {
   DataTypes,
+  type Model,
   Op,
   Sequelize,
-  type Model,
   type WhereOptions,
 } from 'sequelize';
 import { CONFIG } from '@/config';
@@ -14,10 +14,11 @@ import type {
   DataReleaseInternal,
   DataReview,
 } from '@/core/typings/Data';
+import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
-const REVIEW_LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
+const LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 
 const sequelize = new Sequelize({
   database: CONFIG.postgres.databaseName,
@@ -43,6 +44,7 @@ const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
   state: { type: DataTypes.STRING, allowNull: false },
   successfulDeployments: { type: DataTypes.TEXT, allowNull: false },
   tagName: { type: DataTypes.STRING, allowNull: false },
+  ts: { type: DataTypes.STRING, allowNull: true },
 });
 
 const Review = sequelize.define<Model<DataReview>>('Review', {
@@ -56,11 +58,20 @@ export async function cleanOldEntries(): Promise<void> {
   const cleanedReviewsCount = await Review.destroy({
     where: {
       updatedAt: {
-        [Op.lt]: new Date(Date.now() - REVIEW_LIFESPAN_WITHOUT_UPDATE_MS),
+        [Op.lt]: new Date(Date.now() - LIFESPAN_WITHOUT_UPDATE_MS),
       },
     } as any, // Typing issue in sequelize
   });
   logger.info(`Cleaned ${cleanedReviewsCount} reviews.`);
+
+  const cleanedReleasesCount = await Release.destroy({
+    where: {
+      updatedAt: {
+        [Op.lt]: new Date(Date.now() - LIFESPAN_WITHOUT_UPDATE_MS),
+      },
+    } as any, // Typing issue in sequelize
+  });
+  logger.info(`Cleaned ${cleanedReleasesCount} releases.`);
 }
 
 export async function cleanReleases(
@@ -106,7 +117,10 @@ export async function createRelease(
 ): Promise<DataRelease> {
   const [releaseModel] = await Release.findOrCreate({
     where: {
-      ...release,
+      projectId: release.projectId,
+      tagName: release.tagName,
+      description: release.description,
+      state: release.state,
       failedDeployments: JSON.stringify(release.failedDeployments),
       slackAuthor: JSON.stringify(release.slackAuthor),
       startedDeployments: JSON.stringify(release.startedDeployments),
@@ -281,10 +295,14 @@ function formatRelease(releaseModel: Model<DataReleaseInternal>): DataRelease {
 
   return {
     ...internalRelease,
-    failedDeployments: JSON.parse(internalRelease.failedDeployments),
+    failedDeployments: getReleaseDeployments(internalRelease.failedDeployments),
     slackAuthor: JSON.parse(internalRelease.slackAuthor),
-    startedDeployments: JSON.parse(internalRelease.startedDeployments),
-    successfulDeployments: JSON.parse(internalRelease.successfulDeployments),
+    startedDeployments: getReleaseDeployments(
+      internalRelease.startedDeployments,
+    ),
+    successfulDeployments: getReleaseDeployments(
+      internalRelease.successfulDeployments,
+    ),
   };
 }
 
@@ -292,4 +310,41 @@ function toJSON<DataType extends object>(
   model: Model<DataType>,
 ): DatabaseEntry<DataType> {
   return model.toJSON();
+}
+
+function getReleaseDeployments(
+  dbTextValue: string | null,
+): ReleaseDeploymentInfo[] {
+  if (!dbTextValue) {
+    return [];
+  }
+
+  try {
+    const parsedValue = JSON.parse(dbTextValue);
+
+    if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
+      return [];
+    }
+
+    const firstElement = parsedValue[0];
+
+    if (typeof firstElement === 'string') {
+      // --- OLD FORMAT: ["staging", "production"] ---
+      // Transform it on the fly into the new structure
+      return parsedValue.map((env: string) => ({
+        environment: env,
+        date: undefined,
+      }));
+    } else if (typeof firstElement === 'object' && firstElement !== null) {
+      // --- NEW FORMAT: [{"environment": "staging", ...}] ---
+      return parsedValue as ReleaseDeploymentInfo[];
+    }
+
+    return [];
+  } catch (error) {
+    logger.error(
+      `Failed to parse deployment JSON from TEXT column: ${dbTextValue} ${error}`,
+    );
+    return [];
+  }
 }

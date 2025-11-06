@@ -1,4 +1,5 @@
 import type { SlackUser } from '@/core/typings/SlackUser';
+import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
 import type { ReleaseState } from '@/release/typings/ReleaseState';
 
 export interface DataProject {
@@ -8,13 +9,14 @@ export interface DataProject {
 
 export interface DataRelease {
   description: string;
-  failedDeployments: string[];
+  failedDeployments: ReleaseDeploymentInfo[];
   projectId: number;
   slackAuthor: SlackUser;
-  startedDeployments: string[];
+  startedDeployments: ReleaseDeploymentInfo[];
   state: ReleaseState;
-  successfulDeployments: string[];
+  successfulDeployments: ReleaseDeploymentInfo[];
   tagName: string;
+  ts?: string;
 }
 
 export interface DataReleaseInternal

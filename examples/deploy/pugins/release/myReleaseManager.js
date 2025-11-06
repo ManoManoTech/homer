@@ -2,11 +2,11 @@ Object.defineProperty(exports, '__esModule', { value: true });
 const jobsToCheckBeforeRelease = ['Build Image'];
 async function getReleaseStateUpdate(
   { failedDeployments, state, successfulDeployments },
-  deploymentHook
+  deploymentHook,
 ) {
   if (deploymentHook === undefined) {
     const isProductionEnvironment = successfulDeployments.some((env) =>
-      env.startsWith('production')
+      env.environment.startsWith('production'),
     );
     return isProductionEnvironment && state === 'monitoring'
       ? [{ deploymentState: 'completed', environment: 'production' }]
@@ -46,14 +46,14 @@ async function getReleaseStateUpdate(
 async function isReadyToRelease(
   { projectId },
   mainBranchPipelineId,
-  { gitlab: { fetchPipelineJobs } }
+  { gitlab: { fetchPipelineJobs } },
 ) {
   const pipelinesJobs = await fetchPipelineJobs(
     projectId,
-    mainBranchPipelineId
+    mainBranchPipelineId,
   );
   const buildJob = pipelinesJobs.find((job) =>
-    jobsToCheckBeforeRelease.includes(job.name)
+    jobsToCheckBeforeRelease.includes(job.name),
   );
   return buildJob?.status === 'success';
 }
