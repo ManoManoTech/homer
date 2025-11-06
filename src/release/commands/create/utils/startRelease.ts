@@ -1,78 +1,51 @@
-import slackifyMarkdown from 'slackify-markdown';
+import type { ChatPostMessageArguments } from '@slack/web-api';
 import { createRelease as createGitlabRelease } from '@/core/services/gitlab';
 import { slackBotWebClient } from '@/core/services/slack';
+import type { DataRelease } from '@/core/typings/Data';
 import type { GitlabProject } from '@/core/typings/GitlabProject';
-import type { SlackUser } from '@/core/typings/SlackUser';
+import { buildReleaseMessage } from '@/release/commands/create/viewBuilders/buildReleaseMessage';
 import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReleasePipeline } from './waitForReleasePipeline';
 
 interface StartReleaseData {
-  commitId: string;
-  description: string;
   project: GitlabProject;
-  releaseCreator: SlackUser;
-  releaseTagName: string;
+  commitId: string;
+  release: DataRelease;
   hasReleasePipeline: boolean | undefined;
 }
 
 export async function startRelease({
-  commitId,
-  description,
   project,
-  releaseCreator,
-  releaseTagName,
+  commitId,
+  release,
   hasReleasePipeline = true,
-}: StartReleaseData): Promise<void> {
+}: StartReleaseData): Promise<string> {
   const { releaseChannelId } = await ConfigHelper.getProjectReleaseConfig(
-    project.id
+    project.id,
   );
 
-  await createGitlabRelease(project.id, commitId, releaseTagName, description);
+  await createGitlabRelease(
+    project.id,
+    commitId,
+    release.tagName,
+    release.description,
+  );
 
-  await slackBotWebClient.chat.postEphemeral({
-    channel: releaseChannelId,
-    user: releaseCreator.id,
-    text: `Release \`${releaseTagName}\` started for \`${project.path}\` :homer-happy:`,
-  });
-
+  let pipelineUrl = undefined;
   if (hasReleasePipeline) {
-    const pipeline = await waitForReleasePipeline(project.id, releaseTagName);
-    const pipelineUrl = pipeline?.web_url;
-
-    if (pipelineUrl) {
-      await slackBotWebClient.chat.postEphemeral({
-        channel: releaseChannelId,
-        user: releaseCreator.id,
-        text: `↳ <${pipelineUrl}|pipeline> :homer-donut:`,
-      });
-    }
+    const pipeline = await waitForReleasePipeline(project.id, release.tagName);
+    pipelineUrl = pipeline?.web_url;
   }
 
-  await slackBotWebClient.chat.postMessage({
-    channel: releaseChannelId,
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:homer: New release <${
-            project.web_url
-          }/-/releases/${releaseTagName}|${releaseTagName}> for project <${
-            project.web_url
-          }|${project.path_with_namespace}>${
-            description
-              ? `:\n${slackifyMarkdown(description)
-                  .split('\n')
-                  .filter(Boolean)
-                  .map((line) => `  ${line}`)
-                  .join('\n')}`
-              : '.'
-          }`,
-        },
-      },
-    ],
-    icon_url: releaseCreator.profile.image_72,
-    text: `New release ${releaseTagName} for project ${project.path_with_namespace}.`,
-    username: releaseCreator.real_name,
-  });
+  const { ts } = await slackBotWebClient.chat.postMessage(
+    buildReleaseMessage({
+      releaseChannelId,
+      release,
+      releaseStateUpdates: [],
+      project,
+      pipelineUrl,
+    }) as ChatPostMessageArguments,
+  );
+
+  return ts as string;
 }

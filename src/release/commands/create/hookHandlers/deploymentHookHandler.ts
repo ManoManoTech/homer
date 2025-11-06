@@ -1,3 +1,7 @@
+import type {
+  ChatPostMessageArguments,
+  ChatUpdateArguments,
+} from '@slack/web-api';
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { hasRelease, removeRelease, updateRelease } from '@/core/services/data';
@@ -6,9 +10,10 @@ import { slackBotWebClient } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { GitlabDeploymentStatus } from '@/core/typings/GitlabDeployment';
 import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
+import { buildReleaseMessage } from '@/release/commands/create/viewBuilders/buildReleaseMessage';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
-import { buildReleaseStateMessage } from '../viewBuilders/buildReleaseStateMessage';
+import { buildReleaseStateNotificationMessage } from '../viewBuilders/buildReleaseStateNotificationMessage';
 
 const STATUSES_TO_HANDLE: GitlabDeploymentStatus[] = [
   'failed',
@@ -18,7 +23,7 @@ const STATUSES_TO_HANDLE: GitlabDeploymentStatus[] = [
 
 export async function deploymentHookHandler(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   const deploymentHook = req.body as GitlabDeploymentHook;
   const {
@@ -29,9 +34,8 @@ export async function deploymentHookHandler(
   } = deploymentHook;
   const projectId = project.id;
 
-  const hasProjectReleaseConfig = await ConfigHelper.hasProjectReleaseConfig(
-    projectId
-  );
+  const hasProjectReleaseConfig =
+    await ConfigHelper.hasProjectReleaseConfig(projectId);
 
   if (!STATUSES_TO_HANDLE.includes(status) || !hasProjectReleaseConfig) {
     res.sendStatus(HTTP_STATUS_NO_CONTENT);
@@ -52,21 +56,38 @@ export async function deploymentHookHandler(
   switch (status) {
     case 'failed':
       updateGetter = ({ failedDeployments }) => ({
-        failedDeployments: [...new Set([...failedDeployments, environment])],
+        failedDeployments: [
+          ...failedDeployments.filter(
+            (failedDeployment) => failedDeployment.environment !== environment,
+          ),
+          { environment, date: deploymentHook.status_changed_at },
+        ],
       });
       break;
 
     case 'running':
       updateGetter = ({ startedDeployments }) => ({
-        startedDeployments: [...new Set([...startedDeployments, environment])],
+        startedDeployments: [
+          ...startedDeployments.filter(
+            (startedDeployment) =>
+              startedDeployment.environment !== environment,
+          ),
+          { environment, date: deploymentHook.status_changed_at },
+        ],
       });
       break;
 
     case 'success':
       updateGetter = ({ failedDeployments, successfulDeployments }) => ({
-        failedDeployments: failedDeployments.filter((e) => e !== environment),
+        failedDeployments: failedDeployments.filter(
+          (failedDeployment) => failedDeployment.environment !== environment,
+        ),
         successfulDeployments: [
-          ...new Set([...successfulDeployments, environment]),
+          ...successfulDeployments.filter(
+            (successfulDeployment) =>
+              successfulDeployment.environment !== environment,
+          ),
+          { environment, date: deploymentHook.status_changed_at },
         ],
       });
       break;
@@ -76,20 +97,20 @@ export async function deploymentHookHandler(
   }
 
   const release = await updateRelease(projectId, releaseTagName, updateGetter);
-  const { notificationChannelIds, releaseManager } =
+  const { notificationChannelIds, releaseChannelId, releaseManager } =
     await ConfigHelper.getProjectReleaseConfig(projectId);
 
   const releaseStateUpdates = await releaseManager.getReleaseStateUpdate(
     release,
     deploymentHook,
-    getReleaseOptions()
+    getReleaseOptions(),
   );
 
   if (releaseStateUpdates.length > 0) {
     await Promise.all(
       notificationChannelIds.map(async (channelId) =>
         slackBotWebClient.chat.postMessage(
-          buildReleaseStateMessage({
+          buildReleaseStateNotificationMessage({
             channelId,
             pipelineUrl: deployment.deployable.pipeline.web_url,
             projectPathWithNamespace: project.path_with_namespace,
@@ -97,15 +118,34 @@ export async function deploymentHookHandler(
             releaseCreator: release.slackAuthor,
             releaseStateUpdates,
             releaseTagName: deployment.ref,
-          })
-        )
-      )
+          }),
+        ),
+      ),
     );
+
+    const releaseMessage = buildReleaseMessage({
+      releaseChannelId,
+      release,
+      releaseStateUpdates,
+      project,
+      pipelineUrl: deployment.deployable.pipeline.web_url,
+    });
+
+    if (release.ts === undefined || release.ts === null) {
+      const { ts } = await slackBotWebClient.chat.postMessage(
+        releaseMessage as ChatPostMessageArguments,
+      );
+      await updateRelease(projectId, releaseTagName, () => ({ ts }));
+    } else {
+      await slackBotWebClient.chat.update(
+        releaseMessage as ChatUpdateArguments,
+      );
+    }
 
     const isReleaseCompleted = releaseStateUpdates.some(
       (update) =>
         update.deploymentState === 'completed' &&
-        ['production', 'support'].includes(update.environment)
+        ['production', 'support'].includes(update.environment),
     );
 
     if (isReleaseCompleted) {
@@ -116,7 +156,7 @@ export async function deploymentHookHandler(
     const isReleaseBeingMonitored = releaseStateUpdates.some(
       (update) =>
         update.deploymentState === 'monitoring' &&
-        ['production', 'support'].includes(update.environment)
+        ['production', 'support'].includes(update.environment),
     );
 
     if (isReleaseBeingMonitored) {

@@ -15,19 +15,20 @@ export const deploymentHookFixture: GitlabDeploymentHook = {
     id: projectFixture.id,
     name: 'diaspora-project-site',
     description: '',
-    web_url: 'http://example.com/diaspora/diaspora-project-site',
+    web_url: 'https://my-git.domain.com/diaspora/diaspora-project-site',
     avatar_url: null,
     git_ssh_url: 'ssh://vlad@10.126.0.2:2222/root/diaspora-project-site.git',
-    git_http_url: 'http://example.com/diaspora/diaspora-project-site.git',
+    git_http_url:
+      'https://my-git.domain.com/diaspora/diaspora-project-site.git',
     namespace: 'Administrator',
     visibility_level: 0,
     path_with_namespace: 'root/diaspora-project-site',
     default_branch: 'master',
     ci_config_path: '',
-    homepage: 'http://example.com/diaspora/diaspora-project-site',
+    homepage: 'https://my-git.domain.com/diaspora/diaspora-project-site',
     url: 'ssh://vlad@example.com/diaspora/diaspora-project-site.git',
     ssh_url: 'ssh://vlad@example.com/diaspora/diaspora-project-site.git',
-    http_url: 'http://example.com/diaspora/diaspora-project-site.git',
+    http_url: 'https://my-git.domain.com/diaspora/diaspora-project-site.git',
   },
   short_sha: '279484c0',
   user: {
@@ -40,6 +41,6 @@ export const deploymentHookFixture: GitlabDeploymentHook = {
   },
   user_url: 'http://10.126.0.2:3000/root',
   commit_url:
-    'http://example.com/diaspora/diaspora-project-site/-/commit/279484c09fbe69ededfced8c1bb6e6d24616b468',
+    'https://my-git.domain.com/diaspora/diaspora-project-site/-/commit/279484c09fbe69ededfced8c1bb6e6d24616b468',
   commit_title: 'Add new file',
 };
