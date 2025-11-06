@@ -59,7 +59,7 @@ describe('review > pushHook', () => {
       blocks: [
         {
           text: {
-            text: '<http://example.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7|fixed readme>',
+            text: '<https://my-git.domain.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7|fixed readme>',
             type: 'mrkdwn',
           },
           type: 'section',
@@ -122,7 +122,7 @@ describe('review > pushHook', () => {
       blocks: [
         {
           text: {
-            text: '<http://example.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7|fixed readme>',
+            text: '<https://my-git.domain.com/mike/diaspora/commit/da1560886d4f094c3e6c9ef40349f7d38b5d27d7|fixed readme>',
             type: 'mrkdwn',
           },
           type: 'section',

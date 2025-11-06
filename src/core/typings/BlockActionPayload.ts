@@ -1,4 +1,4 @@
-import type { Action, ModalView, View } from '@slack/web-api';
+import type { Actionable, ModalView, View } from '@slack/web-api';
 
 export type BlockActionView<V extends View = ModalView> = V & {
   id: string;
@@ -12,7 +12,7 @@ export type BlockActionView<V extends View = ModalView> = V & {
 };
 
 export interface BlockActionsPayload<V extends View = ModalView> {
-  actions: Action[];
+  actions: Actionable[];
   api_app_id: string;
   container: {
     type: string;

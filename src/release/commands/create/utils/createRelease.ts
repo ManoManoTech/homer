@@ -13,7 +13,7 @@ import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReadinessAndStartRelease } from './waitForReadinessAndStartRelease';
 
 export async function createRelease(
-  payload: ModalViewSubmissionPayload
+  payload: ModalViewSubmissionPayload,
 ): Promise<void> {
   const { user, view } = payload;
   const { values } = view.state;
@@ -21,7 +21,7 @@ export async function createRelease(
   const projectId = parseInt(
     values['release-project-block']['release-select-project-action']
       .selected_option.value,
-    10
+    10,
   );
 
   const releaseTagName: string =
@@ -31,15 +31,14 @@ export async function createRelease(
     values['release-previous-tag-block']?.['release-select-previous-tag-action']
       ?.selected_option.value;
 
-  const { releaseManager } = await ConfigHelper.getProjectReleaseConfig(
-    projectId
-  );
+  const { releaseManager } =
+    await ConfigHelper.getProjectReleaseConfig(projectId);
 
   const [description, slackAuthor] = await Promise.all([
     generateChangelog(
       projectId,
       previousReleaseTagName,
-      (commit) => releaseManager.filterChangelog?.(commit, view.state) ?? true
+      (commit) => releaseManager.filterChangelog?.(commit, view.state) ?? true,
     ),
     fetchSlackUserFromId(user.id),
     getReleaseOptions(),
@@ -47,7 +46,7 @@ export async function createRelease(
 
   if (slackAuthor === undefined) {
     throw new Error(
-      `Unable to retrieve Slack user of release creator using id ${user.id}`
+      `Unable to retrieve Slack user of release creator using id ${user.id}`,
     );
   }
 
@@ -60,6 +59,7 @@ export async function createRelease(
     state: 'notYetReady',
     successfulDeployments: [],
     tagName: releaseTagName,
+    ts: undefined,
   };
 
   // Clean previous release to prevent conflicts

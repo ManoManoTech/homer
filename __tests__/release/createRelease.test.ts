@@ -10,6 +10,11 @@ import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
 import ConfigHelper from '@/release/utils/ConfigHelper';
+import {
+  cancelReleaseButton,
+  getReleaseMessageFixture,
+} from '@root/__tests__/__fixtures__/releaseMessage';
+import { slackUserFixture } from '@root/__tests__/__fixtures__/slackUserFixture';
 import { dockerBuildJobFixture } from '../__fixtures__/dockerBuildJobFixture';
 import { jobFixture } from '../__fixtures__/jobFixture';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
@@ -20,12 +25,19 @@ import { tagFixture } from '../__fixtures__/tagFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 import { waitFor } from '../utils/waitFor';
+
 describe('release > createRelease', () => {
   let releaseConfig: ProjectReleaseConfig;
   beforeAll(async () => {
     releaseConfig = await ConfigHelper.getProjectReleaseConfig(
       projectFixture.id,
     );
+  });
+
+  beforeEach(async () => {
+    (slackBotWebClient.chat.postMessage as jest.Mock).mockResolvedValue({
+      ts: 'ts',
+    });
   });
 
   it('should create a release whereas main pipeline is ready', async () => {
@@ -563,13 +575,7 @@ describe('release > createRelease', () => {
     };
 
     (slackBotWebClient.users.info as jest.Mock).mockImplementation(() =>
-      Promise.resolve({
-        user: {
-          id: 'slackUserId',
-          profile: { image_72: 'image_72' },
-          real_name: 'real_name',
-        },
-      }),
+      Promise.resolve({ user: slackUserFixture }),
     );
 
     const releaseCallMock = mockGitlabCall(
@@ -599,8 +605,7 @@ describe('release > createRelease', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(
       await hasModelEntry('Release', {
-        slackAuthor:
-          '{"id":"slackUserId","profile":{"image_72":"image_72"},"real_name":"real_name"}',
+        slackAuthor: JSON.stringify(slackUserFixture),
         tagName: releaseTagName,
       }),
     ).toEqual(true);
@@ -610,20 +615,12 @@ describe('release > createRelease', () => {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     });
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: releaseConfig.releaseChannelId,
-      text: `Release \`${releaseTagName}\` started for \`${projectFixture.path}\` :homer-happy:`,
-      user: 'slackUserId',
-    });
 
     /** Step 5: post message with release pipeline and changelog */
-
     // Given
     mockGitlabCall(`/projects/${projectId}/pipelines?ref=${releaseTagName}`, [
       pipelineFixture,
     ]);
-
     // When
     jest.advanceTimersByTime(2000);
     jest.useRealTimers();
@@ -631,32 +628,26 @@ describe('release > createRelease', () => {
       setTimeout(resolve, 0);
     }); // execute pending tasks in the event loop
 
+    const expectedReleaseMessage = getReleaseMessageFixture(
+      releaseConfig.releaseChannelId,
+      releaseTagName,
+    );
+    expectedReleaseMessage.blocks.push({ type: 'divider' });
+    expectedReleaseMessage.blocks.push(
+      cancelReleaseButton(projectId, releaseTagName),
+    );
     // Then
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(2);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-      channel: releaseConfig.releaseChannelId,
-      text: `↳ <${pipelineFixture.web_url}|pipeline> :homer-donut:`,
-      user: 'slackUserId',
-    });
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith({
-      channel: releaseConfig.releaseChannelId,
-      blocks: [
-        {
-          text: {
-            text: `\
-:homer: New release <${projectFixture.web_url}/-/releases/stable-19700101-0100|${releaseTagName}> for project <${projectFixture.web_url}|${projectFixture.path_with_namespace}>:
-  •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement great feature> - <https://my-ticket-management.com/view/SPAR-156|SPAR-156>
-  •   <http://gitlab.example.com/my-group/my-project/-/merge_requests/1|feat(great): implement another great feature> - <https://my-ticket-management.com/view/SPAR-158|SPAR-158>`,
-            type: 'mrkdwn',
-          },
-          type: 'section',
-        },
-      ],
-      icon_url: 'image_72',
-      text: `New release ${releaseTagName} for project ${projectFixture.path_with_namespace}.`,
-      username: 'real_name',
-    });
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
+      expectedReleaseMessage,
+    );
+    expect(
+      await hasModelEntry('Release', {
+        slackAuthor: JSON.stringify(slackUserFixture),
+        tagName: releaseTagName,
+        ts: 'ts',
+      }),
+    ).toEqual(true);
   });
 
   it('should create a release whereas main pipeline is not yet ready', async () => {
@@ -665,7 +656,7 @@ describe('release > createRelease', () => {
     // Given
     const { projectId } = releaseConfig;
     const releaseTagName = 'stable-20200101-1100';
-    const userId = 'slackUserId';
+    const userId = slackUserFixture.id;
     const body = {
       payload: JSON.stringify({
         type: 'view_submission',
@@ -702,13 +693,7 @@ describe('release > createRelease', () => {
     jest.useFakeTimers();
 
     (slackBotWebClient.users.info as jest.Mock).mockImplementation(() =>
-      Promise.resolve({
-        user: {
-          id: 'slackUserId',
-          profile: { image_72: 'image_72' },
-          real_name: 'real_name',
-        },
-      }),
+      Promise.resolve({ user: slackUserFixture }),
     );
 
     mockGitlabCall(`/projects/${projectId}/releases`, releaseFixture);
@@ -797,6 +782,15 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
     jest.advanceTimersByTime(30000);
     jest.useRealTimers();
 
+    const expectedReleaseMessage = getReleaseMessageFixture(
+      releaseConfig.releaseChannelId,
+      releaseTagName,
+    );
+    expectedReleaseMessage.blocks.push({ type: 'divider' });
+    expectedReleaseMessage.blocks.push(
+      cancelReleaseButton(projectId, releaseTagName),
+    );
+
     // Then
     await waitFor(() => {
       expect(releaseCallMock.called).toEqual(true);
@@ -805,17 +799,10 @@ wait for them and start the release automatically (<${pipelineFixture.web_url}|p
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
       });
-      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(3);
-      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-        channel: releaseConfig.releaseChannelId,
-        text: `Release \`${releaseTagName}\` started for \`${projectFixture.path}\` :homer-happy:`,
-        user: 'slackUserId',
-      });
-      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(3, {
-        channel: releaseConfig.releaseChannelId,
-        text: `↳ <${pipelineFixture.web_url}|pipeline> :homer-donut:`,
-        user: 'slackUserId',
-      });
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
+        expectedReleaseMessage,
+      );
     });
   });
 

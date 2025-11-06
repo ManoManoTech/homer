@@ -2,7 +2,7 @@ import type { ChatPostMessageArguments } from '@slack/web-api';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { ReleaseStateUpdate } from '../../../typings/ReleaseStateUpdate';
 
-interface ReleaseMessageData {
+interface ReleaseNotificationMessageData {
   channelId: string;
   pipelineUrl: string;
   projectPathWithNamespace: string;
@@ -12,7 +12,7 @@ interface ReleaseMessageData {
   releaseTagName: string;
 }
 
-export function buildReleaseStateMessage({
+export function buildReleaseStateNotificationMessage({
   channelId,
   pipelineUrl,
   projectPathWithNamespace,
@@ -20,7 +20,7 @@ export function buildReleaseStateMessage({
   releaseCreator,
   releaseStateUpdates,
   releaseTagName,
-}: ReleaseMessageData): ChatPostMessageArguments {
+}: ReleaseNotificationMessageData): ChatPostMessageArguments {
   const blocks = releaseStateUpdates.map(
     ({
       deploymentState,
@@ -79,7 +79,7 @@ export function buildReleaseStateMessage({
           text: `${emoji} ${projectDisplayName} ${formattedEnvironment} - <${pipelineUrl}|pipeline> - <${projectWebUrl}/-/releases/${releaseTagName}|release notes>`,
         },
       };
-    }
+    },
   );
 
   return {
