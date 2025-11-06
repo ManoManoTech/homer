@@ -8,7 +8,7 @@ import { buildReleaseModalView } from './commands/create/viewBuilders/buildRelea
 export async function releaseViewSubmissionHandler(
   req: Request,
   res: Response,
-  payload: ModalViewSubmissionPayload
+  payload: ModalViewSubmissionPayload,
 ): Promise<void> {
   const { callback_id } = payload.view;
 
@@ -29,10 +29,15 @@ export async function releaseViewSubmissionHandler(
       break;
     }
 
+    case 'release-changelog-modal': {
+      res.sendStatus(HTTP_STATUS_NO_CONTENT);
+      break;
+    }
+
     default:
       res.sendStatus(HTTP_STATUS_NO_CONTENT);
       logger.error(
-        new Error(`Unknown release view callback id: ${callback_id}`)
+        new Error(`Unknown release view callback id: ${callback_id}`),
       );
   }
 }
