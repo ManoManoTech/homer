@@ -30,6 +30,10 @@ RUN yarn build
 # Stage 3: Production image
 FROM node:24-alpine AS production
 
+# Install tini for proper signal handling and zombie process reaping
+# Tini is recommended by Docker and is part of the Docker init standard
+RUN apk add --no-cache tini
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
@@ -51,6 +55,6 @@ USER nodejs
 
 EXPOSE 3000
 
-# Use Node.js built-in init process handler (available since Node 16)
-# Handles signals properly and reaps zombie processes without external dependencies
-CMD ["node", "--init", "dist/src/index.js"]
+# Use tini as the init process to handle signals and reap zombies
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "dist/src/index.js"]
