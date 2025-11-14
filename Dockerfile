@@ -15,14 +15,18 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json yarn.lock tsconfig.build.json ./
+# Copy package files and TypeScript configs
+COPY package.json yarn.lock tsconfig.json tsconfig.build.json ./
 
 # Install all dependencies (including devDependencies for build)
 RUN yarn install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
+
+# You need to override the config directory with your own config 
+# when building your own image. Also, copy your own plugins directory.
+COPY config ./config
 
 # Build the application
 RUN yarn build

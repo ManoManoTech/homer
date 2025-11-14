@@ -40,8 +40,6 @@ jest.config.js
 .eslintrc
 eslint.config.js
 exec-staged.config.js
-tsconfig.json
-tsconfig.build.json
 
 # Documentation
 docs
