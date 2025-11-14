@@ -30,9 +30,6 @@ RUN yarn build
 # Stage 3: Production image
 FROM node:24-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
@@ -54,6 +51,6 @@ USER nodejs
 
 EXPOSE 3000
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/src/index.js"]
+# Use Node.js built-in init process handler (available since Node 16)
+# Handles signals properly and reaps zombie processes without external dependencies
+CMD ["node", "--init", "dist/src/index.js"]
