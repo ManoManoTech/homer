@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { commandRequestHandler } from '@/core/requestHandlers/commandRequestHandler';
 import { eventRequestHandler } from '@/core/requestHandlers/eventRequestHandler';
+import { githubHookHandler } from '@/core/requestHandlers/githubHookHandler';
 import { gitlabHookHandler } from '@/core/requestHandlers/gitlabHookHandler';
 import { helpRequestHandler } from '@/core/requestHandlers/helpRequestHandler';
 import { interactiveRequestHandler } from '@/core/requestHandlers/interactiveRequestHandler';
@@ -10,6 +11,7 @@ const router = Router();
 
 router.post('/command', catchAsyncRouteErrors(commandRequestHandler));
 router.post('/event', catchAsyncRouteErrors(eventRequestHandler));
+router.post('/github', catchAsyncRouteErrors(githubHookHandler));
 router.post('/gitlab', catchAsyncRouteErrors(gitlabHookHandler));
 router.post('/interactive', catchAsyncRouteErrors(interactiveRequestHandler));
 router.post('/release', helpRequestHandler);

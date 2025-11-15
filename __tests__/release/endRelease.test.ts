@@ -110,61 +110,47 @@ describe('release > endRelease', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
+
+    // Should post 2 messages:
+    // 1. Post notification to notificationChannelIds (simple message)
+    // 2. Update the centralized release message in the releaseChannel (detailed message)
+    // Note: In the test config, releaseChannelId === notificationChannelIds[0],
+    // so both messages go to the same channel
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(2);
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
-      blocks: [
-        {
-          text: {
-            text: `:ccheck: ${projectFixture.path} PRD - <${pipelineFixture.web_url}|pipeline> - <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|release notes>`,
-            type: 'mrkdwn',
-          },
-          type: 'section',
-        },
-      ],
-      channel: 'C0XXXXXXXXX',
-      icon_url: 'image_72',
-      link_names: true,
-      text: ':ccheck: diaspora-project-site PRD',
-      username: 'real_name',
-    });
-    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
-      2,
-      getReleaseCompletedMessageFixture(
-        channelId,
-        deploymentFixture.ref,
-        undefined,
-        [
+
+    // First call(s) are the notification(s) to notificationChannelIds
+    releaseConfig.notificationChannelIds.forEach(
+      (notificationChannelId, index) => {
+        expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+          index + 1,
           {
-            type: 'context',
-            elements: [
+            blocks: [
               {
-                type: 'mrkdwn',
-                text: `✅ *Integration:* Deployed successfully — started <!date^1619639400^at {time}|earlier>, finished <!date^1619639700^at {time}|now> (*took 5m 0s*)`,
+                text: {
+                  text: `:ccheck: ${projectFixture.path} PRD - <${pipelineFixture.web_url}|pipeline> - <${projectFixture.web_url}/-/releases/${releaseFixture.tag_name}|release notes>`,
+                  type: 'mrkdwn',
+                },
+                type: 'section',
               },
             ],
+            channel: notificationChannelId,
+            icon_url: 'image_72',
+            link_names: true,
+            text: ':ccheck: diaspora-project-site PRD',
+            username: 'real_name',
           },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'mrkdwn',
-                text: `✅ *Staging:* Deployed successfully — started <!date^1619639700^at {time}|earlier>, finished <!date^1619639880^at {time}|now> (*took 3m 0s*)`,
-              },
-            ],
-          },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'mrkdwn',
-                text: `✅ *Production:* Deployed successfully — started <!date^1619639880^at {time}|earlier>, finished <!date^1619640180^at {time}|now> (*took 5m 0s*)`,
-              },
-            ],
-          },
-        ],
-      ),
+        );
+      },
     );
 
+    // Last call is to update the centralized release message in the releaseChannel
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        channel: releaseConfig.releaseChannelId,
+        text: '✅ Release Completed: diaspora-project-site',
+      }),
+    );
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(
       await hasModelEntry('Release', { tagName: releaseFixture.tag_name }),

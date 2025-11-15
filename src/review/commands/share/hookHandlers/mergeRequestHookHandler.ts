@@ -1,5 +1,4 @@
 import type { Request, Response } from 'express';
-import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import {
   addReviewToChannel,
@@ -7,11 +6,12 @@ import {
   getReviewsByMergeRequestIid,
   removeReviewsByMergeRequestIid,
 } from '@/core/services/data';
-import { logger } from '@/core/services/logger';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import {
   fetchSlackUserFromGitlabUsername,
   slackBotWebClient,
 } from '@/core/services/slack';
+import { getProjectIdValue } from '@/core/typings/Data';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 
 const VALID_ACTIONS = [
@@ -23,6 +23,16 @@ const VALID_ACTIONS = [
   'open',
   'unapproved',
 ] as const;
+
+// Map GitHub actions to GitLab-style actions
+const GITHUB_ACTION_MAP: Record<string, string> = {
+  opened: 'open',
+  reopened: 'reopen',
+  closed: 'close',
+  synchronize: 'update', // When new commits are pushed
+  edited: 'update',
+  dismissed: 'unapproved', // From pull_request_review webhook (when review is dismissed)
+};
 const LABELS = {
   REVIEW: 'homer-review',
   MERGEABLE: 'homer-mergeable',
@@ -37,12 +47,84 @@ export async function mergeRequestHookHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const {
-    object_attributes: { detailed_merge_status, action, iid },
-    labels,
-    project: { id: projectId },
-    user: { username },
-  } = req.body;
+  // Detect provider type and extract data accordingly
+  const isGitLab = !!req.body.object_kind;
+
+  let projectId: string | number;
+  let iid: number;
+  let action: string;
+  let labels: Array<{ title: string }>;
+  let username: string;
+  let detailed_merge_status: string | undefined;
+
+  if (isGitLab) {
+    // GitLab webhook structure
+    const gitlabData = req.body;
+    if (
+      !gitlabData.object_attributes ||
+      !gitlabData.project ||
+      !gitlabData.user
+    ) {
+      res.sendStatus(HTTP_STATUS_NO_CONTENT);
+      return;
+    }
+
+    projectId = gitlabData.project.id;
+    iid = gitlabData.object_attributes.iid;
+    action = gitlabData.object_attributes.action;
+    labels = gitlabData.labels || [];
+    username = gitlabData.user.username;
+    detailed_merge_status = gitlabData.object_attributes.detailed_merge_status;
+  } else {
+    // GitHub webhook structure
+    const githubData = req.body;
+    if (
+      !githubData.pull_request ||
+      !githubData.repository ||
+      !githubData.sender
+    ) {
+      res.sendStatus(HTTP_STATUS_NO_CONTENT);
+      return;
+    }
+
+    projectId = githubData.repository.full_name;
+    iid = githubData.pull_request.number;
+
+    // Map GitHub action to GitLab-style action
+    const githubAction = githubData.action;
+
+    // For pull_request_review webhooks, check the review state
+    if (githubAction === 'submitted' && githubData.review) {
+      const reviewState = githubData.review.state;
+      if (reviewState === 'approved') {
+        action = 'approved';
+      } else if (
+        reviewState === 'changes_requested' ||
+        reviewState === 'dismissed'
+      ) {
+        action = 'unapproved';
+      } else {
+        // 'commented' state - treat as update
+        action = 'update';
+      }
+    } else {
+      action = GITHUB_ACTION_MAP[githubAction] || githubAction;
+    }
+
+    // Check if PR was merged (GitHub sends 'closed' action with merged=true)
+    if (githubAction === 'closed' && githubData.pull_request.merged) {
+      action = 'merge';
+    }
+
+    labels =
+      githubData.pull_request.labels?.map((l: any) => ({ title: l.name })) ||
+      [];
+    username = githubData.sender.login;
+    // GitHub doesn't have detailed_merge_status, use mergeable state
+    detailed_merge_status = githubData.pull_request.mergeable
+      ? 'mergeable'
+      : undefined;
+  }
 
   if (!VALID_ACTIONS.includes(action as any)) {
     res.sendStatus(HTTP_STATUS_NO_CONTENT);
@@ -58,7 +140,7 @@ export async function mergeRequestHookHandler(
     const isMergeable =
       labels.some(
         (label: { title: string }) => label.title === LABELS.MERGEABLE,
-      ) && ['mergeable', 'not_approved'].includes(detailed_merge_status);
+      ) && ['mergeable', 'not_approved'].includes(detailed_merge_status || '');
 
     if (hasReviewLabel || isMergeable) {
       await handleNewReview(projectId, iid);
@@ -80,15 +162,19 @@ export async function mergeRequestHookHandler(
   const threadMessage = getThreadMessage(action, user.real_name);
 
   await Promise.all(
-    reviews.map(async ({ channelId, ts }) => {
+    reviews.map(async (review) => {
+      const reviewProjectId = getProjectIdValue(review);
       const updates = [
-        buildReviewMessage(channelId, projectId, iid, ts).then(
-          slackBotWebClient.chat.update,
-        ),
+        buildReviewMessage(
+          review.channelId,
+          reviewProjectId,
+          iid,
+          review.ts,
+        ).then(slackBotWebClient.chat.update),
         threadMessage &&
           slackBotWebClient.chat.postMessage({
-            channel: channelId,
-            thread_ts: ts,
+            channel: review.channelId,
+            thread_ts: review.ts,
             ...threadMessage,
           }),
       ].filter(Boolean);
@@ -101,17 +187,17 @@ export async function mergeRequestHookHandler(
   }
 }
 
-async function handleNewReview(projectId: number, iid: number): Promise<void> {
+async function handleNewReview(
+  projectId: number | string,
+  iid: number,
+): Promise<void> {
   const configuredChannels = await getChannelsByProjectId(projectId);
 
   if (configuredChannels.length === 0) {
     return;
   }
 
-  if (configuredChannels.length > CONFIG.slack.channelNotificationThreshold) {
-    logger.warn(`Too many channels linked to project ${projectId}`);
-    return;
-  }
+  const providerType = ProviderFactory.detectProviderType(projectId);
 
   await Promise.all(
     configuredChannels.map(async ({ channelId }) => {
@@ -121,7 +207,9 @@ async function handleNewReview(projectId: number, iid: number): Promise<void> {
       await addReviewToChannel({
         channelId,
         mergeRequestIid: iid,
-        projectId,
+        projectId: typeof projectId === 'number' ? projectId : null,
+        projectIdString: typeof projectId === 'string' ? projectId : null,
+        providerType,
         ts: ts as string,
       });
     }),

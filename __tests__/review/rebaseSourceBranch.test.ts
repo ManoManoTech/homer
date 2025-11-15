@@ -32,7 +32,14 @@ describe('review > rebaseSourceBranch', () => {
       }),
     };
 
-    await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid,
+      projectId: typeof projectId === 'number' ? projectId : null,
+      projectIdString: typeof projectId === 'string' ? projectId : null,
+      providerType: 'gitlab',
+      ts,
+    });
 
     mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/rebase`,

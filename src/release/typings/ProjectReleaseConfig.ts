@@ -3,7 +3,7 @@ import type { ReleaseTagManager } from './ReleaseTagManager';
 
 export interface ProjectReleaseConfig {
   notificationChannelIds: string[];
-  projectId: number;
+  projectId: number; // GitLab project ID (release feature is GitLab-specific for now)
   releaseChannelId: string;
   releaseManager: ReleaseManager;
   releaseTagManager?: ReleaseTagManager;

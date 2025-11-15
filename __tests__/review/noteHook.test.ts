@@ -38,7 +38,15 @@ describe('review > noteHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: mergeRequestFixture.iid,
-      projectId: mergeRequestFixture.project_id,
+      projectId:
+        typeof mergeRequestFixture.project_id === 'number'
+          ? mergeRequestFixture.project_id
+          : null,
+      projectIdString:
+        typeof mergeRequestFixture.project_id === 'string'
+          ? mergeRequestFixture.project_id
+          : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     mockBuildReviewMessageCalls();
@@ -104,7 +112,15 @@ describe('review > noteHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: mergeRequestFixture.iid,
-      projectId: mergeRequestFixture.project_id,
+      projectId:
+        typeof mergeRequestFixture.project_id === 'number'
+          ? mergeRequestFixture.project_id
+          : null,
+      projectIdString:
+        typeof mergeRequestFixture.project_id === 'string'
+          ? mergeRequestFixture.project_id
+          : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     mockBuildReviewMessageCalls();

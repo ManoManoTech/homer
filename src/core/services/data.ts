@@ -32,7 +32,13 @@ const sequelize = new Sequelize({
 
 const Project = sequelize.define<Model<DataProject>>('Project', {
   channelId: { type: DataTypes.STRING, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: { type: DataTypes.INTEGER, allowNull: true }, // GitLab numeric ID (null for GitHub)
+  projectIdString: { type: DataTypes.STRING, allowNull: true }, // GitHub owner/repo (null for GitLab)
+  providerType: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'gitlab',
+  },
 });
 
 const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
@@ -50,7 +56,13 @@ const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
 const Review = sequelize.define<Model<DataReview>>('Review', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   mergeRequestIid: { type: DataTypes.INTEGER, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: { type: DataTypes.INTEGER, allowNull: true }, // GitLab numeric ID (null for GitHub)
+  projectIdString: { type: DataTypes.STRING, allowNull: true }, // GitHub owner/repo (null for GitLab)
+  providerType: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'gitlab',
+  },
   ts: { type: DataTypes.STRING, allowNull: false },
 });
 
@@ -89,9 +101,16 @@ export async function connectToDatabase(): Promise<void> {
 export async function addProjectToChannel({
   channelId,
   projectId,
+  projectIdString,
+  providerType,
 }: DataProject): Promise<void> {
   await Project.findOrCreate({
-    where: { channelId, projectId },
+    where: {
+      channelId,
+      projectId: projectId || null,
+      projectIdString: projectIdString || null,
+      providerType,
+    },
   });
 }
 
@@ -99,16 +118,31 @@ export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
   projectId,
+  projectIdString,
+  providerType,
   ts,
 }: DataReview): Promise<void> {
   const review = await Review.findOne({
-    where: { channelId, mergeRequestIid, projectId },
+    where: {
+      channelId,
+      mergeRequestIid,
+      projectId: projectId || null,
+      projectIdString: projectIdString || null,
+      providerType,
+    },
   });
 
   if (review !== null) {
     await review.update({ ts });
   } else {
-    await Review.create({ channelId, mergeRequestIid, projectId, ts });
+    await Review.create({
+      channelId,
+      mergeRequestIid,
+      projectId: projectId || null,
+      projectIdString: projectIdString || null,
+      providerType,
+      ts,
+    });
   }
 }
 
@@ -180,21 +214,33 @@ export async function getReviewsByChannelId(
 }
 
 export async function getReviewsByMergeRequestIid(
-  projectId: number,
+  projectId: number | string,
   mergeRequestIid: number,
 ): Promise<DataReview[]> {
-  const reviews = await Review.findAll({
-    where: { mergeRequestIid, projectId },
-  });
+  const where: any = { mergeRequestIid };
+
+  if (typeof projectId === 'number') {
+    where.projectId = projectId;
+  } else {
+    where.projectIdString = projectId;
+  }
+
+  const reviews = await Review.findAll({ where });
   return reviews.map(toJSON);
 }
 
 export async function getChannelsByProjectId(
-  projectId: number,
+  projectId: number | string,
 ): Promise<DataProject[]> {
-  const projects = await Project.findAll({
-    where: { projectId },
-  });
+  const where: any = {};
+
+  if (typeof projectId === 'number') {
+    where.projectId = projectId;
+  } else {
+    where.projectIdString = projectId;
+  }
+
+  const projects = await Project.findAll({ where });
   return projects.map(toJSON);
 }
 
@@ -206,6 +252,14 @@ export async function countChannelsByProjectId(
   });
 }
 
+export async function countChannelsByProjectIdString(
+  projectIdString: string,
+): Promise<number> {
+  return Project.count({
+    where: { projectIdString },
+  });
+}
+
 export async function hasRelease(
   projectId: number,
   tagName: string,
@@ -214,12 +268,18 @@ export async function hasRelease(
 }
 
 export async function removeProjectFromChannel(
-  projectId: number,
+  projectId: number | string,
   channelId: string,
 ) {
-  await Project.destroy({
-    where: { channelId, projectId },
-  });
+  const where: any = { channelId };
+
+  if (typeof projectId === 'number') {
+    where.projectId = projectId;
+  } else {
+    where.projectIdString = projectId;
+  }
+
+  await Project.destroy({ where });
 }
 
 export async function removeRelease(

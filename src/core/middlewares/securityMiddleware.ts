@@ -4,6 +4,7 @@ import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
 
 const GITLAB_SECRET = CONFIG.gitlab.secret;
+const GITHUB_SECRET = CONFIG.github.secret;
 const SLACK_SIGNING_SECRET = CONFIG.slack.signingSecret;
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
 
@@ -70,14 +71,77 @@ function isValidSlackRequest(req: Request): boolean {
 }
 
 /**
- * Allows only secure requests from Gitlab or Slack.
+ * Validates requests from GitHub.
+ *
+ * @see https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+ */
+function isValidGitHubRequest(req: Request): boolean {
+  const isGitHubRequest = req.header('X-GitHub-Event') !== undefined;
+
+  if (!isGitHubRequest) {
+    return false;
+  }
+
+  // GitHub uses X-Hub-Signature-256 (SHA256) or X-Hub-Signature (SHA1, deprecated)
+  const signature = req.header('X-Hub-Signature-256');
+
+  if (!signature) {
+    const repoName = req.body?.repository?.full_name;
+    logger.error(
+      `GitHub webhook received without signature${
+        repoName ? ` from '${repoName}'` : ''
+      }`
+    );
+    logger.debug('Missing X-Hub-Signature-256 header');
+    return false;
+  }
+
+  const { rawBody } = req as any;
+  if (!rawBody) {
+    logger.error('GitHub webhook validation failed: rawBody not available');
+    return false;
+  }
+
+  // Validate HMAC SHA-256 signature
+  const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
+  hmac.update(rawBody);
+  const expectedSignature = `sha256=${hmac.digest('hex')}`;
+
+  if (signature !== expectedSignature) {
+    const repoName = req.body?.repository?.full_name;
+    logger.error(
+      `GitHub webhook received with invalid signature${
+        repoName ? ` from '${repoName}'` : ''
+      }`
+    );
+    logger.debug({
+      receivedSignature: signature,
+      expectedPrefix: `${expectedSignature.substring(0, 15)}...`,
+    });
+    return false;
+  }
+
+  logger.debug(
+    `GitHub webhook validated successfully from ${
+      req.body?.repository?.full_name || 'unknown repo'
+    }`
+  );
+  return true;
+}
+
+/**
+ * Allows only secure requests from Gitlab, GitHub, or Slack.
  */
 export function securityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  if (!isValidGitlabRequest(req) && !isValidSlackRequest(req)) {
+  if (
+    !isValidGitlabRequest(req) &&
+    !isValidGitHubRequest(req) &&
+    !isValidSlackRequest(req)
+  ) {
     logger.debug('Unauthorized request received');
     res.status(401).send('Unauthorized');
   } else {

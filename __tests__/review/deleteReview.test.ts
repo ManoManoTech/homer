@@ -26,7 +26,14 @@ describe('review > deleteReview', () => {
       }),
     };
 
-    await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid,
+      projectId,
+      projectIdString: null,
+      providerType: 'gitlab',
+      ts,
+    });
     (slackBotWebClient.chat.delete as jest.Mock).mockResolvedValueOnce(
       undefined,
     );

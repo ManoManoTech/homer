@@ -1,9 +1,9 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
-import { fetchMergeRequestByIid } from '@/core/services/gitlab';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import { getPermalink } from '@/core/services/slack';
-import type { DataReview } from '@/core/typings/Data';
+import { getProjectIdValue, type DataReview } from '@/core/typings/Data';
 
 interface BuildReviewListEphemeralData {
   channelId: string;
@@ -17,13 +17,16 @@ export async function buildReviewListEphemeral({
   userId,
 }: BuildReviewListEphemeralData): Promise<ChatPostEphemeralArguments> {
   const mergeRequests = await Promise.all(
-    reviews.map(({ projectId, mergeRequestIid }) =>
-      fetchMergeRequestByIid(projectId, mergeRequestIid)
-    )
+    reviews.map(async (review) => {
+      const projectId = getProjectIdValue(review);
+      const provider = ProviderFactory.getProviderForProject(projectId);
+      return provider.fetchPullRequest(projectId, review.mergeRequestIid);
+    })
   );
 
-  const openedMergeRequests = mergeRequests.filter(({ state }) =>
-    MERGE_REQUEST_OPEN_STATES.includes(state)
+  const openedMergeRequests = mergeRequests.filter(
+    ({ state }) =>
+      state === 'opened' || MERGE_REQUEST_OPEN_STATES.includes(state)
   );
 
   const links = new Map<number, string>();

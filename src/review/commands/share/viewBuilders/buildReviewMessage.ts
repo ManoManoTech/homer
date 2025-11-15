@@ -1,7 +1,6 @@
 import type {
   ChatPostMessageArguments,
   ChatUpdateArguments,
-  ContextBlock,
   KnownBlock,
   MrkdwnElement,
   SectionBlock,
@@ -10,43 +9,54 @@ import {
   MERGE_REQUEST_CLOSE_STATES,
   MERGE_REQUEST_OPEN_STATES,
 } from '@/constants';
-import {
-  fetchMergeRequestApprovers,
-  fetchMergeRequestByIid,
-  fetchProjectById,
-  fetchReviewers,
-} from '@/core/services/gitlab';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import {
   escapeText,
   fetchSlackUserFromGitlabUser,
   fetchSlackUsersFromGitlabUsers,
 } from '@/core/services/slack';
-import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
-import type { GitlabPipelineStatus } from '@/core/typings/GitlabPipeline';
-import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import { type SlackUser } from '@/core/typings/SlackUser';
+import type { UnifiedUser } from '@/core/typings/UnifiedModels';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 export function buildReviewMessage(
   channelId: string,
-  projectId: number,
+  projectId: number | string,
   mergeRequestIid: number,
 ): Promise<ChatPostMessageArguments>;
 
 export function buildReviewMessage(
   channelId: string,
-  projectId: number,
+  projectId: number | string,
   mergeRequestIid: number,
   ts: string,
 ): Promise<ChatUpdateArguments>;
 
 export async function buildReviewMessage(
   channelId: string,
-  projectId: number,
+  projectId: number | string,
   mergeRequestIid: number,
   ts?: string,
 ) {
-  const mergeRequest = await fetchMergeRequestByIid(projectId, mergeRequestIid);
+  // Get the appropriate provider for this project
+  const provider = ProviderFactory.getProviderForProject(projectId);
+
+  // Fetch pull request and related data using the provider
+  const pullRequest = await provider.fetchPullRequest(
+    projectId,
+    mergeRequestIid,
+  );
+
+  // Helper to transform UnifiedUser to format expected by Slack functions
+  const transformToGitlabUser = (user: UnifiedUser) => ({
+    id: typeof user.id === 'number' ? user.id : 0,
+    username: user.username,
+    name: user.name,
+    avatar_url: user.avatarUrl || null,
+    state: 'active' as const,
+    web_url: user.webUrl || '',
+  });
+
   const [
     slackAssignees,
     approvalInfo,
@@ -54,36 +64,135 @@ export async function buildReviewMessage(
     slackReviewers,
     project,
   ] = await Promise.all([
-    fetchSlackUsersFromGitlabUsers(mergeRequest.assignees),
-    fetchMergeRequestApprovers(projectId, mergeRequestIid).then(
-      async (info) => ({
-        approvers: await fetchSlackUsersFromGitlabUsers(info.approvers),
-        approvals_required: info.approvals_required,
-        approvals_left: info.approvals_left,
-      }),
-    ),
-    fetchSlackUserFromGitlabUser(mergeRequest.author),
-    fetchReviewers(projectId, mergeRequestIid).then(
-      fetchSlackUsersFromGitlabUsers,
-    ),
-    fetchProjectById(projectId),
+    provider
+      .fetchAssignees(projectId, mergeRequestIid)
+      .then((users) => users.map(transformToGitlabUser))
+      .then(fetchSlackUsersFromGitlabUsers),
+    provider
+      .fetchApprovalInfo(projectId, mergeRequestIid)
+      .then(async (info) => ({
+        approvers: await fetchSlackUsersFromGitlabUsers(
+          info.approvers.map(transformToGitlabUser),
+        ),
+        approvalsRequired: info.approvalsRequired,
+        approvalsLeft: info.approvalsLeft,
+      })),
+    fetchSlackUserFromGitlabUser(transformToGitlabUser(pullRequest.author)),
+    provider
+      .fetchReviewers(projectId, mergeRequestIid)
+      .then((users) => users.map(transformToGitlabUser))
+      .then(fetchSlackUsersFromGitlabUsers),
+    provider.fetchProject(projectId),
   ]);
 
   const mergeRequestTitle = MERGE_REQUEST_CLOSE_STATES.includes(
-    mergeRequest.state,
+    pullRequest.state,
   )
-    ? `~${escapeText(mergeRequest.title)}~`
-    : escapeText(mergeRequest.title);
+    ? `~${escapeText(pullRequest.title)}~`
+    : escapeText(pullRequest.title);
 
   const mergeRequestStatus = MERGE_REQUEST_OPEN_STATES.includes(
-    mergeRequest.state,
+    pullRequest.state,
   )
     ? ''
-    : ` (${mergeRequest.state})`;
+    : ` (${pullRequest.state})`;
+
+  // Add provider emoji
+  const providerType = ProviderFactory.detectProviderType(projectId);
+  const providerEmoji = providerType === 'github' ? ':github:' : ':gitlab:';
+
+  const titleContextElements = [
+    {
+      type: 'mrkdwn',
+      text: `${providerEmoji} Project: _<${project.webUrl}|${project.pathWithNamespace}>_`,
+    },
+    {
+      type: 'mrkdwn',
+      text: `Target branch: \`${pullRequest.targetBranch}\``,
+    },
+    {
+      type: 'mrkdwn',
+      text: `Open discussion(s): \`${pullRequest.discussionCount || 0}\``,
+    },
+    {
+      type: 'mrkdwn',
+      text: `Changes: \`${pullRequest.changesCount}\``,
+    },
+  ];
+
+  // Add pipeline status if available
+  if (pullRequest.pipeline) {
+    const pipelineEmoji =
+      pullRequest.pipeline.status === 'success'
+        ? '✅'
+        : pullRequest.pipeline.status === 'failed'
+          ? '❌'
+          : pullRequest.pipeline.status === 'running'
+            ? '🔄'
+            : pullRequest.pipeline.status === 'canceled'
+              ? '⛔'
+              : '⏳';
+    titleContextElements.push({
+      type: 'mrkdwn',
+      text: `Pipeline: ${pipelineEmoji} ${pullRequest.pipeline.status}`,
+    });
+  }
+
+  // Add mergeable status
+  const mergeableEmoji = pullRequest.mergeable ? '✅' : '❌';
+  const mergeableText = pullRequest.mergeable ? 'Yes' : 'No';
+  titleContextElements.push({
+    type: 'mrkdwn',
+    text: `Mergeable: ${mergeableEmoji} ${mergeableText}`,
+  });
 
   const blocks = [
-    buildHeaderBlock(mergeRequest, projectId),
-    buildContextBlock(mergeRequest, project),
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*<${pullRequest.webUrl}|${mergeRequestTitle}${mergeRequestStatus}>*`,
+      },
+      accessory: {
+        type: 'overflow',
+        action_id: 'review-message-actions',
+        options: [
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Create a pipeline',
+            },
+            value: injectActionsParameters(
+              'review-create-pipeline',
+              projectId,
+              pullRequest.sourceBranch,
+            ),
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Rebase source branch',
+            },
+            value: injectActionsParameters(
+              'review-rebase-source-branch',
+              projectId,
+              pullRequest.iid,
+            ),
+          },
+          {
+            text: {
+              type: 'plain_text',
+              text: 'Delete message',
+            },
+            value: 'review-delete-message',
+          },
+        ].filter(Boolean),
+      },
+    },
+    {
+      type: 'context',
+      elements: titleContextElements,
+    },
   ] as KnownBlock[];
 
   const peopleSection = buildPeopleSection(
@@ -98,7 +207,7 @@ export async function buildReviewMessage(
   const message: ChatPostMessageArguments = {
     channel: channelId,
     link_names: true,
-    text: `${mergeRequestTitle} ${mergeRequest.web_url}${mergeRequestStatus}`,
+    text: `${mergeRequestTitle} ${pullRequest.webUrl}${mergeRequestStatus}`,
     blocks,
   };
 
@@ -112,103 +221,6 @@ export async function buildReviewMessage(
     return message as ChatUpdateArguments;
   }
   return message as ChatPostMessageArguments;
-}
-
-function buildHeaderBlock(
-  mergeRequest: GitlabMergeRequestDetails,
-  projectId: number,
-): SectionBlock {
-  const isClosed = MERGE_REQUEST_CLOSE_STATES.includes(mergeRequest.state);
-  const title = escapeText(mergeRequest.title);
-  const formattedTitle = isClosed ? `~${title}~` : title;
-  const status = !MERGE_REQUEST_OPEN_STATES.includes(mergeRequest.state)
-    ? ` (${mergeRequest.state})`
-    : '';
-
-  return {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `*<${mergeRequest.web_url}|${formattedTitle}${status}>*`,
-    },
-    accessory: {
-      type: 'overflow',
-      action_id: 'review-message-actions',
-      options: [
-        {
-          text: { type: 'plain_text', text: 'Create a pipeline' },
-          value: injectActionsParameters(
-            'review-create-pipeline',
-            projectId,
-            mergeRequest.source_branch,
-          ),
-        },
-        {
-          text: { type: 'plain_text', text: 'Rebase source branch' },
-          value: injectActionsParameters(
-            'review-rebase-source-branch',
-            projectId,
-            mergeRequest.iid,
-          ),
-        },
-        {
-          text: { type: 'plain_text', text: 'Delete message' },
-          value: 'review-delete-message',
-        },
-      ],
-    },
-  };
-}
-
-function buildContextBlock(
-  mergeRequest: GitlabMergeRequestDetails,
-  project: GitlabProjectDetails,
-): ContextBlock {
-  const getPipelineStatus = (status?: GitlabPipelineStatus) => {
-    const emojiMap: Record<string, string> = {
-      success: '✅',
-      manual: '⚙️',
-      failed: '❌',
-      running: '⏳',
-      pending: '⏳',
-      canceled: '🛑',
-      skipped: '⏩',
-    };
-    return status ? `${emojiMap[status] || ''} ${status}` : 'None';
-  };
-
-  const getMergeableStatus = (mergeStatus: string) =>
-    mergeStatus === 'can_be_merged' ? '✅ Yes' : '⚠️ No';
-
-  return {
-    type: 'context',
-    elements: [
-      {
-        type: 'mrkdwn',
-        text: `Project: _<${project.web_url}|${project.path_with_namespace}>_`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `Target branch: \`${mergeRequest.target_branch}\``,
-      },
-      {
-        type: 'mrkdwn',
-        text: `Open discussion(s): \`${mergeRequest.user_notes_count || 0}\``,
-      },
-      {
-        type: 'mrkdwn',
-        text: `Changes: \`${(mergeRequest as GitlabMergeRequestDetails).changes_count}\``,
-      },
-      {
-        type: 'mrkdwn',
-        text: `Pipeline: ${getPipelineStatus(mergeRequest.head_pipeline?.status)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `Mergeable: ${getMergeableStatus(mergeRequest.merge_status)}`,
-      },
-    ],
-  };
 }
 
 function buildPeopleSection(
@@ -236,12 +248,12 @@ function buildPeopleSection(
   }
 
   const approvedCount =
-    approvalInfo.approvals_required - approvalInfo.approvals_left;
-  const emojiIndicators = approvalInfo.approvals_left == 0 ? '✅' : '⏳';
+    approvalInfo.approvalsRequired - approvalInfo.approvalsLeft;
+  const emojiIndicators = approvalInfo.approvalsLeft == 0 ? '✅' : '⏳';
 
   fields.push({
     type: 'mrkdwn',
-    text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
+    text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvalsRequired} required ${emojiIndicators}`,
   });
 
   if (approvers.length > 0) {
@@ -258,6 +270,6 @@ function buildPeopleSection(
 
 interface ApprovalInfo {
   approvers: SlackUser[];
-  approvals_required: number;
-  approvals_left: number;
+  approvalsRequired: number;
+  approvalsLeft: number;
 }

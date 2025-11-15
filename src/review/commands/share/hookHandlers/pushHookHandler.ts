@@ -2,10 +2,7 @@ import type { KnownBlock } from '@slack/types';
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
-import {
-  fetchMergeRequestCommits,
-  fetchMergeRequestsByBranchName,
-} from '@/core/services/gitlab';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import {
   fetchSlackUserFromEmail,
   slackBotWebClient,
@@ -31,22 +28,31 @@ export async function pushHookHandler(
 
   const branchName = ref.split('/').slice(2).join('/') as string;
 
-  const mergeRequests =
-    (await fetchMergeRequestsByBranchName(project_id, branchName)).filter(
-      ({ merge_status }) => merge_status !== 'merged'
-    ) || [];
+  // Get provider for this project
+  const provider = ProviderFactory.getProviderForProject(project_id);
+
+  // Search for pull requests on this branch
+  const allPullRequests = await provider.searchPullRequests(
+    [project_id],
+    branchName,
+    ['opened', 'reopened'] // Only open merge requests
+  );
+
+  // Filter to only non-merged (additional safety check)
+  const mergeRequests = allPullRequests.filter((pr) => pr.state !== 'merged');
 
   const mergeRequestsReviews = await Promise.all(
     mergeRequests.map(async (mergeRequest) => {
-      const mergeRequestCommits = await fetchMergeRequestCommits(
+      const mergeRequestCommits = await provider.fetchCommits(
         project_id,
         mergeRequest.iid
       );
 
       // Removes the rebase commits
+      // UnifiedCommit uses 'sha' while GitlabPushedCommit uses 'id'
       const newMergeRequestCommits = commits.filter((commit) =>
         mergeRequestCommits.some(
-          (mergeRequestCommit) => mergeRequestCommit.id === commit.id
+          (mergeRequestCommit) => mergeRequestCommit.sha === commit.id
         )
       );
 

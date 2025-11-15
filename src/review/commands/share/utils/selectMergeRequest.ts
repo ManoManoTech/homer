@@ -1,4 +1,5 @@
 import { addReviewToChannel } from '@/core/services/data';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import {
   deleteEphemeralMessage,
   slackBotWebClient,
@@ -14,9 +15,20 @@ export async function selectMergeRequest(
 ) {
   const { container, response_url } = payload;
   const { channel_id } = container;
-  const [projectId, mergeRequestIid] = extractActionParameters(
+  const [projectIdStr, mergeRequestIidStr] = extractActionParameters(
     action.selected_option.value
-  ).map((value) => parseInt(value, 10));
+  );
+
+  // URL decode the projectId in case Slack encoded the '/' character
+  const decodedProjectIdStr = decodeURIComponent(projectIdStr);
+
+  // Parse projectId - keep as string if it contains '/', otherwise parse as number
+  const projectId: number | string = decodedProjectIdStr.includes('/')
+    ? decodedProjectIdStr
+    : parseInt(decodedProjectIdStr, 10);
+  const mergeRequestIid = parseInt(mergeRequestIidStr, 10);
+
+  const providerType = ProviderFactory.detectProviderType(projectId);
 
   await deleteEphemeralMessage(response_url);
 
@@ -27,7 +39,9 @@ export async function selectMergeRequest(
   await addReviewToChannel({
     channelId: channel_id,
     mergeRequestIid,
-    projectId,
+    projectId: typeof projectId === 'number' ? projectId : null,
+    projectIdString: typeof projectId === 'string' ? projectId : null,
+    providerType,
     ts: ts as string,
   });
 }

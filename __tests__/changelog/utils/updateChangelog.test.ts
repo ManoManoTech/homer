@@ -1,4 +1,4 @@
-import type { AnyBlock } from '@slack/types/dist/block-kit/blocks';
+import type { KnownBlock } from '@slack/types';
 import type { InputBlock, StaticSelect, View } from '@slack/web-api';
 import { buildChangelogModalView } from '@/changelog/buildChangelogModalView';
 import { updateChangelog } from '@/changelog/utils/updateChangelog';
@@ -46,7 +46,7 @@ const makePayload = ({
   projectIdValue,
   releaseTagValue,
 }: {
-  blocks: AnyBlock[];
+  blocks: KnownBlock[];
   projectIdValue: string;
   releaseTagValue?: string;
 }): BlockActionsPayload => ({
@@ -160,7 +160,7 @@ describe('updateChangelog', () => {
     ];
 
     const payload = makePayload({
-      blocks,
+      blocks: blocks as KnownBlock[],
       projectIdValue: '101',
       releaseTagValue: 'v1.0.0',
     });
@@ -181,17 +181,18 @@ describe('updateChangelog', () => {
     expect(firstCallArg.view_id).toBe('V123');
     expect(
       firstCallArg.view.blocks.some(
-        (b: AnyBlock) => b.block_id === 'to-remove-1',
+        (b: KnownBlock) => (b as any).block_id === 'to-remove-1',
       ),
     ).toBe(false);
     expect(
       firstCallArg.view.blocks.some(
-        (b: AnyBlock) => b.block_id === 'to-remove-2',
+        (b: KnownBlock) => (b as any).block_id === 'to-remove-2',
       ),
     ).toBe(false);
     expect(
       firstCallArg.view.blocks.some(
-        (b: AnyBlock) => b.block_id === 'changelog-release-tag-info-block',
+        (b: KnownBlock) =>
+          (b as any).block_id === 'changelog-release-tag-info-block',
       ),
     ).toBe(true);
     expect(firstCallArg.view.blocks.at(-1)).toEqual({
@@ -229,7 +230,7 @@ describe('updateChangelog', () => {
     ];
 
     const payload = makePayload({
-      blocks,
+      blocks: blocks as KnownBlock[],
       projectIdValue: '201',
       releaseTagValue: undefined,
     });

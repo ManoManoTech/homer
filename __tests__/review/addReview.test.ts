@@ -54,9 +54,14 @@ describe('review > addReview', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
+    // Provider uses search first, then state parameter with default open states
     mockGitlabCall(
-      `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
+      `/projects/${project_id}/merge_requests?search=${encodeURIComponent(
+        search,
+      )}&state=locked,opened,reopened`,
       [mergeRequestFixture],
     );
     mockBuildReviewMessageCalls();
@@ -98,6 +103,8 @@ describe('review > addReview', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     mockBuildReviewMessageCalls();
 
@@ -137,6 +144,8 @@ describe('review > addReview', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     mockBuildReviewMessageCalls();
 
@@ -197,9 +206,17 @@ describe('review > addReview', () => {
       user_id: userId,
     };
 
-    await addProjectToChannel({ channelId, projectId });
+    await addProjectToChannel({
+      channelId,
+      projectId,
+      projectIdString: null,
+      providerType: 'gitlab',
+    });
+    // Provider uses search first, then state parameter with default open states
     mockGitlabCall(
-      `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
+      `/projects/${projectId}/merge_requests?search=${encodeURIComponent(
+        search,
+      )}&state=locked,opened,reopened`,
       [],
     );
 
@@ -232,11 +249,25 @@ describe('review > addReview', () => {
 
     await addProjectToChannel({
       channelId,
-      projectId: project_id,
+      projectId: typeof project_id === 'number' ? project_id : null,
+      projectIdString: typeof project_id === 'string' ? project_id : null,
+      providerType: 'gitlab',
     });
+    // Provider uses search first, then state parameter with default open states
     mockGitlabCall(
-      `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
-      [mergeRequestFixture, mergeRequestFixture],
+      `/projects/${project_id}/merge_requests?search=${encodeURIComponent(
+        search,
+      )}&state=locked,opened,reopened`,
+      [
+        mergeRequestFixture,
+        {
+          ...mergeRequestFixture,
+          id: 2,
+          iid: 2,
+          web_url:
+            'http://gitlab.example.com/my-group/my-project/-/merge_requests/2',
+        },
+      ],
     );
 
     // When
@@ -328,6 +359,8 @@ describe('review > addReview', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     // Create modified fixtures with different values
@@ -363,7 +396,7 @@ describe('review > addReview', () => {
 
     // Mock GitLab API calls with modified fixtures
     mockGitlabCall(
-      `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
+      `/projects/${project_id}/merge_requests?search=${encodeURIComponent(search)}&state=locked,opened,reopened`,
       [mergeRequestFixture],
     );
 
@@ -385,6 +418,23 @@ describe('review > addReview', () => {
     );
 
     mockGitlabCall(`/projects/${project_id}`, projectFixture);
+
+    // Mock URL-encoded project path versions (needed for provider abstraction)
+    const encodedProjectPath = encodeURIComponent(
+      projectFixture.path_with_namespace,
+    );
+    mockGitlabCall(
+      `/projects/${encodedProjectPath}/merge_requests/${mergeRequestFixture.iid}`,
+      modifiedMergeRequestDetails,
+    );
+    mockGitlabCall(
+      `/projects/${encodedProjectPath}/merge_requests/${mergeRequestFixture.iid}/approvals`,
+      modifiedMergeRequestApprovals,
+    );
+    mockGitlabCall(
+      `/projects/${encodedProjectPath}/merge_requests/${mergeRequestFixture.iid}/reviewers`,
+      mergeRequestReviewersFixture,
+    );
 
     // When
     const response = await request(app)
@@ -416,7 +466,7 @@ describe('review > addReview', () => {
         el.type === 'mrkdwn' &&
         (el as MrkdwnElement).text.includes('Mergeable'),
     ) as MrkdwnElement;
-    expect(mergeableElement.text).toContain('⚠️ No');
+    expect(mergeableElement.text).toContain('❌ No');
 
     // Verify the approval count shows correctly
     const peopleSection = postedMessage.blocks[2] as SectionBlock;

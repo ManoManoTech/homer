@@ -1,9 +1,10 @@
 import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getProjectsByChannelId } from '@/core/services/data';
-import { fetchProjectById } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { ProviderFactory } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
+import { getProjectIdValue } from '@/core/typings/Data';
 import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type {
   SlackExpressRequest,
@@ -23,9 +24,20 @@ export async function listProjectsRequestHandler(
   const dataProjects = await getProjectsByChannelId(channel_id);
   const projects: GitlabProjectDetails[] = (
     await Promise.all(
-      dataProjects.map(async ({ projectId }) => {
+      dataProjects.map(async (dataProject) => {
+        const projectId = getProjectIdValue(dataProject);
         try {
-          return await fetchProjectById(projectId);
+          const provider = ProviderFactory.getProviderForProject(projectId);
+          const project = await provider.fetchProject(projectId);
+          // Convert UnifiedProject to GitlabProjectDetails format
+          return {
+            id: typeof project.id === 'number' ? project.id : 0,
+            name: project.name,
+            path: project.path,
+            path_with_namespace: project.pathWithNamespace,
+            web_url: project.webUrl,
+            default_branch: project.defaultBranch,
+          } as GitlabProjectDetails;
         } catch (error) {
           logger.error(error, `Failed to fetch project ${projectId}:`);
           return null;

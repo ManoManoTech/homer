@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
+import * as github from '@/core/services/github';
 import { slackBotWebClient } from '@/core/services/slack';
 import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
@@ -11,9 +12,13 @@ import {
   reviewMessagePostFixture,
   reviewMessageUpdateFixture,
 } from '../__fixtures__/reviewMessage';
+import { getGitHubHeaders } from '../utils/getGitHubHeaders';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
+import { waitFor } from '../utils/waitFor';
+
+jest.mock('@/core/services/github');
 
 describe('review > mergeRequestHook', () => {
   beforeEach(async () => {
@@ -62,6 +67,8 @@ describe('review > mergeRequestHook', () => {
         channelId,
         mergeRequestIid: object_attributes.iid,
         projectId: project.id,
+        projectIdString: null,
+        providerType: 'gitlab',
         ts: 'ts',
       });
       mockBuildReviewMessageCalls();
@@ -102,7 +109,9 @@ describe('review > mergeRequestHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: object_attributes.iid,
-      projectId: project_id,
+      projectId: typeof project_id === 'number' ? project_id : null,
+      projectIdString: typeof project_id === 'string' ? project_id : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     mockBuildReviewMessageCalls();
@@ -140,7 +149,9 @@ describe('review > mergeRequestHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: object_attributes.iid,
-      projectId: project_id,
+      projectId: typeof project_id === 'number' ? project_id : null,
+      projectIdString: typeof project_id === 'string' ? project_id : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     mockBuildReviewMessageCalls();
@@ -178,6 +189,8 @@ describe('review > mergeRequestHook', () => {
       channelId,
       mergeRequestIid: object_attributes.iid,
       projectId: project.id,
+      projectIdString: null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     mockBuildReviewMessageCalls();
@@ -242,6 +255,8 @@ describe('review > mergeRequestHook', () => {
       channelId: 'channelId',
       mergeRequestIid: object_attributes.iid,
       projectId: project.id,
+      projectIdString: null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
     (slackBotWebClient.users.lookupByEmail as jest.Mock).mockResolvedValue(
@@ -272,6 +287,8 @@ describe('review > mergeRequestHook', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     mockBuildReviewMessageCalls();
@@ -334,6 +351,8 @@ describe('review > mergeRequestHook', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     mockBuildReviewMessageCalls();
@@ -379,6 +398,8 @@ describe('review > mergeRequestHook', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     mockBuildReviewMessageCalls();
@@ -398,5 +419,117 @@ describe('review > mergeRequestHook', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  });
+
+  describe('GitHub webhooks', () => {
+    it('should update related review messages when pull_request_review with approved state is received', async () => {
+      // Given
+      const repoFullName = 'owner/repo';
+      const prNumber = 42;
+      const channelId = 'channelId';
+
+      await addReviewToChannel({
+        channelId,
+        mergeRequestIid: prNumber,
+        projectId: null,
+        projectIdString: repoFullName,
+        providerType: 'github',
+        ts: 'ts',
+      });
+
+      // Mock GitHub service
+      (github.fetchPullRequest as jest.Mock).mockResolvedValue({
+        id: 1,
+        number: prNumber,
+        title: 'Test PR',
+        body: 'Test PR body',
+        state: 'open',
+        draft: false,
+        html_url: `https://github.com/${repoFullName}/pull/${prNumber}`,
+        user: {
+          id: 1,
+          login: 'author',
+          avatar_url: 'https://github.com/author.png',
+          html_url: 'https://github.com/author',
+          name: 'Author',
+        },
+        head: { ref: 'feature-branch' },
+        base: { ref: 'main' },
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        merged_at: null,
+        closed_at: null,
+        comments: 0,
+        changed_files: 1,
+        labels: [],
+        mergeable: true,
+        merged: false,
+      });
+
+      (github.fetchPullRequestReviews as jest.Mock).mockResolvedValue([
+        {
+          id: 123,
+          state: 'APPROVED',
+          user: { id: 2, login: 'reviewer', avatar_url: '', html_url: '' },
+        },
+      ]);
+
+      (github.fetchRequestedReviewers as jest.Mock).mockResolvedValue([]);
+      (github.fetchPullRequestAssignees as jest.Mock).mockResolvedValue([]);
+      (github.fetchRepository as jest.Mock).mockResolvedValue({
+        full_name: repoFullName,
+        name: 'repo',
+        html_url: `https://github.com/${repoFullName}`,
+        default_branch: 'main',
+      });
+
+      const payload = {
+        action: 'submitted',
+        review: {
+          id: 123,
+          state: 'approved',
+          user: {
+            id: 1,
+            login: 'reviewer',
+          },
+        },
+        pull_request: {
+          number: prNumber,
+          title: 'Test PR',
+          labels: [],
+        },
+        repository: {
+          full_name: repoFullName,
+        },
+        sender: {
+          login: 'reviewer',
+        },
+      };
+
+      const payloadString = JSON.stringify(payload);
+
+      // When
+      const response = await request(app)
+        .post('/api/v1/homer/github')
+        .set(getGitHubHeaders('pull_request_review', payloadString))
+        .send(payload);
+
+      // Then
+      expect(response.status).toEqual(HTTP_STATUS_OK);
+
+      // Wait for async Slack updates
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.update).toHaveBeenCalled();
+      });
+
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel: channelId,
+          icon_emoji: ':thumbsup_blue:',
+          text: expect.stringContaining('has approved this merge request'),
+          thread_ts: 'ts',
+        }),
+      );
+    });
   });
 });

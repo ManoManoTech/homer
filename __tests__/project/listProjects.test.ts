@@ -22,14 +22,20 @@ describe('project > listProjects', () => {
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id + 1,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     await addProjectToChannel({
       channelId,
       projectId: projectFixture.id + 2,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     mockGitlabCall(`/projects/${projectFixture.id}`, projectFixture);

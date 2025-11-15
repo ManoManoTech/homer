@@ -43,7 +43,7 @@ export const reviewMessagePostFixture = {
     {
       elements: [
         {
-          text: `Project: _<${projectFixture.web_url}|${projectFixture.path_with_namespace}>_`,
+          text: `:gitlab: Project: _<${projectFixture.web_url}|${projectFixture.path_with_namespace}>_`,
           type: 'mrkdwn',
         },
         {
