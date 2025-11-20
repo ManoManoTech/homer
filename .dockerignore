@@ -37,7 +37,7 @@ jest.config.js
 # Config files
 .prettierrc
 .eslintrc
-eslint.config.js
+eslint.config.mjs
 exec-staged.config.js
 
 # Documentation
