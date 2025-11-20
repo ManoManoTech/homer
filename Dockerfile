@@ -1,3 +1,7 @@
+
+# Avoid installing Git hooks in Docker
+# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
+ARG HUSKY=0
 # Stage 1: Build dependencies
 FROM node:24-alpine AS dependencies
 
