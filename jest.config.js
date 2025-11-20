@@ -8,6 +8,8 @@ module.exports = {
     'src/**',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**/*.test.ts',
+    /** Exclude logger module from coverage  since it is mocked in setupAfterEnv.ts*/
+    '!src/**/services/logger.ts',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

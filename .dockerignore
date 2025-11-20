@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.github
+
+# Node
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build artifacts
+dist
+coverage
+*.log
+
+# Tests
+__tests__
+__mocks__
+*.test.ts
+*.spec.ts
+jest.config.js
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Config files
+.prettierrc
+.eslintrc
+eslint.config.js
+exec-staged.config.js
+
+# Documentation
+docs
+examples
+
+# Misc
+emojis
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+LICENSE
+PLUGIN_RELEASE.md
+UPGRADE.md
