@@ -12,10 +12,16 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
-      - run: yarn lint
-      - run: yarn test --coverage
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm test --coverage
 
       - name: 'Upload to Codecov'
         uses: 'codecov/codecov-action@v5'

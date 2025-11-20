@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc --project tsconfig.build.json",
-    "dev": "concurrently --kill-others 'yarn build -w' 'wait-on dist/src/index.js && nodemon --watch dist dist/src/index.js'",
+    "dev": "concurrently --kill-others 'pnpm build -w' 'wait-on dist/src/index.js && nodemon --watch dist dist/src/index.js'",
     "lint": "eslint .",
     "pre-commit": "exec-staged",
     "prepare": "husky",
@@ -17,8 +17,10 @@
     "start-env": "node --env-file=.env dist/src/index.js",
     "test": "jest --runInBand --forceExit"
   },
+  "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=24",
+    "pnpm": ">=9.0.0"
   },
   "dependencies": {
     "@slack/web-api": "7.12.0",
