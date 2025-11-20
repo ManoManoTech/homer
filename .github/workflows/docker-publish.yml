@@ -1,4 +1,4 @@
-name: Build project, then Docker Image and publish to Github Artifact Registry
+name: Build and publish optimized Docker Image to Github Artifact Registry
 
 on:
   push:
@@ -11,31 +11,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
-    name: Build from source to dist
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-      - run: yarn install
-      - run: yarn build
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: dist
-          path: dist
-
-      - name: Upload node_modules
-        uses: actions/upload-artifact@v5
-        with:
-          name: node_modules
-          path: node_modules
-
   docker:
-    name: Build Docker Image and publish to Github Artifact Registry
-    needs: build
+    name: Build optimized Docker Image and publish to Github Artifact Registry
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,19 +23,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: ↙️ Download dist
-        uses: actions/download-artifact@v6
-        with:
-          name: dist
-          path: dist
-
-      - name: ↙️ Download node_modules
-        uses: actions/download-artifact@v6
-        with:
-          name: node_modules
-          path: node_modules
-
-      - uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3
@@ -84,6 +50,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          target: production
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3

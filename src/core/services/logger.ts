@@ -11,12 +11,24 @@ const pinoConfig: LoggerOptions = {
 
 if (process.env.NODE_ENV !== 'production') {
   pinoConfig.level = 'debug';
-  pinoConfig.transport = {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-    },
-  };
+  
+  // Only use pino-pretty if available (it's a devDependency)
+  // This prevents errors in Docker builds with --production flag
+  try {
+    // Check if pino-pretty is available before setting transport
+    require.resolve('pino-pretty');
+    pinoConfig.transport = {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+      },
+    };
+  } catch (error) {
+    // pino-pretty not available, use default JSON formatter
+    // This is expected in production Docker builds
+    // eslint-disable-next-line no-console
+    console.warn('pino-pretty not available, using default JSON formatter', error);
+  }
 }
 
 export const logger = pino(pinoConfig);
