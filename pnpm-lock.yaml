@@ -7,9 +7,6 @@ settings:
 importers:
   .:
     dependencies:
-      '@slack/types':
-        specifier: ^2.18.0
-        version: 2.18.0
       '@slack/web-api':
         specifier: 7.12.0
         version: 7.12.0
@@ -56,6 +53,9 @@ importers:
       '@josselinbuils/exec-staged':
         specifier: 1.0.2
         version: 1.0.2
+      '@slack/types':
+        specifier: ^2.18.0
+        version: 2.18.0
       '@types/express':
         specifier: 5.0.4
         version: 5.0.4

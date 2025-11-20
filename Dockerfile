@@ -7,7 +7,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # Copy package files
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod
@@ -21,7 +21,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # Copy package files and TypeScript configs
-COPY package.json pnpm-lock.yaml .npmrc tsconfig.json tsconfig.build.json ./
+COPY package.json pnpm-lock.yaml tsconfig.json tsconfig.build.json ./
 
 # Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile

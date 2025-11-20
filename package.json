@@ -23,7 +23,6 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
-    "@slack/types": "^2.18.0",
     "@slack/web-api": "7.12.0",
     "ajv": "^8.17.1",
     "dayjs": "1.11.18",
@@ -41,6 +40,7 @@
   },
   "devDependencies": {
     "@josselinbuils/exec-staged": "1.0.2",
+    "@slack/types": "^2.18.0",
     "@types/express": "5.0.4",
     "@types/jest": "30.0.0",
     "@types/node": "24.7.1",
