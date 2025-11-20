@@ -1,10 +1,8 @@
-import type { KnownBlock } from '@slack/types';
-import type { HeaderBlock } from '@slack/types/dist/block-kit/blocks';
+import type { KnownBlock, HeaderBlock, MrkdwnElement } from '@slack/types';
 import type {
-  ActionsBlockElement,
   ChatPostMessageArguments,
   ChatUpdateArguments,
-  TextObject,
+  Button,
 } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
 import type { DataRelease } from '@/core/typings/Data';
@@ -16,6 +14,9 @@ import type {
   ReleaseEnvironment,
   ReleaseStateUpdate,
 } from '../../../typings/ReleaseStateUpdate';
+
+// Define types locally as they may not be exported
+type ActionsBlockElement = Button | any;
 
 interface ReleaseMessageData {
   releaseChannelId: string;
@@ -173,7 +174,7 @@ function buildReleaseDataBlocks(
               {
                 type: 'mrkdwn',
                 text: `*Canceled by:*\n@${canceledBy.name}`,
-              } as TextObject,
+              } as MrkdwnElement,
             ]
           : []),
       ],

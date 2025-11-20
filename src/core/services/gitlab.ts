@@ -124,11 +124,15 @@ export async function fetchMergeRequestCommits(
 }
 
 export async function fetchMergeRequestByIid(
-  projectId: number,
-  mergeRequestIid: number,
+  projectId: number | string,
+  mergeRequestIid: number
 ): Promise<GitlabMergeRequestDetails> {
+  // GitLab API supports both numeric project IDs and URL-encoded project paths
+  const projectIdentifier =
+    typeof projectId === 'string' ? encodeURIComponent(projectId) : projectId;
+
   const mergeRequest = await callAPI<GitlabMergeRequestDetails>(
-    `/projects/${projectId}/merge_requests/${mergeRequestIid}`,
+    `/projects/${projectIdentifier}/merge_requests/${mergeRequestIid}`
   );
 
   if (mergeRequest.iid === undefined) {
@@ -147,6 +151,20 @@ export async function fetchMergeRequestsByBranchName(
 ): Promise<GitlabMergeRequest[]> {
   return callAPI(
     `/projects/${projectId}/merge_requests?source_branch=${branchName}`,
+  );
+}
+
+export async function fetchMergeRequestsByText(
+  projectId: number,
+  text: string,
+  states?: string[]
+): Promise<GitlabMergeRequest[]> {
+  const stateParam =
+    states && states.length > 0 ? `&state=${states.join(',')}` : '';
+  return callAPI(
+    `/projects/${projectId}/merge_requests?search=${encodeURIComponent(
+      text
+    )}${stateParam}`
   );
 }
 

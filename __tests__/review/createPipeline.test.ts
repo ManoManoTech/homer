@@ -33,7 +33,14 @@ describe('review > createPipeline', () => {
       }),
     };
 
-    await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid,
+      projectId: typeof projectId === 'number' ? projectId : null,
+      projectIdString: typeof projectId === 'string' ? projectId : null,
+      providerType: 'gitlab',
+      ts,
+    });
 
     const pipelineCallMock = mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/pipeline`,
@@ -84,7 +91,14 @@ describe('review > createPipeline', () => {
       }),
     };
 
-    await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid,
+      projectId: typeof projectId === 'number' ? projectId : null,
+      projectIdString: typeof projectId === 'string' ? projectId : null,
+      providerType: 'gitlab',
+      ts,
+    });
 
     const pipelineCallMock = mockGitlabCall(
       `/projects/${mergeRequestFixture.project_id}/pipeline`,

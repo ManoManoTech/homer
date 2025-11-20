@@ -54,7 +54,12 @@ describe('core > errorManagement', () => {
         text: `review ${search}`,
         user_id: userId,
       };
-      await addProjectToChannel({ channelId, projectId });
+      await addProjectToChannel({
+        channelId,
+        projectId,
+        projectIdString: null,
+        providerType: 'gitlab',
+      });
       mockGitlabCall(
         `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
         [],
@@ -90,7 +95,12 @@ describe('core > errorManagement', () => {
         text: `review ${search}`,
         user_id: userId,
       };
-      await addProjectToChannel({ channelId, projectId });
+      await addProjectToChannel({
+        channelId,
+        projectId,
+        projectIdString: null,
+        providerType: 'gitlab',
+      });
       mockGitlabCall(
         `/projects/${projectId}/merge_requests?state=opened&search=${search}`,
         [],

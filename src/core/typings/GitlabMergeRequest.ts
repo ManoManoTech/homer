@@ -29,7 +29,7 @@ export interface GitlabMergeRequest {
   id: number;
   iid: number;
   labels: string[];
-  project_id: number;
+  project_id: number | string; // number for GitLab, string for GitHub (owner/repo)
   merge_commit_sha: string | null;
   merge_status: GitlabMergeRequestMergeStatus;
   merge_when_pipeline_succeeds: boolean;
@@ -56,12 +56,12 @@ export interface GitlabMergeRequest {
   sha: string;
   should_remove_source_branch: boolean;
   source_branch: string;
-  source_project_id: number;
+  source_project_id: number | string; // number for GitLab, string for GitHub
   squash: boolean;
   squash_commit_sha: string | null;
   state: GitlabMergeRequestState;
   target_branch: string;
-  target_project_id: number;
+  target_project_id: number | string; // number for GitLab, string for GitHub
   task_completion_status: {
     count: number;
     completed_count: number;

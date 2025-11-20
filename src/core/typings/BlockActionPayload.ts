@@ -1,4 +1,11 @@
-import type { Actionable, ModalView, View } from '@slack/web-api';
+import type { ModalView, View } from '@slack/web-api';
+
+// Define Actionable type locally as it's no longer exported from @slack/web-api
+export interface Actionable {
+  type: string;
+  action_id: string;
+  [key: string]: any;
+}
 
 export type BlockActionView<V extends View = ModalView> = V & {
   id: string;

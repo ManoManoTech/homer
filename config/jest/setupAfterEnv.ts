@@ -42,9 +42,22 @@ jest.mock('@/core/services/logger', () => ({
   },
 }));
 
+// Mock ONLY startup-critical functions from data service
+// All other functions use real Sequelize-backed implementations
+jest.mock('@/core/services/data', () => {
+  const actual = jest.requireActual('@/core/services/data');
+
+  return {
+    ...actual,
+    // Override ONLY connectToDatabase to avoid actual database connection
+    connectToDatabase: jest.fn().mockResolvedValue(undefined),
+    // getReleases uses real implementation which works with Sequelize mock
+  };
+});
+
 let stopServer = () => Promise.resolve();
 
-const originalFetch = global.fetch;
+const originalFetch = (global as any).fetch;
 
 beforeAll(async () => {
   const { start } = await import('@/start');
@@ -56,7 +69,7 @@ beforeEach(async () => {
   clearSequelizeMock();
 
   clearFetchMocks();
-  global.fetch = jest.fn().mockImplementation(createFetchMock(originalFetch));
+  (global as any).fetch = jest.fn().mockImplementation(createFetchMock(originalFetch));
 });
 
 afterAll(async () => {

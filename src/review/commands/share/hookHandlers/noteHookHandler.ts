@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { getProjectIdValue } from '@/core/typings/Data';
 import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import { StateUpdateDebouncer } from '../utils/StateUpdateDebouncer';
 import { buildNoteMessage } from '../viewBuilders/buildNoteMessage';
@@ -44,7 +45,9 @@ export async function noteHookHandler(
 
   await Promise.all(
     reviews
-      .map(({ channelId, ts }) => {
+      .map((review) => {
+        const { channelId, ts } = review;
+        const reviewProjectId = getProjectIdValue(review);
         const shockAbsorberId = `${channelId}_${ts}_${object_attributes.author_id}`;
 
         if (!shockAbsorbers.has(shockAbsorberId)) {
@@ -66,7 +69,7 @@ export async function noteHookHandler(
         shockAbsorber.state = [...shockAbsorber.state, object_attributes];
 
         return [
-          buildReviewMessage(channelId, project.id, iid, ts).then(
+          buildReviewMessage(channelId, reviewProjectId, iid, ts).then(
             slackBotWebClient.chat.update
           ),
           shockAbsorber.promise,

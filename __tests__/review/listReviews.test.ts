@@ -27,12 +27,16 @@ describe('review > listReviews', () => {
       channelId,
       mergeRequestIid: mergeRequestIid1,
       projectId,
+      projectIdString: null,
+      providerType: 'gitlab',
       ts,
     });
     await addReviewToChannel({
       channelId,
       mergeRequestIid: mergeRequestIid2,
       projectId,
+      projectIdString: null,
+      providerType: 'gitlab',
       ts,
     });
 

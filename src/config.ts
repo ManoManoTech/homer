@@ -14,6 +14,10 @@ export const CONFIG = {
     token: getEnvVariable('GITLAB_TOKEN'),
     secret: getEnvVariable('GITLAB_SECRET'),
   },
+  github: {
+    token: getEnvVariable('GITHUB_TOKEN'),
+    secret: getEnvVariable('GITHUB_SECRET'),
+  },
   slack: {
     signingSecret: getEnvVariable('SLACK_SIGNING_SECRET'),
     accessToken: getEnvVariable('SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN'),

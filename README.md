@@ -5,7 +5,7 @@
 ![Homer](docs/assets/homer256.png)
 
 Homer is a **Slack** bot intended to help you to easily **share and follow
-Gitlab merge requests**.
+GitLab merge requests and GitHub pull requests**.
 
 ## Why Homer?
 
@@ -20,8 +20,8 @@ merge them more quickly:
 
 ## How does it work?
 
-Homer communicates with both **Slack** and **Gitlab** to get merge request
-information and publish Slack messages.
+Homer communicates with **Slack**, **GitLab**, and **GitHub** to get merge request
+and pull request information and publish Slack messages.
 
 ![Architecture](docs/assets/archi-dark.png#gh-dark-mode-only)
 ![Architecture](docs/assets/archi-light.png#gh-light-mode-only)
@@ -32,15 +32,15 @@ information and publish Slack messages.
 
 Here are the available commands:
 
-| Command                                         | Description                                                                                                                                                     |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/homer changelog`                              | Display changelogs, for any Gitlab project, between 2 release tags.                                                                                             |
-| `/homer project add <project_name\|project_id>` | Add a Gitlab project to a channel.                                                                                                                              |
-| `/homer project list`                           | List the Gitlab projects added to a channel.                                                                                                                    |
-| `/homer project remove`                         | Remove a Gitlab project from a channel.                                                                                                                         |
-| `/homer release`                                | Create a release for configured Gitlab project in a channel.                                                                                                    |
-| `/homer review <search>`                        | Share a merge request on a channel.<br />Searches in title and description by default.<br />Accepts merge request URLs and merge request IDs prefixed with "!". |
-| `/homer review list`                            | List ongoing reviews shared in a channel.                                                                                                                       |
+| Command                                         | Description                                                                                                                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/homer changelog`                              | Display changelogs, for any GitLab project, between 2 release tags.                                                                                               |
+| `/homer project add <project_name\|project_id>` | Add a GitLab project (by ID or name) or GitHub repository (owner/repo) to a channel.                                                                              |
+| `/homer project list`                           | List the projects added to a channel.                                                                                                                             |
+| `/homer project remove`                         | Remove a project from a channel.                                                                                                                                  |
+| `/homer release`                                | Create a release for configured GitLab project in a channel.                                                                                                      |
+| `/homer review <search>`                        | Share a merge request/pull request on a channel.<br />Searches in title and description by default.<br />Accepts MR/PR URLs and IDs (GitLab: !123, GitHub: #123). |
+| `/homer review list`                            | List ongoing reviews shared in a channel.                                                                                                                         |
 
 ### Share a merge request using Homer
 
@@ -126,6 +126,59 @@ If you want to share a merge request in a Slack channel, you can add one of the 
 - `homer-mergeable`: Homer will share the merge request in the channel linked to the Gitlab project, when it is mergeable or waiting for an approval.
 
 More information about the labels can be found in the [Gitlab documentation](https://docs.gitlab.com/user/project/labels/).
+
+### Share a GitHub pull request using Homer
+
+Homer also supports GitHub repositories! Here's how to set it up:
+
+#### 1. Configure GitHub webhook
+
+To keep Slack messages up to date, Homer needs to receive notifications from GitHub:
+
+- Ask for Homer's `GITHUB_SECRET` from the person managing Homer in your organization.
+
+- Go to your GitHub repository settings → Webhooks:
+  `https://github.com/OWNER/REPO/settings/hooks`
+
+- Click "Add webhook" and configure:
+
+  - **Payload URL**: `HOMER_BASE_URL/api/v1/homer/github`
+  - **Content type**: `application/json`
+  - **Secret**: Enter the value of `GITHUB_SECRET`
+  - **Events**: Select individual events:
+    - ✅ Pull requests
+    - ✅ Issue comments
+    - ✅ Pull request reviews
+
+- Click "Add webhook"
+
+- Ensure the GitHub user associated with your `GITHUB_TOKEN` has at least **Read** access to the repository.
+
+#### 2. Add the GitHub repository to a Slack channel
+
+Inside the Slack channel, run:
+
+```
+/homer project add owner/repo
+```
+
+For example: `/homer project add facebook/react`
+
+> [!WARNING]
+> If you want to use Homer in a private channel, you need to invite it to the channel first.
+
+#### 3. Share the pull request
+
+Use the `/homer review <search>` command:
+
+- By PR number: `/homer review #42`
+- By URL: `/homer review https://github.com/facebook/react/pull/12345`
+- By search: `/homer review fix authentication bug`
+
+To see all ongoing reviews: `/homer review list`
+
+> [!NOTE]
+> GitHub labels like `homer-review` are not yet supported, but webhook-based automatic sharing will be added in a future update.
 
 ## Install
 

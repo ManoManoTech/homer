@@ -32,9 +32,14 @@ describe('review > pushHook', () => {
     const branchName = 'master';
     const channelId = 'channelId';
 
+    // Mock the search endpoint used by the provider (not source_branch filter)
     mockGitlabCall(
-      `/projects/${pushHookFixture.project_id}/merge_requests?source_branch=${branchName}`,
-      [mergeRequestFixture],
+      `/projects/${
+        pushHookFixture.project_id
+      }/merge_requests?search=${encodeURIComponent(
+        branchName
+      )}&state=opened,reopened`,
+      [mergeRequestFixture]
     );
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
@@ -43,7 +48,15 @@ describe('review > pushHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: mergeRequestFixture.iid,
-      projectId: mergeRequestFixture.project_id,
+      projectId:
+        typeof mergeRequestFixture.project_id === 'number'
+          ? mergeRequestFixture.project_id
+          : null,
+      projectIdString:
+        typeof mergeRequestFixture.project_id === 'string'
+          ? mergeRequestFixture.project_id
+          : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
 
@@ -95,9 +108,14 @@ describe('review > pushHook', () => {
     const branchName = 'feat/add-logo';
     const channelId = 'channelId';
 
+    // Mock the search endpoint used by the provider (not source_branch filter)
     mockGitlabCall(
-      `/projects/${pushHookFixtureFeatureBranch.project_id}/merge_requests?source_branch=${branchName}`,
-      [mergeRequestFixture],
+      `/projects/${
+        pushHookFixtureFeatureBranch.project_id
+      }/merge_requests?search=${encodeURIComponent(
+        branchName
+      )}&state=opened,reopened`,
+      [mergeRequestFixture]
     );
     mockGitlabCall(
       `/projects/${pushHookFixtureFeatureBranch.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
@@ -106,7 +124,15 @@ describe('review > pushHook', () => {
     await addReviewToChannel({
       channelId,
       mergeRequestIid: mergeRequestFixture.iid,
-      projectId: mergeRequestFixture.project_id,
+      projectId:
+        typeof mergeRequestFixture.project_id === 'number'
+          ? mergeRequestFixture.project_id
+          : null,
+      projectIdString:
+        typeof mergeRequestFixture.project_id === 'string'
+          ? mergeRequestFixture.project_id
+          : null,
+      providerType: 'gitlab',
       ts: 'ts',
     });
 

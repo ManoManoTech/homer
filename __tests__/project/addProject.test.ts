@@ -164,7 +164,7 @@ describe('project > addProject', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
       channel: channelId,
-      text: expect.stringContaining(`No project matches \`${search}\``),
+      text: expect.stringContaining(`No GitLab project matches \`${search}\``),
       user: userId,
     });
   });
@@ -303,14 +303,20 @@ describe('project > addProject', () => {
     await addProjectToChannel({
       channelId: `${channelId}1`,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     await addProjectToChannel({
       channelId: `${channelId}2`,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
     await addProjectToChannel({
       channelId: `${channelId}3`,
       projectId: projectFixture.id,
+      projectIdString: null,
+      providerType: 'gitlab',
     });
 
     // When
