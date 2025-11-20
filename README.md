@@ -170,7 +170,7 @@ Be sure to have all those installed:
 - [Docker Compose](https://docs.docker.com/compose/install/).
 - [Node.js@24](https://nodejs.org/en/). You can use a version manager like
   [nvm](https://github.com/nvm-sh/nvm).
-- [Yarn@1](https://classic.yarnpkg.com/lang/en/).
+- [pnpm@9](https://pnpm.io/installation). pnpm is enabled via corepack (included in Node.js 16.13+).
 
 ### 4. Set the necessary environment variables
 
@@ -263,17 +263,20 @@ git clone https://github.com/ManoManoTech/homer.git
 # Go to directory that was just created
 cd homer
 
-# Install yarn dependencies
-yarn install
+# Enable pnpm (if not already enabled)
+corepack enable
+
+# Install dependencies
+pnpm install
 
 # Start the database Docker container
 docker compose up -d
 
 # Build Homer
-yarn build
+pnpm build
 
 # Start Homer
-yarn start
+pnpm start
 ```
 
 To check that Homer is working properly, you can go to
