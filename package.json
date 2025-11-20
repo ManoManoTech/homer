@@ -12,7 +12,7 @@
     "dev": "concurrently --kill-others 'pnpm build -w' 'wait-on dist/src/index.js && nodemon --watch dist dist/src/index.js'",
     "lint": "eslint .",
     "pre-commit": "exec-staged",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "start": "node dist/src/index.js",
     "start-env": "node --env-file=.env dist/src/index.js",
     "test": "jest --runInBand --forceExit"
