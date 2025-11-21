@@ -1,14 +1,11 @@
-
-# Avoid installing Git hooks in Docker
-# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-ARG HUSKY=0
+ARG PNPM_VERSION=10.23.0
 # Stage 1: Build dependencies
 FROM node:24-alpine AS dependencies
 
 WORKDIR /app
 
 # Enable corepack and prepare pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -26,7 +23,7 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Enable corepack and prepare pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 # Copy package files and TypeScript configs
 COPY package.json pnpm-lock.yaml tsconfig.json tsconfig.build.json ./
@@ -41,6 +38,7 @@ COPY src ./src
 # You need to override the config directory with your own config 
 # when building your own image. Also, copy your own plugins directory.
 COPY config ./config
+COPY plugins ./plugins
 
 # Build the application
 RUN pnpm build

@@ -170,7 +170,7 @@ Be sure to have all those installed:
 - [Docker Compose](https://docs.docker.com/compose/install/).
 - [Node.js@24](https://nodejs.org/en/). You can use a version manager like
   [nvm](https://github.com/nvm-sh/nvm).
-- [pnpm@9](https://pnpm.io/installation). pnpm is enabled via corepack (included in Node.js 16.13+).
+- [pnpm@10](https://pnpm.io/installation). pnpm is enabled via corepack (included in Node.js 16.13+).
 
 ### 4. Set the necessary environment variables
 
