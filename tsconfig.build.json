@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["config/homer", "src", "plugins"]
+  "include": ["config/homer", "src", "plugins"],
+  "compilerOptions": {
+    "sourceMap": false
+  }
 }
