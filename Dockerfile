@@ -1,25 +1,36 @@
+ARG PNPM_VERSION=10.23.0
 # Stage 1: Build dependencies
 FROM node:24-alpine AS dependencies
 
 WORKDIR /app
 
+# Enable corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+
 # Copy package files
-COPY package.json yarn.lock ./
+COPY package.json pnpm-lock.yaml ./
+COPY .husky/install.mjs .husky/install.mjs
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Install only production dependencies
-RUN yarn install --frozen-lockfile --production && \
-    yarn cache clean
+RUN pnpm install --frozen-lockfile --prod
 
 # Stage 2: Build application
 FROM node:24-alpine AS builder
 
 WORKDIR /app
 
+# Enable corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+
 # Copy package files and TypeScript configs
-COPY package.json yarn.lock tsconfig.json tsconfig.build.json ./
+COPY package.json pnpm-lock.yaml tsconfig.json tsconfig.build.json ./
+COPY .husky/install.mjs .husky/install.mjs
 
 # Install all dependencies (including devDependencies for build)
-RUN yarn install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
@@ -27,9 +38,10 @@ COPY src ./src
 # You need to override the config directory with your own config 
 # when building your own image. Also, copy your own plugins directory.
 COPY config ./config
+COPY plugins ./plugins
 
 # Build the application
-RUN yarn build
+RUN pnpm build
 
 # Stage 3: Production image
 FROM node:24-alpine AS production
