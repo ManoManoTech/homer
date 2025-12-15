@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@josselinbuils/exec-staged": "1.0.2",
-    "@slack/types": "^2.18.0",
+    "@slack/types": "^2.19.0",
     "@types/express": "5.0.5",
     "@types/jest": "30.0.0",
     "@types/node": "24.10.1",

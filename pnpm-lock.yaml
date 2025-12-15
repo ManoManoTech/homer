@@ -55,8 +55,8 @@ importers:
         specifier: 1.0.2
         version: 1.0.2
       '@slack/types':
-        specifier: ^2.18.0
-        version: 2.18.0
+        specifier: ^2.19.0
+        version: 2.19.0
       '@types/express':
         specifier: 5.0.5
         version: 5.0.5
@@ -648,8 +648,8 @@ packages:
     resolution: {integrity: sha512-Wz7QYfPAlG/DR+DfABddUZeNgoeY7d1J39OCR2jR+v7VBsB8ezulDK5szTnDDPDwLH5IWhLvXIHlCFZV7MSKgA==}
     engines: {node: '>= 18', npm: '>= 8.6.0'}
 
-  '@slack/types@2.18.0':
-    resolution: {integrity: sha512-ZKrdeoppbM+3l2KKOi4/3oFYKCEwiW3dQfdHZDcecJ9rAmEqWPnARYmac9taZNitb0xnSgu6GOpHgwaKI8se2g==}
+  '@slack/types@2.19.0':
+    resolution: {integrity: sha512-7+QZ38HGcNh/b/7MpvPG6jnw7mliV6UmrquJLqgdxkzJgQEYUcEztvFWRU49z0x4vthF0ixL5lTK601AXrS8IA==}
     engines: {node: '>= 12.13.0', npm: '>= 6.12.0'}
 
   '@slack/web-api@7.12.0':
@@ -4024,12 +4024,12 @@ snapshots:
     dependencies:
       '@types/node': 24.10.1
 
-  '@slack/types@2.18.0': {}
+  '@slack/types@2.19.0': {}
 
   '@slack/web-api@7.12.0':
     dependencies:
       '@slack/logger': 4.0.0
-      '@slack/types': 2.18.0
+      '@slack/types': 2.19.0
       '@types/node': 24.10.1
       '@types/retry': 0.12.0
       axios: 1.13.2
