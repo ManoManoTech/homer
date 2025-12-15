@@ -28,7 +28,7 @@
     "dayjs": "1.11.19",
     "dd-trace": "5.79.0",
     "dotenv": "17.2.3",
-    "express": "5.1.0",
+    "express": "5.2.1",
     "helmet": "8.1.0",
     "pg": "8.16.3",
     "pg-hstore": "2.3.4",
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@josselinbuils/exec-staged": "1.0.2",
     "@slack/types": "^2.18.0",
-    "@types/express": "5.0.5",
+    "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
     "@types/node": "24.10.1",
     "@types/pg": "8.16.0",
