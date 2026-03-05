@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@slack/web-api": "7.12.0",
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "dayjs": "1.11.19",
     "dd-trace": "5.79.0",
     "dotenv": "17.2.3",
@@ -38,9 +38,14 @@
     "source-map-support": "0.5.21",
     "tsconfig-paths": "4.2.0"
   },
+  "pnpm": {
+    "overrides": {
+      "dottie": "2.0.7"
+    }
+  },
   "devDependencies": {
     "@josselinbuils/exec-staged": "1.0.2",
-    "@slack/types": "^2.18.0",
+    "@slack/types": "^2.20.0",
     "@types/express": "5.0.5",
     "@types/jest": "30.0.0",
     "@types/node": "24.10.1",
@@ -58,10 +63,10 @@
     "pino-pretty": "13.1.2",
     "prettier": "3.6.2",
     "rimraf": "6.0.1",
-    "supertest": "^7.1.4",
+    "supertest": "^7.2.2",
     "ts-jest": "29.4.5",
     "typescript": "5.9.3",
-    "typescript-eslint": "^8.49.0",
+    "typescript-eslint": "^8.56.1",
     "wait-on": "9.0.3"
   }
 }
