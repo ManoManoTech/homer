@@ -8,6 +8,12 @@ export const CONFIG = {
     password: getEnvVariable('POSTGRES_PASSWORD'),
     port: Number(getEnvVariable('POSTGRES_PORT', '5432')),
     databaseName: getEnvVariable('POSTGRES_DATABASE_NAME', 'homer'),
+    pool: {
+      max: Number(getEnvVariable('POSTGRES_POOL_MAX', '5')),
+      min: Number(getEnvVariable('POSTGRES_POOL_MIN', '0')),
+      idle: Number(getEnvVariable('POSTGRES_POOL_IDLE', '10000')),
+      acquire: Number(getEnvVariable('POSTGRES_POOL_ACQUIRE', '30000')),
+    },
   },
   gitlab: {
     url: getEnvVariable('GITLAB_URL'),

@@ -26,6 +26,7 @@ const sequelize = new Sequelize({
   host: CONFIG.postgres.host,
   logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
   password: CONFIG.postgres.password,
+  pool: CONFIG.postgres.pool,
   port: CONFIG.postgres.port,
   username: CONFIG.postgres.username,
 });
@@ -80,10 +81,25 @@ export async function cleanReleases(
   await Release.destroy({ where: filter });
 }
 
+let cleanupInterval: ReturnType<typeof setInterval> | undefined;
+
 export async function connectToDatabase(): Promise<void> {
+  await sequelize.authenticate();
   await sequelize.sync({ alter: true });
   await cleanOldEntries();
-  setInterval(cleanOldEntries, CLEAN_INTERVAL_MS);
+  cleanupInterval = setInterval(cleanOldEntries, CLEAN_INTERVAL_MS);
+}
+
+export async function disconnectFromDatabase(): Promise<void> {
+  if (cleanupInterval !== undefined) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = undefined;
+  }
+  await sequelize.close();
+}
+
+export async function checkDatabaseConnection(): Promise<void> {
+  await sequelize.authenticate();
 }
 
 export async function addProjectToChannel({

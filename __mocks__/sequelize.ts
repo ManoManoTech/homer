@@ -84,6 +84,10 @@ class SequelizeMock {
     return modelMock;
   }
 
+  async authenticate(): Promise<void> {}
+
+  async close(): Promise<void> {}
+
   getQueryInterface = () => ({
     changeColumn: () => Promise.resolve(),
   });

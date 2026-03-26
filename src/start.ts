@@ -1,4 +1,7 @@
-import { connectToDatabase } from '@/core/services/data';
+import {
+  connectToDatabase,
+  disconnectFromDatabase,
+} from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { app } from './app';
@@ -22,12 +25,12 @@ export async function start(): Promise<() => Promise<void>> {
       }
       logger.info(`Homer started on port ${PORT}.`);
       waitForNonReadyReleases(); // Promise ignored on purpose
-      resolve(
-        async () =>
-          new Promise((r) => {
-            server.close(r as any);
-          }),
-      );
+      resolve(async () => {
+        await new Promise<void>((r) => {
+          server.close(() => r());
+        });
+        await disconnectFromDatabase();
+      });
     });
   });
 }
