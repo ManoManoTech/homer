@@ -5,6 +5,7 @@ import { CONFIG } from '@/config';
 import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { securityMiddleware } from '@/core/middlewares/securityMiddleware';
 import { healthCheckRequestHandler } from '@/core/requestHandlers/healthCheckRequestHandler';
+import { readinessRequestHandler } from '@/core/requestHandlers/readinessRequestHandler';
 import { REQUEST_BODY_SIZE_LIMIT } from './constants';
 import { router } from './router';
 
@@ -23,6 +24,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true, verify }));
 app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
+app.get('/api/monitoring/readiness', readinessRequestHandler);
 
 app.use(securityMiddleware);
 app.use(CONFIG.apiBasePath, router);

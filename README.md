@@ -253,6 +253,12 @@ the following variables:
 - `POSTGRES_PASSWORD`: password used when connecting to the database.
 - `POSTGRES_PORT`: port where the database listens. Default value is `5432`.
 - `POSTGRES_USER`: username used when connecting to the database. Default value is `homer`.
+- `POSTGRES_POOL_MAX`: maximum number of connections in the pool. Default value is `5`.
+  Increase (e.g. `10`–`20`) for persistent server deployments; keep low for serverless.
+- `POSTGRES_POOL_MIN`: minimum number of connections kept alive. Default value is `0`.
+  Set to `0` for serverless deployments to avoid holding idle connections.
+- `POSTGRES_POOL_IDLE`: milliseconds before an idle connection is released. Default value is `10000`.
+- `POSTGRES_POOL_ACQUIRE`: milliseconds to wait for a connection before throwing. Default value is `30000`.
 
 ### 5. Install and run
 
@@ -279,9 +285,10 @@ pnpm build
 pnpm start
 ```
 
-To check that Homer is working properly, you can go to
-http://localhost:3000/api/monitoring/healthcheck and check that a donut is
-displayed.
+To check that Homer is working properly:
+
+- **Liveness**: `GET /api/monitoring/healthcheck` — returns `🍩` if the process is running.
+- **Readiness**: `GET /api/monitoring/readiness` — returns `ready` (200) if the database connection is healthy, or `503` if not.
 
 ### 6. Make your local instance of Homer reachable from outside
 
