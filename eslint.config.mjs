@@ -93,6 +93,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/core/migrations/**/*', 'src/migrate.ts', 'src/core/services/migrator.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['**/__mocks__/**/*', '**/__tests__/**/*'],
     rules: {
       '@typescript-eslint/no-empty-function': 'off',

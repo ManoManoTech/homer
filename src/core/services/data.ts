@@ -20,7 +20,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
 const LIFESPAN_WITHOUT_UPDATE_MS = 15 * DAY_IN_MS;
 
-const sequelize = new Sequelize({
+export const sequelize = new Sequelize({
   database: CONFIG.postgres.databaseName,
   dialect: 'postgres',
   host: CONFIG.postgres.host,
@@ -85,7 +85,12 @@ let cleanupInterval: ReturnType<typeof setInterval> | undefined;
 
 export async function connectToDatabase(): Promise<void> {
   await sequelize.authenticate();
-  await sequelize.sync({ alter: true });
+  if (process.env.NODE_ENV === 'production') {
+    const { runMigrations } = await import('./migrator');
+    await runMigrations();
+  } else {
+    await sequelize.sync({ alter: true });
+  }
   await cleanOldEntries();
   cleanupInterval = setInterval(cleanOldEntries, CLEAN_INTERVAL_MS);
 }
