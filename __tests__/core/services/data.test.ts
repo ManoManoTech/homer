@@ -88,6 +88,44 @@ describe('data service', () => {
     ]);
   });
 
+  it('should return empty array when deployment field is null', async () => {
+    const { Sequelize: SequelizeMock } = (await import('sequelize')) as any;
+
+    pushRawReleaseEntry(SequelizeMock.models.Release, {
+      projectId: 70,
+      tagName: 'v-null-deploy',
+      description: 'release with null deployments',
+      state: 'created',
+      failedDeployments: null,
+      slackAuthor: JSON.stringify(slackUserFixture),
+      startedDeployments: JSON.stringify([]),
+      successfulDeployments: JSON.stringify([]),
+    });
+
+    const [release] = await getProjectReleases(70);
+
+    expect(release.failedDeployments).toEqual([]);
+  });
+
+  it('should return empty array when deployment array contains unexpected types', async () => {
+    const { Sequelize: SequelizeMock } = (await import('sequelize')) as any;
+
+    pushRawReleaseEntry(SequelizeMock.models.Release, {
+      projectId: 80,
+      tagName: 'v-unexpected-type',
+      description: 'release with unexpected deployment types',
+      state: 'created',
+      failedDeployments: JSON.stringify([123, 456]),
+      slackAuthor: JSON.stringify(slackUserFixture),
+      startedDeployments: JSON.stringify([]),
+      successfulDeployments: JSON.stringify([]),
+    });
+
+    const [release] = await getProjectReleases(80);
+
+    expect(release.failedDeployments).toEqual([]);
+  });
+
   it('should fallback to empty array when deployment JSON is invalid', async () => {
     const { Sequelize: SequelizeMock } = (await import('sequelize')) as any;
 
