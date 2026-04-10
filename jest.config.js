@@ -10,6 +10,10 @@ module.exports = {
     '!src/**/__tests__/**/*.test.ts',
     /** Exclude logger module from coverage  since it is mocked in setupAfterEnv.ts*/
     '!src/**/services/logger.ts',
+    /** Exclude migration infrastructure — operational/DDL code, not unit-testable */
+    '!src/migrate.ts',
+    '!src/**/services/migrator.ts',
+    '!src/**/migrations/**',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

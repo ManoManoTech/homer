@@ -357,6 +357,46 @@ A simple plugin system enables the addition of custom release managers. See this
 
 You can find some [examples](./examples/) to add your own configuration, plugins and how to deploy.
 
+## Database migrations
+
+In production (`NODE_ENV=production`), Homer uses [umzug](https://github.com/sequelize/umzug) to manage database schema changes instead of `sequelize.sync()`. In development, `sync({ alter: true })` is still used for convenience.
+
+### Creating a new migration
+
+1. Create a new file in `src/core/migrations/` following the naming convention:
+
+   ```
+   YYYY.MM.DDTHH.MM.SS.description.ts
+   ```
+
+   Example: `2026.04.15T12.00.00.add-index-on-reviews.ts`
+
+2. Export `up` and `down` functions:
+
+   ```typescript
+   import type { Migration } from '@/core/services/migrator';
+
+   export const up: Migration = async ({ context: queryInterface }) => {
+     // Apply changes
+   };
+
+   export const down: Migration = async ({ context: queryInterface }) => {
+     // Revert changes
+   };
+   ```
+
+3. Build (`pnpm build`) and test locally before deploying.
+
+### CLI commands
+
+After building, you can manage migrations manually:
+
+```bash
+pnpm migrate          # Apply all pending migrations
+pnpm migrate:down     # Revert the last applied migration
+pnpm migrate:status   # List executed and pending migrations
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).

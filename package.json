@@ -15,7 +15,10 @@
     "prepare": "node .husky/install.mjs",
     "start": "node dist/src/index.js",
     "start-env": "node --env-file=.env dist/src/index.js",
-    "test": "jest --runInBand --forceExit"
+    "test": "jest --runInBand --forceExit",
+    "migrate": "node --env-file=.env dist/src/migrate.js up",
+    "migrate:down": "node --env-file=.env dist/src/migrate.js down",
+    "migrate:status": "node --env-file=.env dist/src/migrate.js status"
   },
   "packageManager": "pnpm@10.23.0",
   "engines": {
@@ -36,7 +39,8 @@
     "sequelize": "6.37.7",
     "slackify-markdown": "4.5.0",
     "source-map-support": "0.5.21",
-    "tsconfig-paths": "4.2.0"
+    "tsconfig-paths": "4.2.0",
+    "umzug": "3.8.2"
   },
   "pnpm": {
     "overrides": {
