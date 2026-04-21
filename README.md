@@ -83,14 +83,14 @@ request:
   ![Webhook secret](docs/assets/gitlab/webhook-add.png)
 
 - Make sure that the Gitlab user linked to your `GITLAB_TOKEN` has at least the
-  `Developer` role in your project:
+  `Maintainer` role in your project:
   - Go to the `Projects members` page:
 
     ![Members menu](docs/assets/gitlab/members-menu.png)
 
   - Use the search bar to find the information of the user.
 
-  - Check that the role in `Max role` is at least `Developer`.
+  - Check that the role in `Max role` is at least `Maintainer`.
 
 #### 2. Add the Gitlab project to a Slack channel
 
