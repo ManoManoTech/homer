@@ -2,6 +2,7 @@ import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { fetchProjectById } from '@/core/services/gitlab';
 import type { DataRelease } from '@/core/typings/Data';
 import { injectActionsParameters } from '@/core/utils/slackActions';
+import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
 interface ReleaseSelectionEphemeralData {
   action: string;
@@ -21,13 +22,13 @@ export async function buildReleaseSelectionEphemeral({
   await Promise.all(
     releases.map(async (release) => {
       const { path_with_namespace: projectPath } = await fetchProjectById(
-        release.projectId
+        release.projectId,
       );
       if (releaseGroups[projectPath] === undefined) {
         releaseGroups[projectPath] = [];
       }
       releaseGroups[projectPath].push(release);
-    })
+    }),
   );
 
   return {
@@ -55,7 +56,7 @@ export async function buildReleaseSelectionEphemeral({
             .map(([projectPath, projectReleases]) => ({
               label: {
                 type: 'plain_text',
-                text: projectPath,
+                text: truncateProjectPath(projectPath),
               },
               options: projectReleases.map(({ projectId, tagName }) => ({
                 text: {

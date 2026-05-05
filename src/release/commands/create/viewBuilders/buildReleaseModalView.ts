@@ -10,6 +10,7 @@ import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import { slackifyText } from '@/core/utils/slackifyText';
+import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
 
@@ -37,7 +38,7 @@ export async function buildReleaseModalView({
     projectId = parseInt(
       state.values['release-project-block']?.['release-select-project-action']
         ?.selected_option?.value,
-      10
+      10,
     );
 
     projectOptions = ((blocks[0] as InputBlock).element as StaticSelect)
@@ -49,18 +50,18 @@ export async function buildReleaseModalView({
       await ConfigHelper.getChannelProjectReleaseConfigs(channelId);
     const projects = await Promise.all(
       projectReleaseConfigs.map(async (config) =>
-        fetchProjectById(config.projectId)
-      )
+        fetchProjectById(config.projectId),
+      ),
     );
 
     projectOptions = projects
       .sort((a, b) =>
-        a.path_with_namespace.localeCompare(b.path_with_namespace)
+        a.path_with_namespace.localeCompare(b.path_with_namespace),
       )
       .map((project) => ({
         text: {
           type: 'plain_text',
-          text: project.path_with_namespace,
+          text: truncateProjectPath(project.path_with_namespace),
         },
         value: project.id.toString(),
       })) as SlackOption[];
@@ -68,7 +69,7 @@ export async function buildReleaseModalView({
 
   if (!projectOptions || projectOptions.length === 0) {
     throw new Error(
-      'No releasable Gitlab project has been found on this channel :homer-stressed:'
+      'No releasable Gitlab project has been found on this channel :homer-stressed:',
     );
   }
 
@@ -86,13 +87,13 @@ export async function buildReleaseModalView({
         projectOptions,
         view,
       },
-      getReleaseOptions()
+      getReleaseOptions(),
     );
   }
 
   if (releaseTagManager === undefined) {
     throw new Error(
-      `The Gitlab project ${projectId} should either provide a release tag manager or a custom build modal method.`
+      `The Gitlab project ${projectId} should either provide a release tag manager or a custom build modal method.`,
     );
   }
 
@@ -167,7 +168,7 @@ export async function buildReleaseModalView({
           type: 'plain_text_input',
           action_id: 'release-tag-action',
           initial_value: releaseTagManager.createReleaseTag(
-            previousReleaseTagName
+            previousReleaseTagName,
           ),
         },
         label: {
@@ -238,7 +239,7 @@ export async function buildReleaseModalView({
           text: changelog
             ? slackifyText(
                 changelog,
-                '*⚠️ Changelog truncated due to Slack limitations.*'
+                '*⚠️ Changelog truncated due to Slack limitations.*',
               )
             : 'No change has been found.',
         },
