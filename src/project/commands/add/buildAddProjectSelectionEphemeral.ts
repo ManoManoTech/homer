@@ -1,6 +1,7 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import type { GitlabProject } from '@/core/typings/GitlabProject';
 import { injectActionsParameters } from '@/core/utils/slackActions';
+import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
 interface AddProjectSelectionEphemeralData {
   channelId: string;
@@ -36,17 +37,17 @@ export function buildAddProjectSelectionEphemeral({
           },
           options: projects
             .sort((a, b) =>
-              a.path_with_namespace.localeCompare(b.path_with_namespace)
+              a.path_with_namespace.localeCompare(b.path_with_namespace),
             )
             .map((project) => ({
               text: {
                 type: 'plain_text',
-                text: project.path_with_namespace,
+                text: truncateProjectPath(project.path_with_namespace),
               },
               value: injectActionsParameters(
                 'project',
                 project.id,
-                project.path_with_namespace
+                project.path_with_namespace,
               ),
             })),
         },

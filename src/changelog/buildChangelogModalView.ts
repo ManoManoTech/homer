@@ -6,6 +6,7 @@ import { logger } from '@/core/services/logger';
 import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import { slackifyText } from '@/core/utils/slackifyText';
+import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
 interface ChangelogModalData {
   channelId?: string;
@@ -45,7 +46,7 @@ export async function buildChangelogModalView({
       .map((project) => ({
         text: {
           type: 'plain_text',
-          text: project.path_with_namespace,
+          text: truncateProjectPath(project.path_with_namespace),
         },
         value: project.id.toString(),
       })) as SlackOption[];
