@@ -414,6 +414,7 @@ Mapping/config:
 - `GITLAB_URL`, `TICKET_MANAGEMENT_URL_PATTERN`
 - `SLACK_SUPPORT_CHANNEL_{ID,NAME}`
 - `SLACK_CHANNEL_NOTIFICATION_THRESHOLD` (default 3)
+- `REQUEST_BODY_SIZE_LIMIT` — applied to `express.json` and `express.urlencoded` (default `5mb`); a payload above the limit is rejected by the parser before any handler runs, and `errorMiddleware` emits a structured `request body exceeded size limit` log with the request's `Content-Length` for observability
 
 DB: `POSTGRES_HOST/USER/PASSWORD/PORT/DATABASE_NAME/POOL_*`.
 
@@ -423,6 +424,7 @@ DB: `POSTGRES_HOST/USER/PASSWORD/PORT/DATABASE_NAME/POOL_*`.
 
 - The **security middleware** is the only thing protecting the bot. Anything mounted under `CONFIG.apiBasePath` must trust those headers. Health endpoints are deliberately above it.
 - **`rawBody` capture in `app.ts`** is required for Slack signature verification — preserve it across body-parser refactors.
+- **`REQUEST_BODY_SIZE_LIMIT`** caps the parsed body size for both JSON and URL-encoded requests (default `5mb`). Requests above the limit are dropped at the parser and never reach a handler; bump the env var if production logs show recurring `request body exceeded size limit` entries.
 - **`SLACK_CHANNEL_NOTIFICATION_THRESHOLD`** silently drops MR notifications above the limit; tune per project noise.
 - **GitLab `Maintainer` role** is required on the token, otherwise releases/tag operations fail.
 - **Release race conditions** are guarded by Sequelize transactions + row-level locks; any change to release state must go through `updateRelease`.

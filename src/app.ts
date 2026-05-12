@@ -6,7 +6,6 @@ import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { securityMiddleware } from '@/core/middlewares/securityMiddleware';
 import { healthCheckRequestHandler } from '@/core/requestHandlers/healthCheckRequestHandler';
 import { readinessRequestHandler } from '@/core/requestHandlers/readinessRequestHandler';
-import { REQUEST_BODY_SIZE_LIMIT } from './constants';
 import { router } from './router';
 
 const app = express();
@@ -18,11 +17,17 @@ const verify = (req: Request, res: Response, buffer: Buffer) => {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
   express.json({
-    limit: REQUEST_BODY_SIZE_LIMIT,
+    limit: CONFIG.requestBodySizeLimit,
     verify,
   }),
 );
-app.use(express.urlencoded({ extended: true, verify }));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: CONFIG.requestBodySizeLimit,
+    verify,
+  }),
+);
 app.get('/api/monitoring/healthcheck', healthCheckRequestHandler);
 app.get('/api/monitoring/readiness', readinessRequestHandler);
 

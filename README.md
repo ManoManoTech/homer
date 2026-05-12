@@ -245,6 +245,19 @@ Create a `.env` file containing the following variables:
 
   Maximum number of channels allowed before skipping notifications. If the number of channels linked to a project exceeds this threshold, no notifications will be sent. Default value is `3`.
 
+- `REQUEST_BODY_SIZE_LIMIT`
+
+  Maximum size of incoming HTTP request bodies, applied to both
+  `express.json` and `express.urlencoded`. Default value is `5mb` —
+  GitLab webhook payloads regularly exceed the previous `500kb` cap
+  when merge requests carry long descriptions, many commits, many
+  labels or large notes. Accepts any value supported by the
+  [`bytes`](https://www.npmjs.com/package/bytes) library (e.g.
+  `1mb`, `10mb`). When a payload still exceeds the configured limit
+  the request is rejected by the parser and a structured
+  `request body exceeded size limit` error is logged with the
+  request's `Content-Length` for observability.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 

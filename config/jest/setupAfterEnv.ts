@@ -1,5 +1,10 @@
 import { clearFetchMocks, createFetchMock } from '@root/__mocks__/fetch-mock';
 
+// Constrain body-parser to 500kb in tests so the payload-size path can be
+// exercised with small fixtures (~600kb) instead of allocating multi-megabyte
+// strings. Production default is set in src/config.ts.
+process.env.REQUEST_BODY_SIZE_LIMIT = '500kb';
+
 jest.mock('@slack/web-api', () => {
   const chatDelete = jest.fn();
   const info = jest.fn();

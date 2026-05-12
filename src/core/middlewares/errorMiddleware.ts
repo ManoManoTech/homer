@@ -15,7 +15,7 @@ export async function errorMiddleware(
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction // Needs to be kept even if not used
+  next: NextFunction, // Needs to be kept even if not used
 ): Promise<void> {
   // When someone tries to use Homer on a private channel it is not in
   const isChannelNotFoundError =
@@ -34,7 +34,14 @@ export async function errorMiddleware(
     errorMessage = GENERIC_ERROR_MESSAGE;
   }
 
-  logger.error(error);
+  if (error?.type === 'entity.too.large' || error?.statusCode === 413) {
+    logger.error(
+      { err: error, contentLength: req.header('content-length') },
+      'request body exceeded size limit',
+    );
+  } else {
+    logger.error(error);
+  }
 
   if (!res.headersSent) {
     res.send(errorMessage);

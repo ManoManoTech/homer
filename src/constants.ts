@@ -21,5 +21,4 @@ export const MERGE_REQUEST_OPEN_STATES: GitlabMergeRequestState[] = [
 
 export const PRIVATE_CHANNEL_ERROR_MESSAGE =
   'D’oh! It looks like you tried to use me on a private channel I’m not in. Please invite me using `/invite @homer` so I can publish messages :homer-donut:';
-export const REQUEST_BODY_SIZE_LIMIT = '500kb';
 export const SEPARATOR = '-:-';
