@@ -191,6 +191,59 @@ This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_req
     });
   });
 
+  it('should truncate a long note with a View link and stay under the Slack 3000-char block limit', async () => {
+    // Given
+    const channelId = 'channelId';
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid: mergeRequestFixture.iid,
+      projectId: mergeRequestFixture.project_id,
+      ts: 'ts',
+    });
+    mockBuildReviewMessageCalls();
+    mockGitlabCall(
+      `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+      userDetailsFixture,
+    );
+
+    // 6000-char note: would blow Slack's 3000-char block limit without truncation.
+    const longNote = 'a long line of feedback markdown content\n'.repeat(150);
+    jest.useFakeTimers();
+
+    // When
+    await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
+        ...mergeRequestNoteHookFixture,
+        object_attributes: {
+          ...mergeRequestNoteHookFixture.object_attributes,
+          note: longNote,
+        },
+      });
+    jest.runAllTimers();
+    jest.useRealTimers();
+
+    // Then
+    await waitFor(() => {
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+    });
+    const call = (slackBotWebClient.chat.postMessage as jest.Mock).mock
+      .calls[0][0];
+    const sectionBlocks = call.blocks.filter(
+      (b: { type: string }) => b.type === 'section',
+    );
+    // Single block: the GitLab URL serves as the "more details" affordance.
+    expect(sectionBlocks).toHaveLength(1);
+    const blockText: string = sectionBlocks[0].text.text;
+    expect(blockText.length).toBeLessThanOrEqual(3000);
+    // Truncation marker is present, and the <url|View> link points to the full note.
+    expect(blockText).toContain('Note truncated');
+    expect(blockText).toContain(
+      `<${mergeRequestNoteHookFixture.object_attributes.url}|View>`,
+    );
+  });
+
   it('should answer no content status whether comment is not on a merge request', async () => {
     // When
     const response = await request(app)
