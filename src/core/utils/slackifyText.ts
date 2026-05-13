@@ -1,6 +1,10 @@
 import slackifyMarkdown from 'slackify-markdown';
 
-export const SLACK_CHARACTER_LIMIT = 2980;
+// Matches Slack's hard limit on section block text: "must be less than 3001
+// characters" — i.e. length ≤ 3000. Callers that need to append a suffix
+// (e.g. a `<url|View>` link) MUST pass `slackCharacterLimit - suffix.length`
+// so the assembled output still respects this bound.
+export const SLACK_CHARACTER_LIMIT = 3000;
 
 const SEPARATOR_LENGTH = 2; // for "\n\n"
 

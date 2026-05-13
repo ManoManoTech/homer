@@ -1,14 +1,6 @@
-import {
-  SLACK_CHARACTER_LIMIT as REAL_SLACK_CHARACTER_LIMIT,
-  slackifyText,
-} from '@/core/utils/slackifyText';
+import { SLACK_CHARACTER_LIMIT, slackifyText } from '@/core/utils/slackifyText';
 
 jest.mock('slackify-markdown', () => (text: string) => text);
-
-// Existing tests reference a 3000-char limit; the real module constant
-// (REAL_SLACK_CHARACTER_LIMIT) is 2980 — a deliberate 20-char safety margin
-// below Slack's 3000-char hard limit on block text.
-const SLACK_CHARACTER_LIMIT = 3000;
 
 describe('slackifyText', () => {
   it('should return the slackified text if within character limit', () => {
@@ -64,7 +56,8 @@ describe('slackifyText', () => {
   });
 
   it('respects the provided limit even with many lines and a real-world marker (regression for invalid_blocks)', () => {
-    const customLimit = 2980 - 81; // simulate the budget reserved by slackifyNote for a long <url|View>
+    // Simulate the budget reserved by slackifyNote for a long <url|View>.
+    const customLimit = SLACK_CHARACTER_LIMIT - 81;
     const marker = '*⚠️ Note truncated due to Slack limitations.*';
     const inputText = 'a long line of markdown content\n'.repeat(500);
 
@@ -113,14 +106,14 @@ describe('slackifyText', () => {
     expect(result).toContain(marker);
   });
 
-  it('keeps the total under Slack 3000-char block limit when the caller appends a View link after the helper returns', () => {
+  it('keeps the total at or under Slack 3000-char block limit when the caller appends a View link after the helper returns', () => {
     // Boundary case mirroring buildNoteMessage / slackifyNote in production:
     // the helper is invoked with a budget reduced by the suffix length, then
-    // the caller concatenates the suffix. Total must stay ≤ Slack's hard limit.
-    const SLACK_HARD_LIMIT = 3000;
+    // the caller concatenates the suffix. Total must stay ≤ Slack's hard
+    // limit ("must be less than 3001 characters").
     const suffix =
       '<https://my-git.domain.com/group/project/-/merge_requests/1234#note_99999|View>'; // 79 chars
-    const budget = REAL_SLACK_CHARACTER_LIMIT - suffix.length;
+    const budget = SLACK_CHARACTER_LIMIT - suffix.length;
     const marker = '*⚠️ Note truncated due to Slack limitations.*';
     const oversizedInput = 'paragraph of feedback text.\n'.repeat(500);
 
@@ -128,31 +121,53 @@ describe('slackifyText', () => {
     const finalText = `${body}${suffix}`;
 
     expect(body.length).toBeLessThanOrEqual(budget);
-    expect(finalText.length).toBeLessThanOrEqual(REAL_SLACK_CHARACTER_LIMIT);
-    expect(finalText.length).toBeLessThan(SLACK_HARD_LIMIT);
+    expect(finalText.length).toBeLessThanOrEqual(SLACK_CHARACTER_LIMIT);
     expect(finalText).toContain(marker);
     expect(finalText.endsWith(suffix)).toBe(true);
   });
 
-  it('returns the marker alone if limit is too small to fit any of the original text', () => {
+  it('returns the marker alone when the limit equals marker.length + separator (budgetForBody === 0)', () => {
     const marker = '*⚠️  Note truncated due to Slack limitations.*';
     const inputText = 'oversized note '.repeat(500);
 
-    // Case A: budgetForBody === 0 (limit exactly fits marker + separator).
     const tightLimit = marker.length + 2; // SEPARATOR_LENGTH
-    const tightResult = slackifyText(inputText, marker, tightLimit);
-    expect(tightResult.length).toBeLessThanOrEqual(tightLimit);
-    expect(tightResult).toBe(marker);
+    const result = slackifyText(inputText, marker, tightLimit);
+
+    expect(result.length).toBeLessThanOrEqual(tightLimit);
+    expect(result).toBe(marker);
   });
 
-  it('returns the marker alone if limit is too small to fit any of the original text', () => {
+  it('returns a truncated marker prefix when the limit is smaller than the marker (budgetForBody < 0)', () => {
     const marker = '*⚠️  Note truncated due to Slack limitations.*';
     const inputText = 'oversized note '.repeat(500);
 
-    // Case B: budgetForBody < 0 (limit smaller than marker + separator).
     const tinyLimit = 10;
-    const tinyResult = slackifyText(inputText, marker, tinyLimit);
-    expect(tinyResult.length).toBeLessThanOrEqual(tinyLimit);
-    expect(tinyResult).toBe('*⚠️  Note ');
+    const result = slackifyText(inputText, marker, tinyLimit);
+
+    expect(result.length).toBeLessThanOrEqual(tinyLimit);
+    expect(result).toBe('*⚠️  Note ');
+  });
+
+  it('stays under the limit when input is a single huge line with no newlines', () => {
+    // Exercises the path where split('\n') yields a single element, so
+    // slice(0, -2) returns [] and the body becomes just the separator + marker.
+    const marker = '[truncated]';
+    const input = 'x'.repeat(10_000);
+
+    const result = slackifyText(input, marker, SLACK_CHARACTER_LIMIT);
+
+    expect(result.length).toBeLessThanOrEqual(SLACK_CHARACTER_LIMIT);
+    expect(result.endsWith(marker)).toBe(true);
+  });
+
+  it('stays under the limit when input is dense in paragraph breaks', () => {
+    // Exercises the "\n\n" handling across many short paragraphs.
+    const marker = '[truncated]';
+    const input = 'paragraph here.\n\n'.repeat(500);
+
+    const result = slackifyText(input, marker, SLACK_CHARACTER_LIMIT);
+
+    expect(result.length).toBeLessThanOrEqual(SLACK_CHARACTER_LIMIT);
+    expect(result.endsWith(marker)).toBe(true);
   });
 });
