@@ -174,7 +174,7 @@ describe('review > pushHook', () => {
     );
     mockGitlabCall(
       `/projects/${pushHookFixture.project_id}/merge_requests/${mergeRequestFixture.iid}/commits?per_page=100`,
-      [],
+      [{ id: pushHookFixture.commits[0].id }],
     );
 
     // When

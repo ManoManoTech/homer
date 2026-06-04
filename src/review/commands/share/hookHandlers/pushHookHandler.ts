@@ -2,10 +2,7 @@ import type { KnownBlock } from '@slack/types';
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
-import {
-  fetchMergeRequestCommits,
-  fetchMergeRequestsByBranchName,
-} from '@/core/services/gitlab';
+import { fetchMergeRequestsByBranchName } from '@/core/services/gitlab';
 import {
   fetchSlackUserFromEmails,
   slackBotWebClient,
@@ -13,6 +10,7 @@ import {
 import type { DataReview } from '@/core/typings/Data';
 import type { GitlabPushedCommit } from '@/core/typings/GitlabPushedCommit';
 import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
+import { waitForMergeRequestCommits } from '../utils/waitForMergeRequestCommits';
 
 export async function pushHookHandler(
   req: Request,
@@ -37,11 +35,14 @@ export async function pushHookHandler(
       ({ merge_status }) => merge_status !== 'merged',
     ) || [];
 
+  const pushedCommitIds = new Set(commits.map(({ id }) => id));
+
   const mergeRequestsReviews = await Promise.all(
     mergeRequests.map(async (mergeRequest) => {
-      const mergeRequestCommits = await fetchMergeRequestCommits(
+      const mergeRequestCommits = await waitForMergeRequestCommits(
         project_id,
         mergeRequest.iid,
+        pushedCommitIds,
       );
 
       // Removes the rebase commits
