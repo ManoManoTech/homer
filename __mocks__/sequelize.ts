@@ -27,10 +27,17 @@ class ModelMock {
   }
 
   async destroy({ where }: Options): Promise<void> {
-    const entry = await this.findOne({ where });
-
-    if (entry !== null) {
-      this.entries.splice(this.entries.indexOf(entry), 1);
+    // Real Sequelize `destroy` removes every matching row, not just the first.
+    for (let index = this.entries.length - 1; index >= 0; index -= 1) {
+      const entry = this.entries[index];
+      const matches =
+        !where ||
+        Object.entries(where).every(
+          ([key, value]) => entry.values[key] === value,
+        );
+      if (matches) {
+        this.entries.splice(index, 1);
+      }
     }
   }
 

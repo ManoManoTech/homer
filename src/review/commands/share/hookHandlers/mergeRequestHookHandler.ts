@@ -109,7 +109,7 @@ export async function mergeRequestHookHandler(
   );
 
   if (['close', 'merge'].includes(action)) {
-    await removeReviewsByMergeRequestIid(iid);
+    await removeReviewsByMergeRequestIid(iid, projectId);
   }
 }
 
