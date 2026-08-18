@@ -235,14 +235,19 @@ function buildPeopleSection(
     });
   }
 
-  const approvedCount =
-    approvalInfo.approvals_required - approvalInfo.approvals_left;
-  const emojiIndicators = approvalInfo.approvals_left == 0 ? '✅' : '⏳';
+  if (
+    Number.isFinite(approvalInfo.approvals_required) &&
+    Number.isFinite(approvalInfo.approvals_left)
+  ) {
+    const approvedCount =
+      approvalInfo.approvals_required - approvalInfo.approvals_left;
+    const emojiIndicators = approvalInfo.approvals_left == 0 ? '✅' : '⏳';
 
-  fields.push({
-    type: 'mrkdwn',
-    text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
-  });
+    fields.push({
+      type: 'mrkdwn',
+      text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
+    });
+  }
 
   if (approvers.length > 0) {
     fields.push({

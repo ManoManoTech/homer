@@ -426,4 +426,65 @@ describe('review > addReview', () => {
     ) as MrkdwnElement;
     expect(approvalField.text).toContain('2/3 required ⏳');
   });
+
+  it('should not display approvals when approvals_required is NaN and approvals_left is undefined', async () => {
+    // Given
+    const { project_id } = mergeRequestDetailsFixture;
+    const channelId = 'channelId';
+    const search = 'chore(test)';
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: `review ${search}`,
+      user_id: userId,
+    };
+
+    await addProjectToChannel({
+      channelId,
+      projectId: projectFixture.id,
+    });
+
+    const modifiedMergeRequestApprovals = {
+      ...mergeRequestApprovalsFixture,
+      approvals_required: NaN,
+      approvals_left: undefined,
+      approved_by: [],
+    };
+
+    mockGitlabCall(
+      `/projects/${project_id}/merge_requests?state=opened&search=${search}`,
+      [mergeRequestFixture],
+    );
+    mockGitlabCall(
+      `/projects/${project_id}/merge_requests/${mergeRequestFixture.iid}`,
+      mergeRequestDetailsFixture,
+    );
+    mockGitlabCall(
+      `/projects/${project_id}/merge_requests/${mergeRequestFixture.iid}/approvals`,
+      modifiedMergeRequestApprovals,
+    );
+    mockGitlabCall(
+      `/projects/${project_id}/merge_requests/${mergeRequestFixture.iid}/reviewers`,
+      mergeRequestReviewersFixture,
+    );
+    mockGitlabCall(`/projects/${project_id}`, projectFixture);
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+
+    const postedMessage = (slackBotWebClient.chat.postMessage as jest.Mock).mock
+      .calls[0][0];
+    const peopleSection = postedMessage.blocks[2] as SectionBlock | undefined;
+    const approvalField = peopleSection?.fields?.find(
+      (field) => field.type === 'mrkdwn' && field.text.includes('Approvals'),
+    );
+
+    expect(approvalField).toBeUndefined();
+  });
 });
