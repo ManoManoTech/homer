@@ -108,13 +108,44 @@ export async function fetchSlackUserFromGitlabUser({
   return fetchSlackUserFromGitlabUsername(username);
 }
 
+/**
+ * GitLab appends a numeric suffix when a username is already taken
+ * (`firstname.lastname` taken -> `firstname.lastname1`), while the corporate
+ * email keeps the unsuffixed local part. Returns the local parts to try, most
+ * specific (i.e., as-is) first.
+ */
+export function buildEmailLocalParts(username: string): string[] {
+  const stripped = username.replace(/\d+$/, '');
+  return stripped !== username && /[a-z0-9]$/i.test(stripped)
+    ? [username, stripped]
+    : [username];
+}
+
 export async function fetchSlackUserFromGitlabUsername(
   username: string,
 ): Promise<SlackUser | undefined> {
-  const emails = EMAIL_DOMAINS.split(',').map(
-    (emailDomain) => `${username}@${emailDomain}`,
+  if (!username) {
+    return undefined;
+  }
+
+  const domains = EMAIL_DOMAINS.split(',').map((domain) => domain.trim());
+  const localParts = buildEmailLocalParts(username);
+  const emails = localParts.flatMap((localPart) =>
+    domains.map((domain) => `${localPart}@${domain}`),
   );
-  return fetchSlackUserFromEmails(emails);
+  const user = await fetchSlackUserFromEmails(emails);
+
+  const isExactMatch = domains.some(
+    (domain) => user?.profile.email === `${username}@${domain}`,
+  );
+  if (user !== undefined && !isExactMatch) {
+    logger.info(
+      { username, email: user.profile.email },
+      'slack user resolved from suffix-stripped username',
+    );
+  }
+
+  return user;
 }
 
 export async function fetchSlackUserFromId(

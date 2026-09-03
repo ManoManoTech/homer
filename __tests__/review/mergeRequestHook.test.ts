@@ -93,6 +93,70 @@ describe('review > mergeRequestHook', () => {
     },
   );
 
+  it('should resolve a suffixed GitLab username via the stripped local part fallback', async () => {
+    // Given
+    const { object_attributes, project } = mergeRequestHookFixture;
+    const channelId = 'channelId';
+
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid: object_attributes.iid,
+      projectId: project.id,
+      ts: 'ts',
+    });
+    mockBuildReviewMessageCalls();
+
+    const usersNotFoundError = Object.assign(
+      new Error('An API error occurred: users_not_found'),
+      { data: { ok: false, error: 'users_not_found' } },
+    );
+    (slackBotWebClient.users.lookupByEmail as jest.Mock)
+      .mockRejectedValueOnce(usersNotFoundError)
+      .mockRejectedValueOnce(usersNotFoundError)
+      .mockResolvedValueOnce({
+        user: {
+          name: 'root',
+          profile: { image_72: 'image_72' },
+          real_name: 'root.real',
+        },
+      });
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
+        ...mergeRequestHookFixture,
+        object_attributes: {
+          ...object_attributes,
+          action: 'merge',
+        },
+        user: {
+          ...mergeRequestHookFixture.user,
+          username: 'root1',
+        },
+      });
+
+    // Then
+    expect(
+      slackBotWebClient.users.lookupByEmail as jest.Mock,
+    ).toHaveBeenNthCalledWith(1, { email: 'root1@my-domain.com' });
+    expect(
+      slackBotWebClient.users.lookupByEmail as jest.Mock,
+    ).toHaveBeenNthCalledWith(2, { email: 'root1@ext.my-domain.com' });
+    expect(
+      slackBotWebClient.users.lookupByEmail as jest.Mock,
+    ).toHaveBeenNthCalledWith(3, { email: 'root@my-domain.com' });
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+      channel: channelId,
+      icon_emoji: ':git-merge:',
+      text: '*root.real* has merged this merge request.',
+      thread_ts: 'ts',
+    });
+  });
+
   it('should display closed status in review message', async () => {
     // Given
     const { object_attributes } = mergeRequestHookFixture;

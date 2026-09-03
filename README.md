@@ -223,6 +223,10 @@ Create a `.env` file containing the following variables:
   for instance `my-domain.com,ext.my-domain.com`.
   Used to find Slack users from Gitlab username.
   Note that this means your org has to use the same naming scheme for emails and gitlab username.
+  If a Gitlab username ends with digits (Gitlab appends a numeric suffix when a
+  username is already taken, e.g. `firstname.lastname1`), Homer also tries the
+  email built from the username with that suffix stripped
+  (`firstname.lastname@my-domain.com`) before giving up.
 
 - `GITLAB_URL`
 

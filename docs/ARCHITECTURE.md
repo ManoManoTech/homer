@@ -410,7 +410,9 @@ Auth/secrets:
 
 Mapping/config:
 
-- `EMAIL_DOMAINS` — used to derive Slack user from GitLab username
+- `EMAIL_DOMAINS` — used to derive Slack user from GitLab username; tries the
+  username as-is against each domain first, then (if the username ends with
+  digits) the username with that trailing suffix stripped, before giving up
 - `GITLAB_URL`, `TICKET_MANAGEMENT_URL_PATTERN`
 - `SLACK_SUPPORT_CHANNEL_{ID,NAME}`
 - `SLACK_CHANNEL_NOTIFICATION_THRESHOLD` (default 3)
