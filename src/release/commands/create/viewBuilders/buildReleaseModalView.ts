@@ -149,7 +149,10 @@ export async function buildReleaseModalView({
         element: {
           type: 'static_select',
           action_id: 'release-select-project-action',
-          initial_option: projectOptions?.[0],
+          initial_option:
+            projectOptions.find(
+              ({ value }) => value === projectId?.toString(),
+            ) ?? projectOptions[0],
           options: projectOptions,
           placeholder: {
             type: 'plain_text',
@@ -185,7 +188,10 @@ export async function buildReleaseModalView({
               element: {
                 type: 'static_select',
                 action_id: 'release-select-previous-tag-action',
-                initial_option: previousReleaseOptions[0],
+                initial_option:
+                  previousReleaseOptions.find(
+                    ({ value }) => value === previousReleaseTagName,
+                  ) ?? previousReleaseOptions[0],
                 options: previousReleaseOptions,
                 placeholder: {
                   type: 'plain_text',

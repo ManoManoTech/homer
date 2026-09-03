@@ -45,4 +45,39 @@ describe('buildChangelogModalView', () => {
     expect(text.length).toBeLessThanOrEqual(SLACK_OPTION_TEXT_MAX_LENGTH);
     expect(text.endsWith('…/very-long-project-name')).toBe(true);
   });
+
+  it('keeps the selected release tag as initial option', async () => {
+    (fetchProjectById as jest.Mock).mockResolvedValue(projectFixture);
+    (fetchProjectTags as jest.Mock).mockResolvedValue([
+      { name: 'v3.0.0' },
+      { name: 'v2.0.0' },
+      { name: 'v1.0.0' },
+    ]);
+    (generateChangelog as jest.Mock).mockResolvedValue('');
+
+    const view = await buildChangelogModalView({
+      projectId: projectFixture.id,
+      projectOptions: [
+        { text: { type: 'plain_text', text: 'other' }, value: '404' },
+        {
+          text: {
+            type: 'plain_text',
+            text: projectFixture.path_with_namespace,
+          },
+          value: projectFixture.id.toString(),
+        },
+      ],
+      releaseTagName: 'v2.0.0',
+    });
+
+    const projectSelect = (view.blocks[0] as InputBlock)
+      .element as StaticSelect;
+    const releaseTagSelect = (view.blocks[1] as InputBlock)
+      .element as StaticSelect;
+
+    expect(projectSelect.initial_option?.value).toBe(
+      projectFixture.id.toString(),
+    );
+    expect(releaseTagSelect.initial_option?.value).toBe('v2.0.0');
+  });
 });
