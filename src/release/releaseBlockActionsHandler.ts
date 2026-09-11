@@ -2,12 +2,14 @@ import { logger } from '@/core/services/logger';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { getViewStateValue } from '@/core/utils/getViewStateValue';
 import { cancelReleaseButtonHandler } from '@/release/commands/cancel/cancelReleaseButtonHandler';
 import { displayReleaseChangelog } from '@/release/commands/changelog/displayReleaseChangelog';
 import { endReleaseButtonHandler } from '@/release/commands/end/endReleaseButtonHandler';
 import { selectReleaseToCancel } from './commands/cancel/selectReleaseToCancel';
 import { updateReleaseChangelog } from './commands/create/utils/updateReleaseChangelog';
 import { updateReleaseProject } from './commands/create/utils/updateReleaseProject';
+import { RELEASE_SELECT_PROJECT_ACTION_ID } from './commands/create/viewBuilders/releaseModalBlockIds';
 import { selectReleaseToEnd } from './commands/end/selectReleaseToEnd';
 import getReleaseOptions from './releaseOptions';
 import ConfigHelper from './utils/ConfigHelper';
@@ -42,11 +44,9 @@ export async function releaseBlockActionsHandler(
           return cancelReleaseButtonHandler(payload, action as ButtonAction);
 
         default: {
-          const { state } = payload.view;
           const projectId = parseInt(
-            state.values['release-project-block']?.[
-              'release-select-project-action'
-            ]?.selected_option?.value,
+            getViewStateValue(payload.view, RELEASE_SELECT_PROJECT_ACTION_ID)
+              ?.selected_option?.value as string,
             10,
           );
           const { releaseManager } =

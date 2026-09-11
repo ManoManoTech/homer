@@ -201,7 +201,7 @@ describe('release > createRelease', () => {
             },
           },
           {
-            block_id: 'release-tag-block',
+            block_id: 'release-tag-block-1148-stable-20200101-1000',
             element: {
               action_id: 'release-tag-action',
               initial_value: 'stable-19700101-0100',
@@ -214,7 +214,7 @@ describe('release > createRelease', () => {
             type: 'input',
           },
           {
-            block_id: 'release-previous-tag-block',
+            block_id: 'release-previous-tag-block-1148',
             dispatch_action: true,
             element: {
               action_id: 'release-select-previous-tag-action',
@@ -394,7 +394,7 @@ describe('release > createRelease', () => {
             },
           },
           {
-            block_id: 'release-tag-block',
+            block_id: 'release-tag-block-1148-stable-20200101-1000',
             element: {
               action_id: 'release-tag-action',
               initial_value: releaseTagName,
@@ -404,7 +404,7 @@ describe('release > createRelease', () => {
             type: 'input',
           },
           {
-            block_id: 'release-previous-tag-block',
+            block_id: 'release-previous-tag-block-1148',
             dispatch_action: true,
             element: {
               action_id: 'release-select-previous-tag-action',
@@ -479,7 +479,9 @@ describe('release > createRelease', () => {
       .calls[2][0] as ViewsOpenArguments);
 
     const previousTagBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-previous-tag-block',
+      (block) =>
+        ((block as InputBlock).element as StaticSelect)?.action_id ===
+        'release-select-previous-tag-action',
     ) as InputBlock;
     const previousTagElement = previousTagBlock.element as StaticSelect;
 
@@ -541,7 +543,9 @@ describe('release > createRelease', () => {
 
     // Given
     const releaseTagBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-tag-block',
+      (block) =>
+        ((block as InputBlock).element as PlainTextInput)?.action_id ===
+        'release-tag-action',
     ) as InputBlock;
     const releaseTagElement = releaseTagBlock.element as PlainTextInput;
 

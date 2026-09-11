@@ -17,6 +17,7 @@ import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import type { cleanViewState } from '@/core/utils/cleanViewState';
+import type { getViewStateValue } from '@/core/utils/getViewStateValue';
 import type { slackifyChangelog } from '@/release/commands/create/utils/slackifyChangelog';
 import type { addLoaderToReleaseModal } from '../commands/create/utils/addLoaderToReleaseModal';
 import type { ReleaseStateUpdate } from './ReleaseStateUpdate';
@@ -38,13 +39,14 @@ export interface ReleaseOptions {
   release: {
     getReleaseManager: (managerName: string) => ReleaseManager | undefined;
     getReleaseTagManager: (
-      tagManagerName: string
+      tagManagerName: string,
     ) => ReleaseTagManager | undefined;
   };
   slack: {
     slackifyChangelog: typeof slackifyChangelog;
     addLoaderToReleaseModal: typeof addLoaderToReleaseModal;
     cleanViewState: typeof cleanViewState;
+    getViewStateValue: typeof getViewStateValue;
     webClient: typeof slackBotWebClient;
   };
   logger: typeof logger;
@@ -54,26 +56,26 @@ export interface ReleaseManager {
   blockActionsHandler?(
     payload: BlockActionsPayload,
     action: StaticSelectAction,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<void>;
   buildReleaseModalView?(
     releaseModalData: ReleaseModalData,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<View>;
   filterChangelog?(
     commit: GitlabCommit,
     viewState: any,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): boolean;
   filterReleasesToClean?(
     newRelease: DataRelease,
     oldReleases: DataRelease[],
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): DataRelease[];
   getReleaseStateUpdate(
     release: DataRelease,
     deploymentHook?: GitlabDeploymentHook,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<ReleaseStateUpdate[]>;
   /**
    * Should be used to check whether release preconditions are ok.
@@ -83,6 +85,6 @@ export interface ReleaseManager {
   isReadyToRelease(
     release: DataRelease,
     mainBranchPipelineId: number,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<boolean>;
 }

@@ -7,6 +7,17 @@ import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
+import {
+  buildChangelogMarkdownBlockId,
+  buildChangelogReleaseTagBlockId,
+  CHANGELOG_MARKDOWN_ACTION_ID,
+  CHANGELOG_PREVIEW_BLOCK_ID,
+  CHANGELOG_PREVIEW_TITLE_BLOCK_ID,
+  CHANGELOG_PROJECT_BLOCK_ID,
+  CHANGELOG_RELEASE_TAG_INFO_BLOCK_ID,
+  CHANGELOG_SELECT_PROJECT_ACTION_ID,
+  CHANGELOG_SELECT_RELEASE_TAG_ACTION_ID,
+} from './changelogModalBlockIds';
 
 interface ChangelogModalData {
   channelId?: string;
@@ -76,6 +87,15 @@ export async function buildChangelogModalView({
     value: name,
   })) as SlackOption[];
 
+  const projectInitialOption =
+    projectOptions.find(({ value }) => value === `${projectId}`) ??
+    projectOptions[0];
+
+  const previousReleaseInitialOption =
+    previousReleaseOptions.find(
+      ({ value }) => value === previousReleaseTagName,
+    ) ?? previousReleaseOptions[0];
+
   return {
     type: 'modal',
     callback_id: 'changelog-modal',
@@ -91,13 +111,13 @@ export async function buildChangelogModalView({
     blocks: [
       {
         type: 'input',
-        block_id: 'changelog-project-block',
+        block_id: CHANGELOG_PROJECT_BLOCK_ID,
         dispatch_action: true,
         element: {
           type: 'static_select',
-          action_id: 'changelog-select-project-action',
+          action_id: CHANGELOG_SELECT_PROJECT_ACTION_ID,
           options: projectOptions,
-          initial_option: projectOptions?.[0],
+          initial_option: projectInitialOption,
           placeholder: {
             type: 'plain_text',
             text: 'Select the project',
@@ -112,12 +132,12 @@ export async function buildChangelogModalView({
         ? [
             {
               type: 'input',
-              block_id: 'changelog-release-tag-block',
+              block_id: buildChangelogReleaseTagBlockId(projectId),
               dispatch_action: true,
               element: {
                 type: 'static_select',
-                action_id: 'changelog-select-release-tag-action',
-                initial_option: previousReleaseOptions[0],
+                action_id: CHANGELOG_SELECT_RELEASE_TAG_ACTION_ID,
+                initial_option: previousReleaseInitialOption,
                 options: previousReleaseOptions,
                 placeholder: {
                   type: 'plain_text',
@@ -131,7 +151,7 @@ export async function buildChangelogModalView({
             },
             {
               type: 'context',
-              block_id: 'changelog-release-tag-info-block',
+              block_id: CHANGELOG_RELEASE_TAG_INFO_BLOCK_ID,
               elements: [
                 {
                   type: 'plain_text',
@@ -158,7 +178,7 @@ export async function buildChangelogModalView({
           ],
       {
         type: 'section',
-        block_id: 'changelog-preview-title-block',
+        block_id: CHANGELOG_PREVIEW_TITLE_BLOCK_ID,
         text: {
           type: 'mrkdwn',
           text: '*Preview*',
@@ -166,7 +186,7 @@ export async function buildChangelogModalView({
       },
       {
         type: 'section',
-        block_id: 'changelog-preview-block',
+        block_id: CHANGELOG_PREVIEW_BLOCK_ID,
         text: {
           type: 'mrkdwn',
           text: changelog
@@ -179,13 +199,17 @@ export async function buildChangelogModalView({
       },
       changelog && {
         type: 'input',
-        block_id: 'changelog-markdown-block',
+        block_id: buildChangelogMarkdownBlockId(
+          projectId,
+          previousReleaseTagName,
+        ),
         label: {
           type: 'plain_text',
           text: 'Markdown',
         },
         element: {
           type: 'plain_text_input',
+          action_id: CHANGELOG_MARKDOWN_ACTION_ID,
           multiline: true,
           initial_value: changelog,
         },

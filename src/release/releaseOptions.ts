@@ -8,6 +8,7 @@ import {
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { cleanViewState } from '@/core/utils/cleanViewState';
+import { getViewStateValue } from '@/core/utils/getViewStateValue';
 import { slackifyChangelog } from '@/release/commands/create/utils/slackifyChangelog';
 import { addLoaderToReleaseModal } from './commands/create/utils/addLoaderToReleaseModal';
 import type { ReleaseOptions } from './typings/ReleaseManager';
@@ -19,6 +20,7 @@ export default function getReleaseOptions(): ReleaseOptions {
     slack: {
       addLoaderToReleaseModal,
       cleanViewState,
+      getViewStateValue,
       slackifyChangelog,
       webClient: slackBotWebClient,
     },

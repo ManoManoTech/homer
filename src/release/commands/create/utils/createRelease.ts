@@ -8,28 +8,34 @@ import {
 import { fetchSlackUserFromId } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
+import { getViewStateValue } from '@/core/utils/getViewStateValue';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
+import {
+  RELEASE_SELECT_PREVIOUS_TAG_ACTION_ID,
+  RELEASE_SELECT_PROJECT_ACTION_ID,
+  RELEASE_TAG_ACTION_ID,
+} from '../viewBuilders/releaseModalBlockIds';
 import { waitForReadinessAndStartRelease } from './waitForReadinessAndStartRelease';
 
 export async function createRelease(
   payload: ModalViewSubmissionPayload,
 ): Promise<void> {
   const { user, view } = payload;
-  const { values } = view.state;
 
   const projectId = parseInt(
-    values['release-project-block']['release-select-project-action']
-      .selected_option.value,
+    getViewStateValue(view, RELEASE_SELECT_PROJECT_ACTION_ID)?.selected_option
+      ?.value as string,
     10,
   );
 
-  const releaseTagName: string =
-    values['release-tag-block']['release-tag-action'].value;
+  const releaseTagName = getViewStateValue(view, RELEASE_TAG_ACTION_ID)
+    ?.value as string;
 
-  const previousReleaseTagName: string | undefined =
-    values['release-previous-tag-block']?.['release-select-previous-tag-action']
-      ?.selected_option.value;
+  const previousReleaseTagName: string | undefined = getViewStateValue(
+    view,
+    RELEASE_SELECT_PREVIOUS_TAG_ACTION_ID,
+  )?.selected_option?.value;
 
   const { releaseManager } =
     await ConfigHelper.getProjectReleaseConfig(projectId);

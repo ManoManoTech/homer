@@ -7,12 +7,24 @@ import type {
 } from '@slack/web-api';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
+import { logger } from '@/core/services/logger';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
+import { getViewStateValue } from '@/core/utils/getViewStateValue';
 import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
+import {
+  buildPreviousReleaseTagBlockId,
+  buildReleaseTagBlockId,
+  RELEASE_CHANGELOG_BLOCK_ID,
+  RELEASE_PREVIOUS_TAG_INFO_BLOCK_ID,
+  RELEASE_PROJECT_BLOCK_ID,
+  RELEASE_SELECT_PREVIOUS_TAG_ACTION_ID,
+  RELEASE_SELECT_PROJECT_ACTION_ID,
+  RELEASE_TAG_ACTION_ID,
+} from './releaseModalBlockIds';
 
 interface ReleaseModalData {
   channelId?: string;
@@ -27,22 +39,39 @@ export async function buildReleaseModalView({
   let projectId: number | undefined;
   let projectOptions: SlackOption[] | undefined;
 
+  // ⚠️ Everything read from `view` must be read synchronously: the callers
+  // start this build before mutating `view.blocks` to display the loader.
   if (view !== undefined) {
-    const { blocks, state } = view;
+    const { blocks } = view;
 
-    previousReleaseTagName =
-      state.values['release-previous-tag-block']?.[
-        'release-select-previous-tag-action'
-      ]?.selected_option?.value;
+    previousReleaseTagName = getViewStateValue(
+      view,
+      RELEASE_SELECT_PREVIOUS_TAG_ACTION_ID,
+    )?.selected_option?.value;
 
-    projectId = parseInt(
-      state.values['release-project-block']?.['release-select-project-action']
-        ?.selected_option?.value,
-      10,
-    );
+    const selectedProjectId = getViewStateValue(
+      view,
+      RELEASE_SELECT_PROJECT_ACTION_ID,
+    )?.selected_option?.value;
 
-    projectOptions = ((blocks[0] as InputBlock).element as StaticSelect)
-      .options as SlackOption[];
+    projectId =
+      selectedProjectId !== undefined
+        ? parseInt(selectedProjectId, 10)
+        : undefined;
+
+    if (projectId !== undefined && Number.isNaN(projectId)) {
+      projectId = undefined;
+    }
+
+    const projectBlock = blocks.find(
+      (block) =>
+        ((block as InputBlock).element as StaticSelect)?.action_id ===
+        RELEASE_SELECT_PROJECT_ACTION_ID,
+    ) as InputBlock | undefined;
+
+    projectOptions = (projectBlock?.element as StaticSelect)?.options as
+      | SlackOption[]
+      | undefined;
   }
 
   if (projectOptions === undefined && channelId !== undefined) {
@@ -110,7 +139,15 @@ export async function buildReleaseModalView({
     previousReleaseTagName !== undefined &&
     previousReleaseTag === undefined
   ) {
-    throw new Error(`Previous release tag ${previousReleaseTagName} not found`);
+    // Happens when a tag selected on another project is carried over. Throwing
+    // here would leave the modal stuck on its loader, so fall back to the
+    // latest release tag of the selected project instead.
+    logger.error(
+      new Error(
+        `Previous release tag ${previousReleaseTagName} not found in project ${projectId}`,
+      ),
+    );
+    previousReleaseTagName = undefined;
   }
 
   if (tags.length > 0 && previousReleaseTagName === undefined) {
@@ -129,6 +166,15 @@ export async function buildReleaseModalView({
     value: name,
   })) as SlackOption[];
 
+  const projectInitialOption =
+    projectOptions.find(({ value }) => value === `${projectId}`) ??
+    projectOptions[0];
+
+  const previousReleaseInitialOption =
+    previousReleaseOptions.find(
+      ({ value }) => value === previousReleaseTagName,
+    ) ?? previousReleaseOptions[0];
+
   return {
     type: 'modal',
     callback_id: 'release-create-modal',
@@ -144,12 +190,12 @@ export async function buildReleaseModalView({
     blocks: [
       {
         type: 'input',
-        block_id: 'release-project-block',
+        block_id: RELEASE_PROJECT_BLOCK_ID,
         dispatch_action: true,
         element: {
           type: 'static_select',
-          action_id: 'release-select-project-action',
-          initial_option: projectOptions?.[0],
+          action_id: RELEASE_SELECT_PROJECT_ACTION_ID,
+          initial_option: projectInitialOption,
           options: projectOptions,
           placeholder: {
             type: 'plain_text',
@@ -163,10 +209,10 @@ export async function buildReleaseModalView({
       },
       {
         type: 'input',
-        block_id: 'release-tag-block',
+        block_id: buildReleaseTagBlockId(projectId, previousReleaseTagName),
         element: {
           type: 'plain_text_input',
-          action_id: 'release-tag-action',
+          action_id: RELEASE_TAG_ACTION_ID,
           initial_value: releaseTagManager.createReleaseTag(
             previousReleaseTagName,
           ),
@@ -180,12 +226,12 @@ export async function buildReleaseModalView({
         ? [
             {
               type: 'input',
-              block_id: 'release-previous-tag-block',
+              block_id: buildPreviousReleaseTagBlockId(projectId),
               dispatch_action: true,
               element: {
                 type: 'static_select',
-                action_id: 'release-select-previous-tag-action',
-                initial_option: previousReleaseOptions[0],
+                action_id: RELEASE_SELECT_PREVIOUS_TAG_ACTION_ID,
+                initial_option: previousReleaseInitialOption,
                 options: previousReleaseOptions,
                 placeholder: {
                   type: 'plain_text',
@@ -199,7 +245,7 @@ export async function buildReleaseModalView({
             },
             {
               type: 'context',
-              block_id: 'release-previous-tag-info-block',
+              block_id: RELEASE_PREVIOUS_TAG_INFO_BLOCK_ID,
               elements: [
                 {
                   type: 'plain_text',
@@ -233,7 +279,7 @@ export async function buildReleaseModalView({
       },
       {
         type: 'section',
-        block_id: 'release-changelog-block',
+        block_id: RELEASE_CHANGELOG_BLOCK_ID,
         text: {
           type: 'mrkdwn',
           text: changelog

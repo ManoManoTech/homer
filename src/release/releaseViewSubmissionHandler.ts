@@ -2,8 +2,10 @@ import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { logger } from '@/core/services/logger';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
+import { getViewStateValue } from '@/core/utils/getViewStateValue';
 import { createRelease } from './commands/create/utils/createRelease';
 import { buildReleaseModalView } from './commands/create/viewBuilders/buildReleaseModalView';
+import { RELEASE_TAG_ACTION_ID } from './commands/create/viewBuilders/releaseModalBlockIds';
 
 export async function releaseViewSubmissionHandler(
   req: Request,
@@ -15,9 +17,8 @@ export async function releaseViewSubmissionHandler(
   switch (callback_id) {
     case 'release-create-modal': {
       const { view } = payload;
-      const { state } = view;
 
-      if (state.values['release-tag-block'] === undefined) {
+      if (getViewStateValue(view, RELEASE_TAG_ACTION_ID) === undefined) {
         res.json({
           response_action: 'update',
           view: await buildReleaseModalView({ view }),
