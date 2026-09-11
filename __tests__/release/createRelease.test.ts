@@ -704,6 +704,9 @@ describe('release > createRelease', () => {
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
       [{ ...dockerBuildJobFixture, status: 'running' }],
     );
+    mockGitlabCall(`/projects/${projectId}/repository/tags?per_page=100`, [
+      tagFixture,
+    ]);
     mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
       tagFixture,
