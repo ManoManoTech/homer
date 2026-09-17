@@ -214,7 +214,7 @@ describe('release > createRelease', () => {
             type: 'input',
           },
           {
-            block_id: 'release-previous-tag-block',
+            block_id: `release-previous-tag-block-${projectId}`,
             dispatch_action: true,
             element: {
               action_id: 'release-select-previous-tag-action',
@@ -404,7 +404,7 @@ describe('release > createRelease', () => {
             type: 'input',
           },
           {
-            block_id: 'release-previous-tag-block',
+            block_id: `release-previous-tag-block-${projectId}`,
             dispatch_action: true,
             element: {
               action_id: 'release-select-previous-tag-action',
@@ -479,7 +479,7 @@ describe('release > createRelease', () => {
       .calls[2][0] as ViewsOpenArguments);
 
     const previousTagBlock = [...view.blocks].find(
-      (block) => block.block_id === 'release-previous-tag-block',
+      (block) => block.block_id === `release-previous-tag-block-${projectId}`,
     ) as InputBlock;
     const previousTagElement = previousTagBlock.element as StaticSelect;
 
@@ -672,7 +672,7 @@ describe('release > createRelease', () => {
                   },
                 },
               },
-              'release-previous-tag-block': {
+              [`release-previous-tag-block-${projectId}`]: {
                 'release-select-previous-tag-action': {
                   selected_option: {
                     value: 'stable-20200101-1000',
@@ -704,6 +704,9 @@ describe('release > createRelease', () => {
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
       [{ ...dockerBuildJobFixture, status: 'running' }],
     );
+    mockGitlabCall(`/projects/${projectId}/repository/tags?per_page=100`, [
+      tagFixture,
+    ]);
     mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
       tagFixture,

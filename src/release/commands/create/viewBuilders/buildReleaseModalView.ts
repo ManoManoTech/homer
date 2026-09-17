@@ -13,6 +13,11 @@ import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
+import {
+  buildPreviousReleaseTagBlockId,
+  getSelectedPreviousReleaseTagName,
+  SELECT_PREVIOUS_RELEASE_TAG_ACTION_ID,
+} from '../utils/previousReleaseTagBlock';
 
 interface ReleaseModalData {
   channelId?: string;
@@ -30,15 +35,17 @@ export async function buildReleaseModalView({
   if (view !== undefined) {
     const { blocks, state } = view;
 
-    previousReleaseTagName =
-      state.values['release-previous-tag-block']?.[
-        'release-select-previous-tag-action'
-      ]?.selected_option?.value;
-
     projectId = parseInt(
       state.values['release-project-block']?.['release-select-project-action']
         ?.selected_option?.value,
       10,
+    );
+
+    // Read the tag of the selected project only: after a project switch the
+    // block of the previously selected project is no longer part of the view.
+    previousReleaseTagName = getSelectedPreviousReleaseTagName(
+      state.values,
+      projectId,
     );
 
     projectOptions = ((blocks[0] as InputBlock).element as StaticSelect)
@@ -183,11 +190,11 @@ export async function buildReleaseModalView({
         ? [
             {
               type: 'input',
-              block_id: 'release-previous-tag-block',
+              block_id: buildPreviousReleaseTagBlockId(projectId),
               dispatch_action: true,
               element: {
                 type: 'static_select',
-                action_id: 'release-select-previous-tag-action',
+                action_id: SELECT_PREVIOUS_RELEASE_TAG_ACTION_ID,
                 initial_option:
                   previousReleaseOptions.find(
                     ({ value }) => value === previousReleaseTagName,

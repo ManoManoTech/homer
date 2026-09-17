@@ -5,11 +5,14 @@ import {
   createRelease as createReleaseEntry,
   getProjectReleases,
 } from '@/core/services/data';
+import { fetchProjectTags } from '@/core/services/gitlab';
 import { fetchSlackUserFromId } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
 import getReleaseOptions from '@/release/releaseOptions';
+import type { ReleaseTagManager } from '@/release/typings/ReleaseTagManager';
 import ConfigHelper from '../../../utils/ConfigHelper';
+import { getSelectedPreviousReleaseTagName } from './previousReleaseTagBlock';
 import { waitForReadinessAndStartRelease } from './waitForReadinessAndStartRelease';
 
 export async function createRelease(
@@ -27,12 +30,14 @@ export async function createRelease(
   const releaseTagName: string =
     values['release-tag-block']['release-tag-action'].value;
 
-  const previousReleaseTagName: string | undefined =
-    values['release-previous-tag-block']?.['release-select-previous-tag-action']
-      ?.selected_option.value;
-
-  const { releaseManager } =
+  const { releaseManager, releaseTagManager } =
     await ConfigHelper.getProjectReleaseConfig(projectId);
+
+  const previousReleaseTagName = await resolvePreviousReleaseTagName(
+    projectId,
+    getSelectedPreviousReleaseTagName(values, projectId),
+    releaseTagManager,
+  );
 
   const [description, slackAuthor] = await Promise.all([
     generateChangelog(
@@ -81,4 +86,33 @@ export async function createRelease(
 
   const release = await createReleaseEntry(releaseData);
   await waitForReadinessAndStartRelease(release);
+}
+
+/**
+ * Slack keeps the value of a select whose block_id and action_id are unchanged
+ * between two views.update calls, so after a project switch the submitted
+ * previous tag can be the one of the project displayed first, which does not
+ * exist in the selected project.
+ *
+ * Scoping the block id to the project makes such a tag unreachable through the
+ * modal built here (see `previousReleaseTagBlock`), but the submitted value
+ * still comes from the client, and a release manager building its own modal
+ * picks its own block id, so it is checked before reaching the changelog.
+ */
+async function resolvePreviousReleaseTagName(
+  projectId: number,
+  submittedTagName: string | undefined,
+  releaseTagManager: ReleaseTagManager | undefined,
+): Promise<string | undefined> {
+  if (submittedTagName === undefined) {
+    return undefined;
+  }
+
+  const tags = await fetchProjectTags(projectId);
+
+  if (tags.some(({ name }) => name === submittedTagName)) {
+    return submittedTagName;
+  }
+  return tags.find(({ name }) => releaseTagManager?.isReleaseTag(name) ?? true)
+    ?.name;
 }
