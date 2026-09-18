@@ -97,7 +97,10 @@ export async function buildChangelogModalView({
           type: 'static_select',
           action_id: 'changelog-select-project-action',
           options: projectOptions,
-          initial_option: projectOptions?.[0],
+          initial_option:
+            projectOptions.find(
+              ({ value }) => value === projectId?.toString(),
+            ) ?? projectOptions[0],
           placeholder: {
             type: 'plain_text',
             text: 'Select the project',
@@ -117,7 +120,10 @@ export async function buildChangelogModalView({
               element: {
                 type: 'static_select',
                 action_id: 'changelog-select-release-tag-action',
-                initial_option: previousReleaseOptions[0],
+                initial_option:
+                  previousReleaseOptions.find(
+                    ({ value }) => value === previousReleaseTagName,
+                  ) ?? previousReleaseOptions[0],
                 options: previousReleaseOptions,
                 placeholder: {
                   type: 'plain_text',
