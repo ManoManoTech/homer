@@ -3,6 +3,8 @@ export interface HttpCallMock {
   calledWith: [Request | URL, RequestInit | undefined] | undefined;
   responseBody: unknown;
   status?: number;
+  /** Held until resolved, to interleave concurrent requests deterministically. */
+  gate?: Promise<void>;
 }
 
 let fetchMocks: Record<string, HttpCallMock> = {};
@@ -42,12 +44,16 @@ export function createFetchMock(originalFetch: typeof fetch) {
       mock.called = true;
       mock.calledWith = [input, init];
 
+      if (mock.gate !== undefined) {
+        await mock.gate;
+      }
+
       const response = new Response(JSON.stringify(mock.responseBody), {
         status: mock.status,
         headers: { 'Content-Type': 'application/json' },
       });
 
-      return Promise.resolve(response);
+      return response;
     }
 
     return originalFetch(input, init);

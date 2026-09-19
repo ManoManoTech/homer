@@ -6,6 +6,7 @@ export const EXPIRED_TRIGGER_ID_ERROR_MESSAGE =
 export const EXPIRED_TRIGGER_ID_SLACK_ERROR = 'expired_trigger_id';
 export const GENERIC_ERROR_MESSAGE =
   "D'oh! Something went wrong :homer-stressed:";
+export const HASH_CONFLICT_SLACK_ERROR = 'hash_conflict';
 export const HOMER_GIT_URL = `https://github.com/ManoManoTech/homer/`;
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_OK = 200;
