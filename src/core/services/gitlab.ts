@@ -244,6 +244,12 @@ export async function fetchProjectTag(
   return tag;
 }
 
+export async function fetchProjectReleases(
+  projectId: number,
+): Promise<GitlabRelease[]> {
+  return callAPI(`/projects/${projectId}/releases?per_page=100`);
+}
+
 export async function fetchProjectTags(
   projectId: number,
 ): Promise<GitlabTag[]> {

@@ -29,7 +29,7 @@ export async function createRelease(
 
   const previousReleaseTagName: string | undefined =
     values['release-previous-tag-block']?.['release-select-previous-tag-action']
-      ?.selected_option.value;
+      ?.selected_option?.value;
 
   const { releaseManager } =
     await ConfigHelper.getProjectReleaseConfig(projectId);

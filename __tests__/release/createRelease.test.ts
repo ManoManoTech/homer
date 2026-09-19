@@ -63,6 +63,14 @@ describe('release > createRelease', () => {
       })),
     );
     mockGitlabCall(
+      `/projects/${projectId}/releases?per_page=100`,
+      [...Array(10)].map((_, i) => ({
+        tag_name: `${tagFixture.name.slice(0, -1)}${i}`,
+        name: `${tagFixture.name.slice(0, -1)}${i}`,
+        released_at: `2020-01-${`${10 - i}`.padStart(2, '0')}T10:00:00.000Z`,
+      })),
+    );
+    mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
       tagFixture,
     );
@@ -225,41 +233,46 @@ describe('release > createRelease', () => {
                 },
                 value: 'stable-20200101-1000',
               },
-              options: [
+              option_groups: [
                 {
-                  text: {
-                    text: 'stable-20200101-1000',
-                    type: 'plain_text',
-                  },
-                  value: 'stable-20200101-1000',
-                },
-                {
-                  text: {
-                    text: 'stable-20200101-1001',
-                    type: 'plain_text',
-                  },
-                  value: 'stable-20200101-1001',
-                },
-                {
-                  text: {
-                    text: 'stable-20200101-1002',
-                    type: 'plain_text',
-                  },
-                  value: 'stable-20200101-1002',
-                },
-                {
-                  text: {
-                    text: 'stable-20200101-1003',
-                    type: 'plain_text',
-                  },
-                  value: 'stable-20200101-1003',
-                },
-                {
-                  text: {
-                    text: 'stable-20200101-1004',
-                    type: 'plain_text',
-                  },
-                  value: 'stable-20200101-1004',
+                  label: { type: 'plain_text', text: 'Releases' },
+                  options: [
+                    {
+                      text: {
+                        text: 'stable-20200101-1000',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1000',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1001',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1001',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1002',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1002',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1003',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1003',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1004',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1004',
+                    },
+                  ],
                 },
               ],
               placeholder: {
@@ -412,26 +425,46 @@ describe('release > createRelease', () => {
                 text: { text: 'stable-20200101-1000', type: 'plain_text' },
                 value: 'stable-20200101-1000',
               },
-              options: [
+              option_groups: [
                 {
-                  text: { text: 'stable-20200101-1000', type: 'plain_text' },
-                  value: 'stable-20200101-1000',
-                },
-                {
-                  text: { text: 'stable-20200101-1001', type: 'plain_text' },
-                  value: 'stable-20200101-1001',
-                },
-                {
-                  text: { text: 'stable-20200101-1002', type: 'plain_text' },
-                  value: 'stable-20200101-1002',
-                },
-                {
-                  text: { text: 'stable-20200101-1003', type: 'plain_text' },
-                  value: 'stable-20200101-1003',
-                },
-                {
-                  text: { text: 'stable-20200101-1004', type: 'plain_text' },
-                  value: 'stable-20200101-1004',
+                  label: { type: 'plain_text', text: 'Releases' },
+                  options: [
+                    {
+                      text: {
+                        text: 'stable-20200101-1000',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1000',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1001',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1001',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1002',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1002',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1003',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1003',
+                    },
+                    {
+                      text: {
+                        text: 'stable-20200101-1004',
+                        type: 'plain_text',
+                      },
+                      value: 'stable-20200101-1004',
+                    },
+                  ],
                 },
               ],
               placeholder: {
@@ -499,7 +532,8 @@ describe('release > createRelease', () => {
               },
               [previousTagBlock.block_id as string]: {
                 [previousTagElement.action_id as string]: {
-                  selected_option: previousTagElement.options?.[0],
+                  selected_option:
+                    previousTagElement.option_groups?.[0]?.options?.[0],
                 },
               },
             },
@@ -565,7 +599,8 @@ describe('release > createRelease', () => {
               },
               [previousTagBlock.block_id as string]: {
                 [previousTagElement.action_id as string]: {
-                  selected_option: previousTagElement.options?.[0],
+                  selected_option:
+                    previousTagElement.option_groups?.[0]?.options?.[0],
                 },
               },
             },
@@ -703,6 +738,14 @@ describe('release > createRelease', () => {
     mockGitlabCall(
       `/projects/${projectId}/pipelines/${pipelineFixture.id}/jobs?per_page=100`,
       [{ ...dockerBuildJobFixture, status: 'running' }],
+    );
+    mockGitlabCall(
+      `/projects/${projectId}/releases?per_page=100`,
+      [...Array(10)].map((_, i) => ({
+        tag_name: `${tagFixture.name.slice(0, -1)}${i}`,
+        name: `${tagFixture.name.slice(0, -1)}${i}`,
+        released_at: `2020-01-${`${10 - i}`.padStart(2, '0')}T10:00:00.000Z`,
+      })),
     );
     mockGitlabCall(
       `/projects/${projectId}/repository/tags/${tagFixture.name}`,
