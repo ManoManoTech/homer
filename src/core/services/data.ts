@@ -260,9 +260,10 @@ export async function removeReview(ts: string): Promise<void> {
 
 export async function removeReviewsByMergeRequestIid(
   mergeRequestIid: number,
+  projectId: number,
 ): Promise<void> {
   await Review.destroy({
-    where: { mergeRequestIid },
+    where: { mergeRequestIid, projectId },
   });
 }
 

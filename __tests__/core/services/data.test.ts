@@ -2,6 +2,7 @@ import {
   addReviewToChannel,
   createRelease,
   getProjectReleases,
+  removeReviewsByMergeRequestIid,
   updateRelease,
 } from '@/core/services/data';
 import type { DataRelease } from '@/core/typings/Data';
@@ -49,6 +50,48 @@ describe('data service', () => {
 
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(await hasModelEntry('Review', { ...review, ts: 'ts2' })).toBe(true);
+  });
+
+  it('removes only the target project reviews when two projects share a merge request iid', async () => {
+    const sharedIid = 42;
+
+    // Project 1 has the merge request shared across two channels.
+    await addReviewToChannel({
+      channelId: 'C1',
+      mergeRequestIid: sharedIid,
+      projectId: 1,
+      ts: 'ts-p1-a',
+    });
+    await addReviewToChannel({
+      channelId: 'C2',
+      mergeRequestIid: sharedIid,
+      projectId: 1,
+      ts: 'ts-p1-b',
+    });
+    // A different project happens to reuse the same iid.
+    await addReviewToChannel({
+      channelId: 'C3',
+      mergeRequestIid: sharedIid,
+      projectId: 2,
+      ts: 'ts-p2',
+    });
+
+    await removeReviewsByMergeRequestIid(sharedIid, 1);
+
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(
+      await hasModelEntry('Review', {
+        mergeRequestIid: sharedIid,
+        projectId: 1,
+      }),
+    ).toBe(false);
+    expect(
+      await hasModelEntry('Review', {
+        mergeRequestIid: sharedIid,
+        projectId: 2,
+        ts: 'ts-p2',
+      }),
+    ).toBe(true);
   });
 
   it('should return all releases for a project', async () => {
