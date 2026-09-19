@@ -157,7 +157,9 @@ export async function buildReleaseModalView({
         element: {
           type: 'static_select',
           action_id: 'release-select-project-action',
-          initial_option: projectOptions?.[0],
+          initial_option:
+            projectOptions.find(({ value }) => value === `${projectId}`) ??
+            projectOptions[0],
           options: projectOptions,
           placeholder: {
             type: 'plain_text',
