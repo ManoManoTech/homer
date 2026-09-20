@@ -6,13 +6,18 @@ import type {
   View,
 } from '@slack/web-api';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
-import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
+import {
+  fetchProjectById,
+  fetchProjectReleases,
+  fetchProjectTags,
+} from '@/core/services/gitlab';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
+import { buildPreviousReleaseTagOptionGroups } from '../utils/previousReleaseTagOptions';
 
 interface ReleaseModalData {
   channelId?: string;
@@ -97,13 +102,24 @@ export async function buildReleaseModalView({
     );
   }
 
-  const tags = (await fetchProjectTags(projectId))
-    .filter(({ name }) => releaseTagManager.isReleaseTag(name))
-    .slice(0, 5);
+  const [tags, releases] = await Promise.all([
+    fetchProjectTags(projectId),
+    fetchProjectReleases(projectId),
+  ]);
+
+  const { optionGroups: previousReleaseOptionGroups, defaultOption } =
+    buildPreviousReleaseTagOptionGroups(
+      tags.filter(({ name }) => releaseTagManager.isReleaseTag(name)),
+      releases,
+    );
+
+  const selectableTagNames = previousReleaseOptionGroups.flatMap(
+    ({ options }) => options.map(({ value }) => value),
+  );
 
   const previousReleaseTag =
     previousReleaseTagName !== undefined
-      ? tags.find(({ name }) => name === previousReleaseTagName)
+      ? selectableTagNames.find((name) => name === previousReleaseTagName)
       : undefined;
 
   if (
@@ -113,21 +129,13 @@ export async function buildReleaseModalView({
     throw new Error(`Previous release tag ${previousReleaseTagName} not found`);
   }
 
-  if (tags.length > 0 && previousReleaseTagName === undefined) {
-    previousReleaseTagName = tags[0].name;
+  if (previousReleaseTagName === undefined) {
+    previousReleaseTagName = defaultOption?.value;
   }
 
   const changelog = previousReleaseTagName
     ? await generateChangelog(projectId, previousReleaseTagName)
     : '';
-
-  const previousReleaseOptions = tags.map(({ name }) => ({
-    text: {
-      type: 'plain_text',
-      text: name,
-    },
-    value: name,
-  })) as SlackOption[];
 
   return {
     type: 'modal',
@@ -149,7 +157,9 @@ export async function buildReleaseModalView({
         element: {
           type: 'static_select',
           action_id: 'release-select-project-action',
-          initial_option: projectOptions?.[0],
+          initial_option:
+            projectOptions.find(({ value }) => value === `${projectId}`) ??
+            projectOptions[0],
           options: projectOptions,
           placeholder: {
             type: 'plain_text',
@@ -176,7 +186,7 @@ export async function buildReleaseModalView({
           text: 'Release tag',
         },
       },
-      previousReleaseOptions.length > 0
+      previousReleaseOptionGroups.length > 0
         ? [
             {
               type: 'input',
@@ -185,8 +195,8 @@ export async function buildReleaseModalView({
               element: {
                 type: 'static_select',
                 action_id: 'release-select-previous-tag-action',
-                initial_option: previousReleaseOptions[0],
-                options: previousReleaseOptions,
+                initial_option: defaultOption,
+                option_groups: previousReleaseOptionGroups,
                 placeholder: {
                   type: 'plain_text',
                   text: 'Select the previous release tag',

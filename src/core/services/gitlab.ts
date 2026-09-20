@@ -244,6 +244,27 @@ export async function fetchProjectTag(
   return tag;
 }
 
+export async function fetchProjectReleases(
+  projectId: number,
+): Promise<GitlabRelease[]> {
+  return callAPI(`/projects/${projectId}/releases?per_page=100`);
+}
+
+/**
+ * Tells whether a tag still exists without throwing: `fetchProjectTag` treats a
+ * missing tag as an error, which is the wrong shape for a validation check.
+ */
+export async function hasProjectTag(
+  projectId: number,
+  tagName: string,
+): Promise<boolean> {
+  const tag = await callAPI<GitlabTag>(
+    `/projects/${projectId}/repository/tags/${tagName}`,
+  );
+
+  return tag?.name !== undefined;
+}
+
 export async function fetchProjectTags(
   projectId: number,
 ): Promise<GitlabTag[]> {

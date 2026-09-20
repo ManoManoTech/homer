@@ -12,6 +12,7 @@ import {
 } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
 import { fetchSlackUserFromId, slackBotWebClient } from '@/core/services/slack';
+import { NOT_DEPLOYED_RELEASE_NAME_PREFIX } from '@/release/commands/create/utils/previousReleaseTagOptions';
 import { buildReleaseCanceledMessage } from '@/release/commands/create/viewBuilders/buildReleaseMessage';
 import ConfigHelper from '@/release/utils/ConfigHelper';
 
@@ -43,7 +44,11 @@ export async function cancelRelease(
       const { name } = await fetchReleaseByTagName(projectId, tagName);
       const [pipeline] = await fetchPipelinesByRef(projectId, release.tagName);
       await Promise.all([
-        updateReleaseName(projectId, tagName, `[NOT DEPLOYED] ${name}`),
+        updateReleaseName(
+          projectId,
+          tagName,
+          `${NOT_DEPLOYED_RELEASE_NAME_PREFIX}${name}`,
+        ),
         removeRelease(projectId, tagName),
         cancelPipeline(projectId, pipeline.id),
       ]);
