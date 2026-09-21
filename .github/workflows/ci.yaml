@@ -24,7 +24,7 @@ jobs:
       - run: pnpm test --coverage
 
       - name: 'Upload to Codecov'
-        uses: 'codecov/codecov-action@v6'
+        uses: 'codecov/codecov-action@v7'
         with:
           directory: coverage
         env:
