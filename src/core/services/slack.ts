@@ -2,10 +2,11 @@ import { WebClient } from '@slack/web-api';
 import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
+import type { UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
+import { findChatUser } from './userIdentity';
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
-const EMAIL_DOMAINS = CONFIG.slack.emailDomains;
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
@@ -111,10 +112,27 @@ export async function fetchSlackUserFromGitlabUser({
 export async function fetchSlackUserFromGitlabUsername(
   username: string,
 ): Promise<SlackUser | undefined> {
-  const emails = EMAIL_DOMAINS.split(',').map(
-    (emailDomain) => `${username}@${emailDomain}`,
+  return findChatUser(
+    { provider: 'gitlab', username },
+    fetchSlackUserFromIdentity,
   );
-  return fetchSlackUserFromEmails(emails);
+}
+
+async function fetchSlackUserFromIdentity({
+  chatUserId,
+  emails = [],
+}: UserIdentity): Promise<SlackUser | undefined> {
+  if (chatUserId === undefined) {
+    return fetchSlackUserFromEmails(emails);
+  }
+  try {
+    return await fetchSlackUserFromId(chatUserId);
+  } catch (error) {
+    // An explicit id that Slack doesn't know means the resolver's data is
+    // stale, which someone should fix, hence warn rather than info.
+    logger.warn({ err: error, chatUserId }, 'slack user lookup by id failed');
+    return undefined;
+  }
 }
 
 export async function fetchSlackUserFromId(
