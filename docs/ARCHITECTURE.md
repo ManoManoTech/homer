@@ -194,7 +194,7 @@ sequenceDiagram
             end
         end
     else existing review
-        H->>SL: lookup user by gitlab username + EMAIL_DOMAINS
+        H->>SL: lookup user through the USER_IDENTITY_RESOLVERS chain
         loop each existing review row
             H->>SL: chat.update main message
             opt approved/close/merge/unapproved
@@ -410,7 +410,8 @@ Auth/secrets:
 
 Mapping/config:
 
-- `EMAIL_DOMAINS` — used to derive Slack user from GitLab username
+- `USER_IDENTITY_RESOLVERS` — ordered resolvers that map a GitLab user to a Slack user (default `emailDomainConvention`); company resolvers are plugins `import()`-ed from `@root/plugins/identity/<name>` once at startup, see `PLUGIN_USER_IDENTITY.md`
+- `EMAIL_DOMAINS` — used by the `emailDomainConvention` resolver to derive the Slack user's email from the GitLab username
 - `GITLAB_URL`, `TICKET_MANAGEMENT_URL_PATTERN`
 - `SLACK_SUPPORT_CHANNEL_{ID,NAME}`
 - `SLACK_CHANNEL_NOTIFICATION_THRESHOLD` (default 3)
