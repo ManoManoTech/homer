@@ -221,8 +221,15 @@ Create a `.env` file containing the following variables:
 
   Email domains of your organization (separated by comma),
   for instance `my-domain.com,ext.my-domain.com`.
-  Used to find Slack users from Gitlab username.
-  Note that this means your org has to use the same naming scheme for emails and gitlab username.
+  Used by the default `emailDomainConvention` user identity resolver to find Slack users from Gitlab username.
+  Note that this resolver assumes your org uses the same naming scheme for emails and gitlab username;
+  if it doesn't, see `USER_IDENTITY_RESOLVERS`.
+
+- `USER_IDENTITY_RESOLVERS`
+
+  Comma-separated list of the resolvers used, in order, to find the Slack user behind a Gitlab user.
+  Each entry is either the built-in `emailDomainConvention` or the file name of your own plugin in `plugins/identity/`.
+  Default value is `emailDomainConvention`. See this dedicated [page](./PLUGIN_USER_IDENTITY.md) for more details.
 
 - `GITLAB_URL`
 
@@ -366,7 +373,11 @@ Here is a sample configuration with one project:
 
 A simple plugin system enables the addition of custom release managers. See this dedicated [page](./PLUGIN_RELEASE.md) for more details.
 
-### 9. Examples
+### 9. Match Gitlab users to Slack users your own way
+
+By default Homer finds a Slack user by trying `<gitlab username>@<domain>` for each domain of `EMAIL_DOMAINS`. If your usernames don't follow your email naming scheme, you can provide your own user identity resolver as a plugin (for instance one that queries your company directory). See this dedicated [page](./PLUGIN_USER_IDENTITY.md) for more details.
+
+### 10. Examples
 
 You can find some [examples](./examples/) to add your own configuration, plugins and how to deploy.
 

@@ -33,5 +33,9 @@ export const CONFIG = {
     ),
   },
   ticketManagementUrlPattern: getEnvVariable('TICKET_MANAGEMENT_URL_PATTERN'),
+  userIdentityResolvers: getEnvVariable(
+    'USER_IDENTITY_RESOLVERS',
+    'emailDomainConvention',
+  ),
   requestBodySizeLimit: getEnvVariable('REQUEST_BODY_SIZE_LIMIT', '5mb'),
 } as const;

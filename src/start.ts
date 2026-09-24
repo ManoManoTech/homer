@@ -1,14 +1,23 @@
+import { CONFIG } from '@/config';
 import {
   connectToDatabase,
   disconnectFromDatabase,
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
+import { loadUserIdentityResolvers } from '@/core/services/userIdentity';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
 import { app } from './app';
 
 const PORT = 3000;
 
 export async function start(): Promise<() => Promise<void>> {
+  await loadUserIdentityResolvers(
+    CONFIG.userIdentityResolvers
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean),
+  );
+
   return new Promise((resolve, reject) => {
     const server = app.listen(PORT, async () => {
       try {
