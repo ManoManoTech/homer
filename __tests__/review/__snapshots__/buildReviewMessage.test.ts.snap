@@ -1,0 +1,477 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`buildReviewMessage renders the closed merge request payload 1`] = `
+{
+  "blocks": [
+    {
+      "accessory": {
+        "action_id": "review-message-actions",
+        "options": [
+          {
+            "text": {
+              "text": "Create a pipeline",
+              "type": "plain_text",
+            },
+            "value": "review-create-pipeline~~1148~~test1",
+          },
+          {
+            "text": {
+              "text": "Rebase source branch",
+              "type": "plain_text",
+            },
+            "value": "review-rebase-source-branch~~1148~~1",
+          },
+          {
+            "text": {
+              "text": "Delete message",
+              "type": "plain_text",
+            },
+            "value": "review-delete-message",
+          },
+        ],
+        "type": "overflow",
+      },
+      "text": {
+        "text": "*<http://gitlab.example.com/my-group/my-project/-/merge_requests/1|~merge request title~ (closed)>*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Target branch: \`master\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Open discussion(s): \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Changes: \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Pipeline: ✅ success",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Mergeable: ✅ Yes",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "fields": [
+        {
+          "text": "*Participants*
+ @axel.block @user1",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approvals*
+ 1/2 required ⏳",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approved by*
+ @root",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "section",
+    },
+  ],
+  "channel": "channelId",
+  "icon_url": "image_72",
+  "link_names": true,
+  "text": "~merge request title~ http://gitlab.example.com/my-group/my-project/-/merge_requests/1 (closed)",
+  "username": "admin.real",
+}
+`;
+
+exports[`buildReviewMessage renders the fully-approved payload (no approvals left) 1`] = `
+{
+  "blocks": [
+    {
+      "accessory": {
+        "action_id": "review-message-actions",
+        "options": [
+          {
+            "text": {
+              "text": "Create a pipeline",
+              "type": "plain_text",
+            },
+            "value": "review-create-pipeline~~1148~~test1",
+          },
+          {
+            "text": {
+              "text": "Rebase source branch",
+              "type": "plain_text",
+            },
+            "value": "review-rebase-source-branch~~1148~~1",
+          },
+          {
+            "text": {
+              "text": "Delete message",
+              "type": "plain_text",
+            },
+            "value": "review-delete-message",
+          },
+        ],
+        "type": "overflow",
+      },
+      "text": {
+        "text": "*<http://gitlab.example.com/my-group/my-project/-/merge_requests/1|merge request title>*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Target branch: \`master\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Open discussion(s): \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Changes: \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Pipeline: ✅ success",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Mergeable: ✅ Yes",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "fields": [
+        {
+          "text": "*Participants*
+ @axel.block @user1",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approvals*
+ 2/2 required ✅",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approved by*
+ @root",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "section",
+    },
+  ],
+  "channel": "channelId",
+  "icon_url": "image_72",
+  "link_names": true,
+  "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
+  "username": "admin.real",
+}
+`;
+
+exports[`buildReviewMessage renders the merged merge request payload 1`] = `
+{
+  "blocks": [
+    {
+      "accessory": {
+        "action_id": "review-message-actions",
+        "options": [
+          {
+            "text": {
+              "text": "Create a pipeline",
+              "type": "plain_text",
+            },
+            "value": "review-create-pipeline~~1148~~test1",
+          },
+          {
+            "text": {
+              "text": "Rebase source branch",
+              "type": "plain_text",
+            },
+            "value": "review-rebase-source-branch~~1148~~1",
+          },
+          {
+            "text": {
+              "text": "Delete message",
+              "type": "plain_text",
+            },
+            "value": "review-delete-message",
+          },
+        ],
+        "type": "overflow",
+      },
+      "text": {
+        "text": "*<http://gitlab.example.com/my-group/my-project/-/merge_requests/1|~merge request title~ (merged)>*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Target branch: \`master\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Open discussion(s): \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Changes: \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Pipeline: ✅ success",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Mergeable: ✅ Yes",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "fields": [
+        {
+          "text": "*Participants*
+ @axel.block @user1",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approvals*
+ 1/2 required ⏳",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approved by*
+ @root",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "section",
+    },
+  ],
+  "channel": "channelId",
+  "icon_url": "image_72",
+  "link_names": true,
+  "text": "~merge request title~ http://gitlab.example.com/my-group/my-project/-/merge_requests/1 (merged)",
+  "username": "admin.real",
+}
+`;
+
+exports[`buildReviewMessage renders the post payload for an open merge request 1`] = `
+{
+  "blocks": [
+    {
+      "accessory": {
+        "action_id": "review-message-actions",
+        "options": [
+          {
+            "text": {
+              "text": "Create a pipeline",
+              "type": "plain_text",
+            },
+            "value": "review-create-pipeline~~1148~~test1",
+          },
+          {
+            "text": {
+              "text": "Rebase source branch",
+              "type": "plain_text",
+            },
+            "value": "review-rebase-source-branch~~1148~~1",
+          },
+          {
+            "text": {
+              "text": "Delete message",
+              "type": "plain_text",
+            },
+            "value": "review-delete-message",
+          },
+        ],
+        "type": "overflow",
+      },
+      "text": {
+        "text": "*<http://gitlab.example.com/my-group/my-project/-/merge_requests/1|merge request title>*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Target branch: \`master\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Open discussion(s): \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Changes: \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Pipeline: ✅ success",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Mergeable: ✅ Yes",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "fields": [
+        {
+          "text": "*Participants*
+ @axel.block @user1",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approvals*
+ 1/2 required ⏳",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approved by*
+ @root",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "section",
+    },
+  ],
+  "channel": "channelId",
+  "icon_url": "image_72",
+  "link_names": true,
+  "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
+  "username": "admin.real",
+}
+`;
+
+exports[`buildReviewMessage renders the update payload (with ts) for an open merge request 1`] = `
+{
+  "blocks": [
+    {
+      "accessory": {
+        "action_id": "review-message-actions",
+        "options": [
+          {
+            "text": {
+              "text": "Create a pipeline",
+              "type": "plain_text",
+            },
+            "value": "review-create-pipeline~~1148~~test1",
+          },
+          {
+            "text": {
+              "text": "Rebase source branch",
+              "type": "plain_text",
+            },
+            "value": "review-rebase-source-branch~~1148~~1",
+          },
+          {
+            "text": {
+              "text": "Delete message",
+              "type": "plain_text",
+            },
+            "value": "review-delete-message",
+          },
+        ],
+        "type": "overflow",
+      },
+      "text": {
+        "text": "*<http://gitlab.example.com/my-group/my-project/-/merge_requests/1|merge request title>*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Target branch: \`master\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Open discussion(s): \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Changes: \`1\`",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Pipeline: ✅ success",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "Mergeable: ✅ Yes",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "fields": [
+        {
+          "text": "*Participants*
+ @axel.block @user1",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approvals*
+ 1/2 required ⏳",
+          "type": "mrkdwn",
+        },
+        {
+          "text": "*Approved by*
+ @root",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "section",
+    },
+  ],
+  "channel": "channelId",
+  "icon_url": "image_72",
+  "link_names": true,
+  "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
+  "ts": "ts",
+  "username": "admin.real",
+}
+`;
