@@ -13,6 +13,13 @@ export const reviewMessagePostFixture = {
           {
             text: {
               type: 'plain_text',
+              text: 'Refresh',
+            },
+            value: 'review-refresh~~1148~~1',
+          },
+          {
+            text: {
+              type: 'plain_text',
               text: 'Create a pipeline',
             },
             value: 'review-create-pipeline~~1148~~test1',
