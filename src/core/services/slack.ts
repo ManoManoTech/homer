@@ -4,7 +4,7 @@ import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
-import { findChatUser } from './userIdentity';
+import { type ChatUserLookup, findChatUser } from './userIdentity';
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
 
@@ -63,7 +63,15 @@ const USERS_NOT_FOUND_SLACK_ERROR = 'users_not_found';
 
 /**
  * Tries each email against `users.lookupByEmail` and returns the first match.
- *
+ */
+export async function fetchSlackUserFromEmails(
+  emails: string[],
+): Promise<SlackUser | undefined> {
+  const lookup = await lookUpSlackUserByEmails(emails);
+  return lookup.status === 'found' ? lookup.chatUser : undefined;
+}
+
+/**
  * Logging policy when no user is found:
  *  - All lookups returned `users_not_found` → `logger.info` (expected
  *    operational state: GitLab user left the company / is external / has no
@@ -72,15 +80,15 @@ const USERS_NOT_FOUND_SLACK_ERROR = 'users_not_found';
  *    `logger.warn` with the underlying error, since this may indicate Slack
  *    health rather than user absence.
  */
-export async function fetchSlackUserFromEmails(
+async function lookUpSlackUserByEmails(
   emails: string[],
-): Promise<SlackUser | undefined> {
+): Promise<ChatUserLookup<SlackUser>> {
   let transientError: unknown;
 
   for (const email of emails) {
     try {
       const response = await slackBotWebClient.users.lookupByEmail({ email });
-      return response.user as SlackUser;
+      return { status: 'found', chatUser: response.user as SlackUser };
     } catch (error) {
       if (!isSlackErrorCode(error, USERS_NOT_FOUND_SLACK_ERROR)) {
         transientError = error;
@@ -89,18 +97,18 @@ export async function fetchSlackUserFromEmails(
   }
 
   if (emails.length === 0) {
-    return undefined;
+    return { status: 'not_found' };
   }
 
   if (transientError !== undefined) {
     logger.warn({ err: transientError, emails }, 'slack user lookup failed');
-  } else {
-    logger.info(
-      { emails, slackError: USERS_NOT_FOUND_SLACK_ERROR },
-      'no slack user found for emails',
-    );
+    return { status: 'failed' };
   }
-  return undefined;
+  logger.info(
+    { emails, slackError: USERS_NOT_FOUND_SLACK_ERROR },
+    'no slack user found for emails',
+  );
+  return { status: 'not_found' };
 }
 
 export async function fetchSlackUserFromGitlabUser({
@@ -121,17 +129,20 @@ export async function fetchSlackUserFromGitlabUsername(
 async function fetchSlackUserFromIdentity({
   chatUserId,
   emails = [],
-}: UserIdentity): Promise<SlackUser | undefined> {
+}: UserIdentity): Promise<ChatUserLookup<SlackUser>> {
   if (chatUserId === undefined) {
-    return fetchSlackUserFromEmails(emails);
+    return lookUpSlackUserByEmails(emails);
   }
   try {
-    return await fetchSlackUserFromId(chatUserId);
+    const chatUser = await fetchSlackUserFromId(chatUserId);
+    return chatUser === undefined
+      ? { status: 'not_found' }
+      : { status: 'found', chatUser };
   } catch (error) {
     // An explicit id that Slack doesn't know means the resolver's data is
     // stale, which someone should fix, hence warn rather than info.
     logger.warn({ err: error, chatUserId }, 'slack user lookup by id failed');
-    return undefined;
+    return { status: 'not_found' };
   }
 }
 

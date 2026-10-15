@@ -74,13 +74,21 @@ async function importPlugin(
   return plugin as UserIdentityResolver;
 }
 
+/** Outcome of looking an identity up on the chat platform. */
+export type ChatUserLookup<ChatUser> =
+  | { status: 'found'; chatUser: ChatUser }
+  | { status: 'not_found' }
+  | { status: 'failed' };
+
 /**
  * Asks each resolver in order who the git user is, and returns the first chat
  * user that `findOnChatPlatform` finds for one of the answers.
  */
 export async function findChatUser<ChatUser>(
   user: GitUser,
-  findOnChatPlatform: (identity: UserIdentity) => Promise<ChatUser | undefined>,
+  findOnChatPlatform: (
+    identity: UserIdentity,
+  ) => Promise<ChatUserLookup<ChatUser>>,
 ): Promise<ChatUser | undefined> {
   for (const { name, resolver } of resolvers) {
     let identity: UserIdentity | undefined;
@@ -99,9 +107,9 @@ export async function findChatUser<ChatUser>(
     if (identity === undefined) {
       continue;
     }
-    const chatUser = await findOnChatPlatform(identity);
-    if (chatUser !== undefined) {
-      return chatUser;
+    const lookup = await findOnChatPlatform(identity);
+    if (lookup.status === 'found') {
+      return lookup.chatUser;
     }
   }
   return undefined;
