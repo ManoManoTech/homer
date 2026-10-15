@@ -24,8 +24,9 @@ export interface UserIdentity {
 export interface UserIdentityResolver {
   /**
    * Returns `undefined` or `null` when this resolver doesn't know the user, in
-   * which case the next resolver is asked. Throwing, or returning anything that
-   * isn't a `UserIdentity`, stops the search and the user is left out.
+   * which case the next resolver is asked. Throwing, not answering within
+   * 2 seconds, or returning anything that isn't a `UserIdentity` stops the
+   * search and the user is left out.
    */
   resolve(user: GitUser): Promise<UserIdentity | null | undefined>;
 }

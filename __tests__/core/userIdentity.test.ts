@@ -11,6 +11,7 @@ import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 
 const TEST_PLUGIN_DIRECTORY = '@root/__tests__/__fixtures__/plugins/identity';
+const TEST_RESOLVER_TIMEOUT_MS = 20;
 
 function slackApiError(error: string): Error {
   return Object.assign(new Error(`An API error occurred: ${error}`), {
@@ -260,6 +261,38 @@ describe('user identity resolvers', () => {
       const response = await approveMergeRequestAs('root');
 
       expectNoApprovalNotification(response);
+    });
+
+    it('leaves the user out instead of trying the next resolver when a plugin does not answer in time', async () => {
+      await loadUserIdentityResolvers(
+        ['hangingDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+        TEST_RESOLVER_TIMEOUT_MS,
+      );
+
+      const response = await approveMergeRequestAs('root');
+
+      expectNoApprovalNotification(response);
+    });
+
+    it('logs which plugin did not answer in time', async () => {
+      await loadUserIdentityResolvers(
+        ['hangingDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+        TEST_RESOLVER_TIMEOUT_MS,
+      );
+
+      await approveMergeRequestAs('root');
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resolver: 'hangingDirectory',
+          err: expect.objectContaining({
+            message: `user identity resolver did not answer within ${TEST_RESOLVER_TIMEOUT_MS} ms`,
+          }),
+        }),
+        'user identity resolver failed',
+      );
     });
 
     it('logs which plugin threw', async () => {

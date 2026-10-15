@@ -7,6 +7,10 @@ import type {
 import { logger } from './logger';
 
 const PLUGIN_DIRECTORY = '@root/plugins/identity';
+// The merge request webhook looks users up before answering GitLab, which
+// gives up after 10 s on GitLab.com and disables webhooks that keep failing;
+// the GitLab API calls made for the same event need the rest of that budget.
+const RESOLVER_TIMEOUT_MS = 2000;
 
 /** Assumes git usernames match the local part of the company email. */
 const emailDomainConvention: UserIdentityResolver = {
@@ -31,6 +35,7 @@ interface NamedResolver {
 let resolvers: NamedResolver[] = [
   { name: 'emailDomainConvention', resolver: emailDomainConvention },
 ];
+let resolverTimeoutMs = RESOLVER_TIMEOUT_MS;
 
 /**
  * Replaces the resolver chain. Each name is either a built-in resolver or the
@@ -39,10 +44,12 @@ let resolvers: NamedResolver[] = [
 export async function loadUserIdentityResolvers(
   names: string[],
   pluginDirectory = PLUGIN_DIRECTORY,
+  timeoutMs = RESOLVER_TIMEOUT_MS,
 ): Promise<void> {
   if (names.length === 0) {
     throw new Error('At least one user identity resolver must be configured.');
   }
+  resolverTimeoutMs = timeoutMs;
   resolvers = await Promise.all(
     names.map(async (name) => ({
       name,
@@ -101,7 +108,7 @@ export async function findChatUser<ChatUser>(
     let identity: unknown;
 
     try {
-      identity = await resolver.resolve(user);
+      identity = await withTimeout(resolver.resolve(user), resolverTimeoutMs);
     } catch (error) {
       logger.error(
         { err: error, resolver: name, user },
@@ -128,6 +135,30 @@ export async function findChatUser<ChatUser>(
     }
   }
   return undefined;
+}
+
+/**
+ * Stops waiting for `promise` after `timeoutMs`. The plugin's own work can't be
+ * cancelled and may still finish in the background; its result is ignored.
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `user identity resolver did not answer within ${timeoutMs} ms`,
+          ),
+        ),
+      timeoutMs,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function isUserIdentity(value: unknown): value is UserIdentity {

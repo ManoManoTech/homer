@@ -53,6 +53,7 @@ Homer only moves on to the next resolver when the current one has a clear answer
 | None of the returned emails is a Slack user                                                          | Asks the next resolver                                                            |
 | The returned Slack user id doesn't exist (`user_not_found`)                                          | Logs a warning (the resolver's data is probably stale) and asks the next resolver |
 | The resolver throws an error                                                                         | Logs the error with the resolver name and leaves the person out                   |
+| The resolver doesn't answer within 2 seconds                                                         | Logs the error with the resolver name and leaves the person out                   |
 | The resolver returns something that isn't a valid answer                                             | Logs the error with the resolver name and the answer, and leaves the person out   |
 | Slack fails to look up the returned emails or id (rate limit, outage…)                               | Logs a warning and leaves the person out                                          |
 | No resolver finds a Slack user                                                                       | Leaves the person out, as Homer always did when a user isn't found                |
@@ -66,6 +67,6 @@ When the variable is not set, only `emailDomainConvention` is used, which is Hom
 
 As for [release manager plugins](./PLUGIN_RELEASE.md), build a Docker image based on Homer's where your `plugins` directory is copied to `dist/plugins`. See the [deploy example](./examples/deploy/Dockerfile).
 
-Resolvers run on every merge request event, several times per message (one call per person shown). If yours calls a remote service, keep it fast and consider caching its answers.
+Resolvers run on every merge request event, several times per message (one call per person shown). If yours calls a remote service, keep it fast and consider caching its answers: Homer stops waiting after 2 seconds, because it looks users up before answering GitLab, and GitLab disables webhooks that time out repeatedly.
 
 Please only **add your own resolvers or resolvers from trusted sources**: they run inside Homer with access to its configuration.
