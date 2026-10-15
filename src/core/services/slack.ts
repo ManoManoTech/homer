@@ -60,6 +60,8 @@ export async function getPermalink(
 }
 
 const USERS_NOT_FOUND_SLACK_ERROR = 'users_not_found';
+// users.info uses a different code than users.lookupByEmail.
+const USER_NOT_FOUND_SLACK_ERROR = 'user_not_found';
 
 /**
  * Tries each email against `users.lookupByEmail` and returns the first match.
@@ -139,10 +141,17 @@ async function fetchSlackUserFromIdentity({
       ? { status: 'not_found' }
       : { status: 'found', chatUser };
   } catch (error) {
-    // An explicit id that Slack doesn't know means the resolver's data is
-    // stale, which someone should fix, hence warn rather than info.
+    if (isSlackErrorCode(error, USER_NOT_FOUND_SLACK_ERROR)) {
+      // An explicit id that Slack doesn't know means the resolver's data is
+      // stale, which someone should fix, hence warn rather than info.
+      logger.warn(
+        { err: error, chatUserId },
+        'slack user id from user identity resolver not found',
+      );
+      return { status: 'not_found' };
+    }
     logger.warn({ err: error, chatUserId }, 'slack user lookup by id failed');
-    return { status: 'not_found' };
+    return { status: 'failed' };
   }
 }
 

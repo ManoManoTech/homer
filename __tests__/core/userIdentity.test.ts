@@ -1,17 +1,18 @@
 import request from 'supertest';
 import { app } from '@/app';
-import { HTTP_STATUS_OK } from '@/constants';
+import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { loadUserIdentityResolvers } from '@/core/services/userIdentity';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
+import { answerWith } from '../__fixtures__/plugins/identity/configurableDirectory';
 import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCalls';
 
 const TEST_PLUGIN_DIRECTORY = '@root/__tests__/__fixtures__/plugins/identity';
 
-function slackNotFoundError(error: string): Error {
+function slackApiError(error: string): Error {
   return Object.assign(new Error(`An API error occurred: ${error}`), {
     code: 'slack_webapi_platform_error',
     data: { ok: false, error },
@@ -46,6 +47,12 @@ function expectApprovalThreadMessageFrom(realName: string) {
     text: `*${realName}* has approved this merge request.`,
     thread_ts: 'ts',
   });
+}
+
+// When the approver isn't found on Slack, Homer answers 204 and posts nothing.
+function expectNoApprovalNotification(response: request.Response) {
+  expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
 }
 
 describe('user identity resolvers', () => {
@@ -119,7 +126,7 @@ describe('user identity resolvers', () => {
       (slackBotWebClient.users.lookupByEmail as jest.Mock).mockImplementation(
         ({ email }: { email: string }) => {
           if (email === 'root.company@corp.test') {
-            return Promise.reject(slackNotFoundError('users_not_found'));
+            return Promise.reject(slackApiError('users_not_found'));
           }
           const name = email.split('@')[0];
           return Promise.resolve({
@@ -144,7 +151,7 @@ describe('user identity resolvers', () => {
 
     it('moves to the next resolver when the Slack user id returned by a plugin is not found', async () => {
       (slackBotWebClient.users.info as jest.Mock).mockRejectedValue(
-        slackNotFoundError('user_not_found'),
+        slackApiError('user_not_found'),
       );
       await loadUserIdentityResolvers(
         ['slackIdDirectory', 'emailDomainConvention'],
@@ -157,9 +164,10 @@ describe('user identity resolvers', () => {
       expectApprovalThreadMessageFrom('root.real');
     });
 
-    it('moves to the next resolver when a plugin throws', async () => {
+    it('treats a null answer as an unknown user', async () => {
+      answerWith(null);
       await loadUserIdentityResolvers(
-        ['brokenDirectory', 'emailDomainConvention'],
+        ['configurableDirectory', 'emailDomainConvention'],
         TEST_PLUGIN_DIRECTORY,
       );
 
@@ -167,6 +175,91 @@ describe('user identity resolvers', () => {
 
       expect(response.status).toEqual(HTTP_STATUS_OK);
       expectApprovalThreadMessageFrom('root.real');
+    });
+
+    it('leaves the user out instead of trying the next resolver when a plugin throws', async () => {
+      await loadUserIdentityResolvers(
+        ['brokenDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+      );
+
+      const response = await approveMergeRequestAs('root');
+
+      expectNoApprovalNotification(response);
+    });
+
+    it.each([
+      ['emails is null', { emails: null }],
+      ['emails is a string', { emails: 'root.company@corp.test' }],
+      ['emails contains a non-string', { emails: [42] }],
+      ['chatUserId is not a string', { chatUserId: 42 }],
+      ['the answer is a string', 'root.company@corp.test'],
+      ['the answer is an array', ['root.company@corp.test']],
+    ])(
+      'leaves the user out instead of trying the next resolver when %s',
+      async (_, answer) => {
+        answerWith(answer);
+        await loadUserIdentityResolvers(
+          ['configurableDirectory', 'emailDomainConvention'],
+          TEST_PLUGIN_DIRECTORY,
+        );
+
+        const response = await approveMergeRequestAs('root');
+
+        expectNoApprovalNotification(response);
+      },
+    );
+
+    it('logs which plugin returned an invalid identity', async () => {
+      answerWith({ emails: null });
+      await loadUserIdentityResolvers(
+        ['configurableDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+      );
+
+      await approveMergeRequestAs('root');
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resolver: 'configurableDirectory',
+          identity: { emails: null },
+        }),
+        'user identity resolver returned an invalid identity',
+      );
+    });
+
+    it('leaves the user out instead of trying the next resolver when Slack fails to look up the email', async () => {
+      const lookUpByLocalPart = (
+        slackBotWebClient.users.lookupByEmail as jest.Mock
+      ).getMockImplementation()!;
+      (slackBotWebClient.users.lookupByEmail as jest.Mock).mockImplementation(
+        (args: { email: string }) =>
+          args.email === 'root.company@corp.test'
+            ? Promise.reject(slackApiError('ratelimited'))
+            : lookUpByLocalPart(args),
+      );
+      await loadUserIdentityResolvers(
+        ['companyDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+      );
+
+      const response = await approveMergeRequestAs('root');
+
+      expectNoApprovalNotification(response);
+    });
+
+    it('leaves the user out instead of trying the next resolver when Slack fails to look up the user id', async () => {
+      (slackBotWebClient.users.info as jest.Mock).mockRejectedValue(
+        slackApiError('ratelimited'),
+      );
+      await loadUserIdentityResolvers(
+        ['slackIdDirectory', 'emailDomainConvention'],
+        TEST_PLUGIN_DIRECTORY,
+      );
+
+      const response = await approveMergeRequestAs('root');
+
+      expectNoApprovalNotification(response);
     });
 
     it('logs which plugin threw', async () => {

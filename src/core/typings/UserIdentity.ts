@@ -22,6 +22,10 @@ export interface UserIdentity {
  * their own resolvers as plugins, see PLUGIN_USER_IDENTITY.md.
  */
 export interface UserIdentityResolver {
-  /** Returns `undefined` when this resolver doesn't know the user. */
-  resolve(user: GitUser): Promise<UserIdentity | undefined>;
+  /**
+   * Returns `undefined` or `null` when this resolver doesn't know the user, in
+   * which case the next resolver is asked. Throwing, or returning anything that
+   * isn't a `UserIdentity`, stops the search and the user is left out.
+   */
+  resolve(user: GitUser): Promise<UserIdentity | null | undefined>;
 }

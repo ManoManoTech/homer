@@ -16,7 +16,9 @@ Create a JavaScript file in a `plugins/identity` directory, for instance `plugin
 
 - `{ emails: ['first.choice@my-domain.com', 'second.choice@my-domain.com'] }`: Homer tries each email in order.
 - `{ chatUserId: 'U0XXXXXXXXX' }`: Homer uses this Slack user id directly.
-- `undefined`: this resolver doesn't know the user, and Homer moves on to the next resolver.
+- `undefined` or `null`: this resolver doesn't know the user, and Homer moves on to the next resolver.
+
+Anything else (for instance `emails` that isn't an array of strings) is treated as a failure, see below.
 
 ```js
 // plugins/identity/companyDirectory.js
@@ -43,10 +45,20 @@ USER_IDENTITY_RESOLVERS=companyDirectory,emailDomainConvention
 
 For each Gitlab user, Homer asks the resolvers one after the other and stops at the first answer that matches a Slack user. With the configuration above, users missing from `companyDirectory`, or whose email isn't a Slack user, still get the default behaviour.
 
-- If no resolver finds a Slack user, Homer behaves as it does today when a user isn't found: the person is left out of the message.
-- If a resolver throws an error (for instance your directory service is down), Homer logs the error with the resolver name and moves on to the next resolver. The notification is still sent.
-- If a Slack user id returned by a resolver doesn't exist on Slack, Homer logs a warning and moves on to the next resolver.
-- If a listed resolver can't be loaded (unknown name, or a file that doesn't export a `resolve` function), Homer doesn't start, and the error names the resolver.
+Homer only moves on to the next resolver when the current one has a clear answer that doesn't lead to a Slack user. When something fails, it stops and leaves the person out rather than falling back to a later, possibly less reliable resolver: if `companyDirectory` is down, guessing `jdoe@my-domain.com` could name somebody else.
+
+| Situation                                                                                            | What Homer does                                                                   |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| The resolver returns `undefined` or `null`                                                           | Asks the next resolver                                                            |
+| None of the returned emails is a Slack user                                                          | Asks the next resolver                                                            |
+| The returned Slack user id doesn't exist (`user_not_found`)                                          | Logs a warning (the resolver's data is probably stale) and asks the next resolver |
+| The resolver throws an error                                                                         | Logs the error with the resolver name and leaves the person out                   |
+| The resolver returns something that isn't a valid answer                                             | Logs the error with the resolver name and the answer, and leaves the person out   |
+| Slack fails to look up the returned emails or id (rate limit, outage…)                               | Logs a warning and leaves the person out                                          |
+| No resolver finds a Slack user                                                                       | Leaves the person out, as Homer always did when a user isn't found                |
+| A listed resolver can't be loaded (unknown name, or a file that doesn't export a `resolve` function) | Doesn't start, and the error names the resolver                                   |
+
+Leaving a person out has the same effect as when Homer can't find them on Slack: author, assignees, reviewers and approvers are simply missing from the message, and for an approve, close, merge or similar event, Homer doesn't post the "has approved this merge request" style reply or update the message when it can't tell who acted.
 
 When the variable is not set, only `emailDomainConvention` is used, which is Homer's historical behaviour.
 

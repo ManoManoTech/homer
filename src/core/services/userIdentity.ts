@@ -83,6 +83,12 @@ export type ChatUserLookup<ChatUser> =
 /**
  * Asks each resolver in order who the git user is, and returns the first chat
  * user that `findOnChatPlatform` finds for one of the answers.
+ *
+ * Only an explicit "unknown user" moves on to the next resolver. Any failure
+ * (resolver error, invalid answer, chat lookup failure) stops the chain and
+ * returns no user: later resolvers are often guesses, and falling back to one
+ * while the resolver that knows better is unavailable could name the wrong
+ * person, which is worse than naming nobody.
  */
 export async function findChatUser<ChatUser>(
   user: GitUser,
@@ -91,26 +97,48 @@ export async function findChatUser<ChatUser>(
   ) => Promise<ChatUserLookup<ChatUser>>,
 ): Promise<ChatUser | undefined> {
   for (const { name, resolver } of resolvers) {
-    let identity: UserIdentity | undefined;
+    // Plugins are untyped JavaScript, so their answer is checked before use.
+    let identity: unknown;
 
     try {
       identity = await resolver.resolve(user);
     } catch (error) {
-      // A failing resolver (e.g. its directory service is down) must not block
-      // the notification: the next resolvers may still find the user.
       logger.error(
         { err: error, resolver: name, user },
         'user identity resolver failed',
       );
+      return undefined;
+    }
+    if (identity === undefined || identity === null) {
       continue;
     }
-    if (identity === undefined) {
-      continue;
+    if (!isUserIdentity(identity)) {
+      logger.error(
+        { resolver: name, user, identity },
+        'user identity resolver returned an invalid identity',
+      );
+      return undefined;
     }
     const lookup = await findOnChatPlatform(identity);
     if (lookup.status === 'found') {
       return lookup.chatUser;
     }
+    if (lookup.status === 'failed') {
+      return undefined;
+    }
   }
   return undefined;
+}
+
+function isUserIdentity(value: unknown): value is UserIdentity {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const { chatUserId, emails } = value as Record<string, unknown>;
+  return (
+    (chatUserId === undefined || typeof chatUserId === 'string') &&
+    (emails === undefined ||
+      (Array.isArray(emails) &&
+        emails.every((email) => typeof email === 'string')))
+  );
 }
