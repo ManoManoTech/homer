@@ -124,6 +124,29 @@ export async function fetchSlackUserFromId(
   return response?.user as SlackUser | undefined;
 }
 
+/**
+ * Reverse of `fetchSlackUserFromGitlabUsername`: the GitLab username is the
+ * local part of the Slack email, provided its domain is a configured one.
+ */
+export async function fetchGitlabUsernameFromSlackUserId(
+  userId: string,
+): Promise<string | undefined> {
+  let slackUser: SlackUser | undefined;
+
+  try {
+    slackUser = await fetchSlackUserFromId(userId);
+  } catch (error) {
+    logger.warn({ err: error, userId }, 'slack user lookup failed');
+    return undefined;
+  }
+
+  const [username, domain] = slackUser?.profile?.email?.split('@') ?? [];
+
+  return username && EMAIL_DOMAINS.split(',').includes(domain)
+    ? username
+    : undefined;
+}
+
 export async function fetchSlackUsersFromGitlabUsers(
   gitlabUsers: GitlabUser[],
 ): Promise<SlackUser[]> {
