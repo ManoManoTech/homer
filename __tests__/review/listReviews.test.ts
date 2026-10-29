@@ -276,6 +276,53 @@ describe('review > listReviews', () => {
     );
   });
 
+  it('should not list merge requests that are no longer open', async () => {
+    // Given
+    const channelId = 'channelId';
+    const projectId = 1;
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: 'review list',
+      user_id: userId,
+    };
+    const reviews = [
+      { mergeRequestIid: 1, ts: 'ts1', state: 'opened', title: 'opened' },
+      { mergeRequestIid: 2, ts: 'ts2', state: 'merged', title: 'merged' },
+    ];
+
+    for (const { mergeRequestIid, ts, state, title } of reviews) {
+      await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+      mockGitlabCall(
+        `/projects/${projectId}/merge_requests/${mergeRequestIid}`,
+        {
+          ...mergeRequestDetailsFixture,
+          iid: mergeRequestIid,
+          state,
+          title,
+        },
+      );
+    }
+    (slackBotWebClient.chat.getPermalink as jest.Mock).mockImplementation(
+      ({ message_ts }: { message_ts: string }) => ({
+        permalink: `https://slack/${message_ts}`,
+      }),
+    );
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.getPermalink).toHaveBeenCalledTimes(1);
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Ongoing reviews: opened.' }),
+    );
+  });
+
   it('should notify user when there is no review', async () => {
     // Given
     const channelId = 'channelId';
