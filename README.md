@@ -32,15 +32,16 @@ information and publish Slack messages.
 
 Here are the available commands:
 
-| Command                                         | Description                                                                                                                                                     |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/homer changelog`                              | Display changelogs, for any Gitlab project, between 2 release tags.                                                                                             |
-| `/homer project add <project_name\|project_id>` | Add a Gitlab project to a channel.                                                                                                                              |
-| `/homer project list`                           | List the Gitlab projects added to a channel.                                                                                                                    |
-| `/homer project remove`                         | Remove a Gitlab project from a channel.                                                                                                                         |
-| `/homer release`                                | Create a release for configured Gitlab project in a channel.                                                                                                    |
-| `/homer review <search>`                        | Share a merge request on a channel.<br />Searches in title and description by default.<br />Accepts merge request URLs and merge request IDs prefixed with "!". |
-| `/homer review list`                            | List ongoing reviews shared in a channel.                                                                                                                       |
+| Command                                           | Description                                                                                                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/homer changelog`                                | Display changelogs, for any Gitlab project, between 2 release tags.                                                                                             |
+| `/homer project add <project_name\|project_id>`   | Add a Gitlab project to a channel.                                                                                                                              |
+| `/homer project list`                             | List the Gitlab projects added to a channel.                                                                                                                    |
+| `/homer project remove`                           | Remove a Gitlab project from a channel.                                                                                                                         |
+| `/homer release`                                  | Create a release for configured Gitlab project in a channel.                                                                                                    |
+| `/homer review <search>`                          | Share a merge request on a channel.<br />Searches in title and description by default.<br />Accepts merge request URLs and merge request IDs prefixed with "!". |
+| `/homer review list`                              | List ongoing reviews shared in a channel.                                                                                                                       |
+| `/homer review reminder [on [HH:mm] [days]\|off]` | Post ongoing reviews shared in a channel on a schedule, see [Post ongoing reviews on a schedule](#post-ongoing-reviews-on-a-schedule).                          |
 
 ### Share a merge request using Homer
 
@@ -117,6 +118,29 @@ You can provide a merge request ID prefixed with `!`, e.g.: `/homer review !128`
 
 If you want to get an overview of merge requests that are still being reviewed
 (meaning they are not merged yet), use `/homer review list`.
+
+##### Post ongoing reviews on a schedule
+
+`/homer review list` answers only to the person who typed it. To have Homer post
+the same list publicly in the channel on a schedule, use `/homer review reminder`:
+
+- `/homer review reminder on`: every weekday at 09:30.
+- `/homer review reminder on 10:00 mon,wed,fri`: on Monday, Wednesday and Friday at 10:00.
+- `/homer review reminder on 14:30 mon-thu`: from Monday to Thursday at 14:30.
+- `/homer review reminder`: display the current schedule of the channel.
+- `/homer review reminder off`: stop it.
+
+The time must be on a quarter of an hour (minutes among `00`, `15`, `30` or `45`)
+and is interpreted in the `REVIEW_REMINDER_TIMEZONE` timezone. Days are written
+`mon`, `tue`, `wed`, `thu`, `fri`, `sat` and `sun`, as a list (`mon,wed,fri`), a
+range (`mon-fri`) or both (`mon-wed,fri`).
+
+Homer checks due reminders every quarter of an hour:
+
+- nothing is posted when there is no ongoing review in the channel;
+- each channel gets at most one post per day, even when several instances of Homer are running;
+- a failed post is retried on the next 3 checks, then given up until the next scheduled day;
+- the reminder of a channel Homer cannot post to anymore (archived channel, Homer removed) is deleted.
 
 ##### Using the `homer-review` or `homer-mergeable` gitlab label
 
@@ -244,6 +268,10 @@ Create a `.env` file containing the following variables:
 - `SLACK_CHANNEL_NOTIFICATION_THRESHOLD`
 
   Maximum number of channels allowed before skipping notifications. If the number of channels linked to a project exceeds this threshold, no notifications will be sent. Default value is `3`.
+
+- `REVIEW_REMINDER_TIMEZONE`
+
+  [IANA timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in which the times of `/homer review reminder` are interpreted. Default value is `Europe/Paris`.
 
 - `REQUEST_BODY_SIZE_LIMIT`
 

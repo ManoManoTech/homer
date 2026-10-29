@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { SlackSlashCommandResponse } from '@/core/typings/SlackSlashCommand';
 import { listReviewsRequestHandler } from './commands/list/listReviewsRequestHandler';
+import { reviewReminderRequestHandler } from './commands/reminder/reviewReminderRequestHandler';
 import { shareReviewRequestHandler } from './commands/share/shareReviewRequestHandler';
 
 export async function reviewRequestHandler(req: Request, res: Response) {
@@ -10,6 +11,9 @@ export async function reviewRequestHandler(req: Request, res: Response) {
   switch (command) {
     case 'list':
       return listReviewsRequestHandler(req, res);
+
+    case 'reminder':
+      return reviewReminderRequestHandler(req, res);
 
     default:
       return shareReviewRequestHandler(req, res);

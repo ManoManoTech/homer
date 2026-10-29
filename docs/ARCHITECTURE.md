@@ -122,6 +122,9 @@ mindmap
     Review
       /homer review search
       /homer review list
+      /homer review reminder
+        Quarter-hourly scheduler
+        DB ReviewReminders
       Labels
         homer-review
         homer-mergeable

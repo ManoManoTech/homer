@@ -1,5 +1,17 @@
 import { getEnvVariable } from '@/core/utils/getEnvVariable';
 
+/**
+ * Reads an IANA timezone from the environment.
+ *
+ * @throws {RangeError} if the timezone is unknown, so that Homer fails at
+ * startup rather than on every use of the timezone.
+ */
+function getTimezoneEnvVariable(name: string, defaultValue: string): string {
+  const timezone = getEnvVariable(name, defaultValue);
+  new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+  return timezone;
+}
+
 export const CONFIG = {
   apiBasePath: getEnvVariable('API_BASE_PATH', '/api/v1/homer'),
   postgres: {
@@ -32,6 +44,10 @@ export const CONFIG = {
       getEnvVariable('SLACK_CHANNEL_NOTIFICATION_THRESHOLD', '3'),
     ),
   },
+  reviewReminderTimezone: getTimezoneEnvVariable(
+    'REVIEW_REMINDER_TIMEZONE',
+    'Europe/Paris',
+  ),
   ticketManagementUrlPattern: getEnvVariable('TICKET_MANAGEMENT_URL_PATTERN'),
   requestBodySizeLimit: getEnvVariable('REQUEST_BODY_SIZE_LIMIT', '5mb'),
 } as const;

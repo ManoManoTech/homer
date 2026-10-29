@@ -36,6 +36,13 @@ jest.mock('@slack/web-api', () => {
 jest.mock('dd-trace', () => ({}));
 jest.mock('sequelize');
 
+// The real scheduler would run reminder checks against the shared mocks
+// whenever the suite crosses a quarter of an hour.
+jest.mock('@/review/commands/reminder/scheduleReviewReminders', () => ({
+  ...jest.requireActual('@/review/commands/reminder/scheduleReviewReminders'),
+  scheduleReviewReminders: () => () => {},
+}));
+
 // ⚠️ The pino logger is not compatible with Jest, please use the console
 // instead to debug.
 jest.mock('@/core/services/logger', () => ({

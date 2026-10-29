@@ -80,6 +80,16 @@ class ModelMock {
   }
 
   async sync() {}
+
+  async update(newValues: EntryValues, { where }: Options): Promise<[number]> {
+    const entry = await this.findOne({ where });
+
+    if (entry === null) {
+      return [0];
+    }
+    await entry.update(newValues);
+    return [1];
+  }
 }
 
 class SequelizeMock {

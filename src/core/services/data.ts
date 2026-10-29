@@ -13,6 +13,8 @@ import type {
   DataRelease,
   DataReleaseInternal,
   DataReview,
+  DataReviewReminder,
+  DataReviewReminderInternal,
 } from '@/core/typings/Data';
 import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
 
@@ -54,6 +56,21 @@ const Review = sequelize.define<Model<DataReview>>('Review', {
   projectId: { type: DataTypes.INTEGER, allowNull: false },
   ts: { type: DataTypes.STRING, allowNull: false },
 });
+
+const ReviewReminder = sequelize.define<Model<DataReviewReminderInternal>>(
+  'ReviewReminder',
+  {
+    channelId: { type: DataTypes.STRING, allowNull: false },
+    days: { type: DataTypes.STRING, allowNull: false },
+    failedAttempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    lastSentOn: { type: DataTypes.STRING, allowNull: true },
+    time: { type: DataTypes.STRING, allowNull: false },
+  },
+);
 
 export async function cleanOldEntries(): Promise<void> {
   const cleanedReviewsCount = await Review.destroy({
@@ -133,6 +150,79 @@ export async function addReviewToChannel({
   }
 }
 
+/**
+ * Creates the reminder of a channel, or replaces its schedule if it already
+ * exists. Replacing the schedule keeps the day of the last reminder sent, so
+ * it does not cause a second post on the same day; disabling then enabling
+ * the reminder does not keep it.
+ */
+export async function setReviewReminder({
+  channelId,
+  days,
+  time,
+}: Pick<DataReviewReminder, 'channelId' | 'days' | 'time'>): Promise<void> {
+  const reminder = await ReviewReminder.findOne({ where: { channelId } });
+
+  if (reminder !== null) {
+    await reminder.update({ days: days.join(','), time });
+  } else {
+    await ReviewReminder.create({
+      channelId,
+      days: days.join(','),
+      failedAttempts: 0,
+      lastSentOn: null,
+      time,
+    });
+  }
+}
+
+/**
+ * Atomically marks the reminder of a channel as sent for the given day.
+ *
+ * The update only matches if `lastSentOn` still holds the value read before,
+ * so when several Homer instances run the reminder job concurrently, exactly
+ * one of them wins the claim. The winner is in charge of posting the reminder
+ * and of releasing the claim with {@link releaseReviewReminderClaim} if it
+ * fails to do so.
+ *
+ * @returns `true` if the caller won the claim.
+ */
+export async function claimReviewReminder(
+  channelId: string,
+  previousLastSentOn: string | null,
+  lastSentOn: string,
+): Promise<boolean> {
+  const [updatedCount] = await ReviewReminder.update(
+    { lastSentOn },
+    { where: { channelId, lastSentOn: previousLastSentOn } },
+  );
+  return updatedCount === 1;
+}
+
+/**
+ * Restores the day of the last reminder sent as it was before a claim, so
+ * that the next run of the reminder job retries to post it, and records the
+ * number of failed attempts so far. Does nothing if the reminder has been
+ * claimed or removed in the meantime.
+ */
+export async function releaseReviewReminderClaim(
+  channelId: string,
+  claimedLastSentOn: string,
+  previousLastSentOn: string | null,
+  failedAttempts: number,
+): Promise<void> {
+  await ReviewReminder.update(
+    { failedAttempts, lastSentOn: previousLastSentOn },
+    { where: { channelId, lastSentOn: claimedLastSentOn } },
+  );
+}
+
+export async function resetReviewReminderFailedAttempts(
+  channelId: string,
+): Promise<void> {
+  await ReviewReminder.update({ failedAttempts: 0 }, { where: { channelId } });
+}
+
 export async function createRelease(
   release: DataRelease,
 ): Promise<DataRelease> {
@@ -189,6 +279,17 @@ export async function getReleases(
   return (
     await Release.findAll({ order: [['createdAt', 'DESC']], where: filter })
   ).map(formatRelease);
+}
+
+export async function getReviewReminder(
+  channelId: string,
+): Promise<DataReviewReminder | undefined> {
+  const reminder = await ReviewReminder.findOne({ where: { channelId } });
+  return reminder !== null ? formatReviewReminder(reminder) : undefined;
+}
+
+export async function getReviewReminders(): Promise<DataReviewReminder[]> {
+  return (await ReviewReminder.findAll()).map(formatReviewReminder);
 }
 
 export async function getReviewsByChannelId(
@@ -250,6 +351,12 @@ export async function removeRelease(
   await Release.destroy({
     where: { projectId, tagName },
   });
+}
+
+export async function removeReviewReminderFromChannel(
+  channelId: string,
+): Promise<void> {
+  await ReviewReminder.destroy({ where: { channelId } });
 }
 
 export async function removeReview(ts: string): Promise<void> {
@@ -325,6 +432,20 @@ function formatRelease(releaseModel: Model<DataReleaseInternal>): DataRelease {
     successfulDeployments: getReleaseDeployments(
       internalRelease.successfulDeployments,
     ),
+  };
+}
+
+function formatReviewReminder(
+  reminderModel: Model<DataReviewReminderInternal>,
+): DataReviewReminder {
+  const { channelId, days, failedAttempts, lastSentOn, time } =
+    toJSON(reminderModel);
+  return {
+    channelId,
+    days: days.split(',').map(Number),
+    failedAttempts,
+    lastSentOn,
+    time,
   };
 }
 
