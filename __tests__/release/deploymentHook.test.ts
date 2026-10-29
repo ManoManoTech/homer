@@ -924,10 +924,6 @@ describe('release > deploymentHookHandler', () => {
             },
           ],
         },
-        cancelReleaseButton(
-          initialMockRelease.projectId,
-          initialMockRelease.tagName,
-        ),
       ],
     );
     (expectedReleaseMessage.blocks[2] as SectionBlock).text!.text =

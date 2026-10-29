@@ -387,10 +387,7 @@ function buildDeploymentActionBlock(
 ): KnownBlock | undefined {
   const actionElements: ActionsBlockElement[] = [];
 
-  if (
-    release.state !== 'monitoring' ||
-    !isReleaseCompleted(releaseStateUpdates)
-  ) {
+  if (!isReleaseCompleted(releaseStateUpdates)) {
     actionElements.push({
       type: 'button',
       style: 'danger',
