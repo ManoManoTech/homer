@@ -76,6 +76,55 @@ describe('review > listReviews', () => {
     });
   });
 
+  it('should link each review to its own message when merge requests from different projects share an iid', async () => {
+    // Given
+    const channelId = 'channelId';
+    const mergeRequestIid = 1;
+    const userId = 'userId';
+    const body = {
+      channel_id: channelId,
+      text: 'review list',
+      user_id: userId,
+    };
+    const reviews = [
+      { projectId: 1, ts: 'ts1', title: 'first project' },
+      { projectId: 2, ts: 'ts2', title: 'second project' },
+    ];
+
+    for (const { projectId, ts, title } of reviews) {
+      await addReviewToChannel({ channelId, mergeRequestIid, projectId, ts });
+      mockGitlabCall(
+        `/projects/${projectId}/merge_requests/${mergeRequestIid}`,
+        {
+          ...mergeRequestDetailsFixture,
+          title,
+        },
+      );
+    }
+    (slackBotWebClient.chat.getPermalink as jest.Mock).mockImplementation(
+      ({ message_ts }: { message_ts: string }) => ({
+        permalink: `https://slack/${message_ts}`,
+      }),
+    );
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/command')
+      .set(getSlackHeaders(body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(
+      (slackBotWebClient.chat.postEphemeral as jest.Mock).mock.calls[0][0]
+        .blocks[0].text.text,
+    ).toEqual(
+      slackifyMarkdown(`**Ongoing reviews:**
+- [first project](https://slack/ts1)
+- [second project](https://slack/ts2)`),
+    );
+  });
+
   it('should notify user when there is no review', async () => {
     // Given
     const channelId = 'channelId';
