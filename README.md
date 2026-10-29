@@ -362,6 +362,18 @@ Here is a sample configuration with one project:
 }
 ```
 
+Each project can also define the following optional properties:
+
+- `ignoredNoteAuthorPattern`: a regular expression matched against the Gitlab
+  username of a note's author. The thread message of a note whose author matches
+  is not posted on Slack (the review message is still refreshed). For instance,
+  `"ignoredNoteAuthorPattern": "^(project|group)_\\d+_bot"` mutes the project and
+  group access token bots (ex: CI reports posted as comments), including the
+  older `project_123_bot1` naming (backslashes must be escaped in JSON). An
+  invalid expression prevents Homer from starting. Usernames are
+  chosen by Gitlab users, so avoid patterns prone to catastrophic backtracking
+  (ex: nested quantifiers like `(a+)+`).
+
 ### 8. Add your own release manager
 
 A simple plugin system enables the addition of custom release managers. See this dedicated [page](./PLUGIN_RELEASE.md) for more details.

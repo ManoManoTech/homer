@@ -12,6 +12,19 @@ import { mockBuildReviewMessageCalls } from '../utils/mockBuildReviewMessageCall
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 import { waitFor } from '../utils/waitFor';
 
+jest.mock('@root/config/homer/projects.json', () => ({
+  projects: [
+    {
+      description: 'homer',
+      ignoredNoteAuthorPattern: '^(project|group)_\\d+_bot',
+      notificationChannelIds: ['C0XXXXXXXXX'],
+      projectId: 1148,
+      releaseChannelId: 'C0XXXXXXXXX',
+      releaseManager: 'defaultReleaseManager',
+    },
+  ],
+}));
+
 describe('review > noteHook', () => {
   beforeEach(async () => {
     (slackBotWebClient.users.lookupByEmail as jest.Mock).mockImplementation(
@@ -93,6 +106,109 @@ describe('review > noteHook', () => {
         text: ':speech_balloon_blue: This MR needs work.\n',
         thread_ts: 'ts',
         unfurl_links: false,
+      });
+    });
+  });
+
+  describe('when the project has an ignoredNoteAuthorPattern', () => {
+    beforeEach(async () => {
+      await addReviewToChannel({
+        channelId: 'channelId',
+        mergeRequestIid: mergeRequestFixture.iid,
+        projectId: mergeRequestFixture.project_id,
+        ts: 'ts',
+      });
+      mockBuildReviewMessageCalls();
+    });
+
+    it('should refresh the review message but not post a thread message for a matching author', async () => {
+      // Given
+      mockGitlabCall(
+        `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+        { ...userDetailsFixture, username: 'project_1047_bot_2e5bdb43' },
+      );
+      jest.useFakeTimers();
+
+      // When
+      const response = await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture);
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      // Then
+      expect(response.status).toEqual(HTTP_STATUS_OK);
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
+          1,
+          reviewMessageUpdateFixture,
+        );
+      });
+      expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should match older access token bot usernames without a hash suffix', async () => {
+      // Given
+      mockGitlabCall(
+        `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+        { ...userDetailsFixture, username: 'project_123_bot1' },
+      );
+      jest.useFakeTimers();
+
+      // When
+      await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture);
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      // Then
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
+      });
+      expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should still relay a note written by a non matching author', async () => {
+      // Given
+      mockGitlabCall(
+        `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+        { ...userDetailsFixture, username: 'jiminy' },
+      );
+      jest.useFakeTimers();
+
+      // When
+      const response = await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture);
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      // Then
+      expect(response.status).toEqual(HTTP_STATUS_OK);
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('should still relay the note when the author cannot be fetched', async () => {
+      // Given: no mocked Gitlab call for the author lookup
+      jest.useFakeTimers();
+
+      // When
+      await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send(mergeRequestNoteHookFixture);
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      // Then
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
       });
     });
   });

@@ -23,8 +23,8 @@ describe('configBuilder', () => {
     expect(
       await buildProjectReleaseConfigs(
         { projects },
-        { federationReleaseTagManager }
-      )
+        { federationReleaseTagManager },
+      ),
     ).toEqual([
       {
         notificationChannelIds: ['C678'],
@@ -54,8 +54,8 @@ describe('configBuilder', () => {
     expect(
       await buildProjectReleaseConfigs(
         { projects },
-        { federationReleaseTagManager, stableDateReleaseTagManager }
-      )
+        { federationReleaseTagManager, stableDateReleaseTagManager },
+      ),
     ).toEqual([
       {
         notificationChannelIds: ['C678'],
@@ -68,19 +68,49 @@ describe('configBuilder', () => {
   });
   it('should throw an error if projects is not an array', async () => {
     expect(() =>
-      buildProjectReleaseConfigs({} as any, { federationReleaseTagManager })
+      buildProjectReleaseConfigs({} as any, { federationReleaseTagManager }),
     ).rejects.toThrow(
-      'The config file should contain an array of valid project configurations'
+      'The config file should contain an array of valid project configurations',
     );
   });
   it('should throw an error if there is an invalid project configuration', async () => {
     expect(() =>
       buildProjectReleaseConfigs(
         [{ projectId: 123, releaseManager: 'defaultReleaseManager' }] as any,
-        { federationReleaseTagManager }
-      )
+        { federationReleaseTagManager },
+      ),
     ).rejects.toThrow(
-      'The config file should contain an array of valid project configurations'
+      'The config file should contain an array of valid project configurations',
+    );
+  });
+  it('should compile the ignored note author pattern', async () => {
+    const projects = [
+      {
+        releaseManager: 'defaultReleaseManager',
+        notificationChannelIds: ['C678'],
+        projectId: 123,
+        releaseChannelId: 'C456',
+        ignoredNoteAuthorPattern: '^(project|group)_\\d+_bot',
+      },
+    ];
+
+    const [config] = await buildProjectReleaseConfigs({ projects }, {});
+
+    expect(config.ignoredNoteAuthorRegex).toEqual(/^(project|group)_\d+_bot/);
+  });
+  it('should reject an invalid ignored note author pattern', async () => {
+    const projects = [
+      {
+        releaseManager: 'defaultReleaseManager',
+        notificationChannelIds: ['C678'],
+        projectId: 123,
+        releaseChannelId: 'C456',
+        ignoredNoteAuthorPattern: '^(project|group',
+      },
+    ];
+
+    await expect(buildProjectReleaseConfigs({ projects }, {})).rejects.toThrow(
+      /Invalid ignoredNoteAuthorPattern for project 123: .*Unterminated group/,
     );
   });
 });
