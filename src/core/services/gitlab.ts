@@ -12,6 +12,7 @@ import type {
   GitlabMergeRequestDetails,
 } from '@/core/typings/GitlabMergeRequest';
 import type { GitlabMergeRequestApprovalInfo } from '@/core/typings/GitlabMergeRequestApprovalInfo';
+import type { GitlabMergeRequestReviewer } from '@/core/typings/GitlabMergeRequestReviewer';
 import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
 import type {
   GitlabProject,
@@ -289,15 +290,22 @@ export async function fetchReleaseByTagName(
   return release;
 }
 
+export async function fetchMergeRequestReviewers(
+  projectId: number,
+  mergeRequestIid: number,
+): Promise<GitlabMergeRequestReviewer[]> {
+  return callAPI(
+    `/projects/${projectId}/merge_requests/${mergeRequestIid}/reviewers`,
+  );
+}
+
 export async function fetchReviewers(
   projectId: number,
   mergeRequestIid: number,
 ): Promise<GitlabUser[]> {
-  return (
-    await callAPI<{ user: GitlabUser }[]>(
-      `/projects/${projectId}/merge_requests/${mergeRequestIid}/reviewers`,
-    )
-  ).map(({ user }) => user);
+  return (await fetchMergeRequestReviewers(projectId, mergeRequestIid)).map(
+    ({ user }) => user,
+  );
 }
 
 export async function fetchUserById(
