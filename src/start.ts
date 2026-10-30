@@ -4,6 +4,7 @@ import {
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { waitForNonReadyReleases } from '@/release/commands/create/utils/waitForNonReadyReleases';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 import { app } from './app';
 
 const PORT = 3000;
@@ -17,6 +18,19 @@ export async function start(): Promise<() => Promise<void>> {
         reject(
           new Error(
             `Unable to connect to the database: ${
+              (error as Error).stack ?? error
+            }`,
+          ),
+        );
+        return;
+      }
+      try {
+        // Fails fast on an invalid projects configuration
+        await ConfigHelper.init();
+      } catch (error) {
+        reject(
+          new Error(
+            `Invalid projects configuration: ${
               (error as Error).stack ?? error
             }`,
           ),
