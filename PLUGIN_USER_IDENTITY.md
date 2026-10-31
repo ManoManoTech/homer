@@ -4,13 +4,13 @@
 
 Homer shows who did what on a merge request (author, assignees, reviewers, approvers, comment authors) as Slack users. To do that it has to find the Slack user behind each Gitlab user.
 
-By default, the built-in `emailDomainConvention` resolver tries `<gitlab username>@<domain>` for each domain of `EMAIL_DOMAINS`. This only works when your Gitlab usernames match the local part of your company emails. When they don't, you can write your own resolver, for instance one that queries your company directory or reads a mapping file, and load it as a plugin.
+By default, the built-in `emailDomainConvention` resolver tries `<gitlab username>@<domain>` for each domain of `EMAIL_DOMAINS`. This only works when your Gitlab usernames match the local part of your company emails. When they don't, you can write your own resolver (for instance one that queries your company directory or reads a mapping file) and load it as a plugin.
 
 A resolver only says **who the person is** (their emails, or their Slack user id if you already know it). Homer then finds that person on Slack itself, so a resolver doesn't need Slack credentials or the Slack API.
 
 ## Writing a resolver
 
-Create a JavaScript file in a `plugins/identity` directory, for instance `plugins/identity/companyDirectory.js`. It must export an object with a `resolve` function, either with `module.exports = { resolve }` as below, or as the `export default` of a TypeScript file compiled to CommonJS (the types are not published as a package yet, but you can find the interface [here](./src/core/typings/UserIdentity.ts)).
+Create a JavaScript file in a `plugins/identity` directory, for instance `plugins/identity/companyDirectory.js`. It must export an object with a `resolve` function, either with `module.exports = { resolve }` as below, or as the `export default` of a TypeScript file compiled to CommonJS (the types are not published as a package yet, but there is [an interface](./src/core/typings/UserIdentity.ts)).
 
 `resolve` receives the Gitlab user and returns, or resolves to, one of:
 
