@@ -1,5 +1,6 @@
 import { CONFIG } from '@/config';
 import type {
+  ChatUserInfo,
   GitUser,
   UserIdentity,
   UserIdentityResolver,
@@ -20,6 +21,14 @@ const emailDomainConvention: UserIdentityResolver = {
         .split(',')
         .map((emailDomain) => `${username}@${emailDomain}`),
     };
+  },
+
+  async findGitUsername({ email }) {
+    const [username, domain] = email?.split('@') ?? [];
+
+    return username && CONFIG.slack.emailDomains.split(',').includes(domain)
+      ? username
+      : undefined;
   },
 };
 
@@ -78,6 +87,14 @@ async function importPlugin(
       `Cannot load user identity resolver "${name}": its default export must have a resolve function.`,
     );
   }
+  if (
+    plugin.findGitUsername !== undefined &&
+    typeof plugin.findGitUsername !== 'function'
+  ) {
+    throw new Error(
+      `Cannot load user identity resolver "${name}": findGitUsername must be a function when it is provided.`,
+    );
+  }
   return plugin as UserIdentityResolver;
 }
 
@@ -133,6 +150,49 @@ export async function findChatUser<ChatUser>(
     if (lookup.status === 'failed') {
       return undefined;
     }
+  }
+  return undefined;
+}
+
+/**
+ * Reverse of `findChatUser`: asks each resolver in order which git user a chat
+ * user is. Follows the same rules: only an explicit "unknown user" moves on to
+ * the next resolver, any failure returns no username. A resolver without
+ * `findGitUsername` also stops the search, since a later resolver could only
+ * guess about a user the earlier one may know.
+ */
+export async function findGitUsernameOfChatUser(
+  chatUser: ChatUserInfo,
+): Promise<string | undefined> {
+  for (const { name, resolver } of resolvers) {
+    if (resolver.findGitUsername === undefined) {
+      return undefined;
+    }
+    let username: unknown;
+
+    try {
+      username = await withTimeout(
+        resolver.findGitUsername(chatUser),
+        resolverTimeoutMs,
+      );
+    } catch (error) {
+      logger.error(
+        { err: error, resolver: name, chatUser },
+        'user identity resolver failed',
+      );
+      return undefined;
+    }
+    if (username === undefined || username === null) {
+      continue;
+    }
+    if (typeof username !== 'string' || username === '') {
+      logger.error(
+        { resolver: name, chatUser, username },
+        'user identity resolver returned an invalid git username',
+      );
+      return undefined;
+    }
+    return username;
   }
   return undefined;
 }

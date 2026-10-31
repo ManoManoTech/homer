@@ -4,7 +4,11 @@ import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
-import { type ChatUserLookup, findChatUser } from './userIdentity';
+import {
+  type ChatUserLookup,
+  findChatUser,
+  findGitUsernameOfChatUser,
+} from './userIdentity';
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
 
@@ -163,8 +167,8 @@ export async function fetchSlackUserFromId(
 }
 
 /**
- * Reverse of `fetchSlackUserFromGitlabUsername`: the GitLab username is the
- * local part of the Slack email, provided its domain is a configured one.
+ * Reverse of `fetchSlackUserFromGitlabUsername`: asks the user identity
+ * resolvers which GitLab user this Slack user is.
  */
 export async function fetchGitlabUsernameFromSlackUserId(
   userId: string,
@@ -178,11 +182,10 @@ export async function fetchGitlabUsernameFromSlackUserId(
     return undefined;
   }
 
-  const [username, domain] = slackUser?.profile?.email?.split('@') ?? [];
-
-  return username && EMAIL_DOMAINS.split(',').includes(domain)
-    ? username
-    : undefined;
+  return findGitUsernameOfChatUser({
+    chatUserId: userId,
+    email: slackUser?.profile?.email,
+  });
 }
 
 export async function fetchSlackUsersFromGitlabUsers(

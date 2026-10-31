@@ -17,6 +17,12 @@ export interface UserIdentity {
   emails?: string[];
 }
 
+/** A chat platform user, as Homer knows them when it needs their git user. */
+export interface ChatUserInfo {
+  chatUserId: string;
+  email?: string;
+}
+
 /**
  * Maps a git user to their identity on the chat platform. Companies can add
  * their own resolvers as plugins, see PLUGIN_USER_IDENTITY.md.
@@ -29,4 +35,13 @@ export interface UserIdentityResolver {
    * search and the user is left out.
    */
   resolve(user: GitUser): Promise<UserIdentity | null | undefined>;
+
+  /**
+   * Optional reverse lookup, used to personalize `/homer review list`: returns
+   * the git username of a chat user, or `undefined` or `null` when this
+   * resolver doesn't know them, in which case the next resolver is asked. A
+   * resolver without this method stops the search, so that a later resolver's
+   * guess never stands in for a resolver that can't answer.
+   */
+  findGitUsername?(chatUser: ChatUserInfo): Promise<string | null | undefined>;
 }

@@ -32,8 +32,23 @@ module.exports = {
     const email = emailsByGitlabUsername[username];
     return email === undefined ? undefined : { emails: [email] };
   },
+
+  // Optional, see "Finding the Gitlab user behind a Slack user" below.
+  async findGitUsername({ chatUserId, email }) {
+    return Object.keys(emailsByGitlabUsername).find(
+      (username) => emailsByGitlabUsername[username] === email,
+    );
+  },
 };
 ```
+
+### Finding the Gitlab user behind a Slack user
+
+`/homer review list` personalizes the list for the person running it (merge requests waiting for their review first, then the ones they authored). For that, Homer needs the reverse mapping: which Gitlab user is this Slack user? A resolver provides it with an optional `findGitUsername` function. It receives the Slack user (`{ chatUserId, email }`, `email` being absent when Slack doesn't share it) and returns the Gitlab username, or `undefined` or `null` when this resolver doesn't know the user, in which case Homer moves on to the next resolver.
+
+The built-in `emailDomainConvention` takes the local part of the Slack email when its domain is one of `EMAIL_DOMAINS`.
+
+If a resolver in the list has no `findGitUsername`, Homer stops there and shows the list without personalization: a later resolver such as `emailDomainConvention` could only guess, and that guess could be someone else. The same failure rules as below apply (an error, a timeout or an answer that isn't a non-empty string stops the search and is logged).
 
 ## Configuring the resolvers
 
