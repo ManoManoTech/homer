@@ -36,6 +36,11 @@ describe('review > mergeRequestHook', () => {
 
   it.each([
     [
+      'approval',
+      ':thumbsup_blue:',
+      '*root.real* has approved this merge request.',
+    ],
+    [
       'approved',
       ':thumbsup_blue:',
       '*root.real* has approved this merge request.',
@@ -46,6 +51,11 @@ describe('review > mergeRequestHook', () => {
       '*root.real* has closed this merge request.',
     ],
     ['merge', ':git-merge:', '*root.real* has merged this merge request.'],
+    [
+      'unapproval',
+      ':thumbsdown_blue:',
+      '*root.real* has unapproved this merge request.',
+    ],
     [
       'unapproved',
       ':thumbsdown_blue:',

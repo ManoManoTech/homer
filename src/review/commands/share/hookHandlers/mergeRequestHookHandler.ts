@@ -16,12 +16,14 @@ import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 
 const VALID_ACTIONS = [
+  'approval',
   'approved',
   'close',
   'merge',
   'reopen',
   'update',
   'open',
+  'unapproval',
   'unapproved',
 ] as const;
 const LABELS = {
@@ -153,11 +155,18 @@ function getThreadMessage(
   action: string,
   userName: string,
 ): ThreadMessage | undefined {
+  const approved = {
+    text: `*${userName}* has approved this merge request.`,
+    icon_emoji: ':thumbsup_blue:',
+  };
+  const unapproved = {
+    text: `*${userName}* has unapproved this merge request.`,
+    icon_emoji: ':thumbsdown_blue:',
+  };
+  // GitLab sends approved and unapproved only when the required approvals are reached or lost.
   const messages: Record<string, ThreadMessage> = {
-    approved: {
-      text: `*${userName}* has approved this merge request.`,
-      icon_emoji: ':thumbsup_blue:',
-    },
+    approval: approved,
+    approved,
     close: {
       text: `*${userName}* has closed this merge request.`,
       icon_emoji: ':closed_book_blue:',
@@ -166,10 +175,8 @@ function getThreadMessage(
       text: `*${userName}* has merged this merge request.`,
       icon_emoji: ':git-merge:',
     },
-    unapproved: {
-      text: `*${userName}* has unapproved this merge request.`,
-      icon_emoji: ':thumbsdown_blue:',
-    },
+    unapproval: unapproved,
+    unapproved,
   };
   return messages[action];
 }
