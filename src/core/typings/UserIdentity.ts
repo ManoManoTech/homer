@@ -25,7 +25,7 @@ export interface ChatUserInfo {
 
 /**
  * Maps a git user to their identity on the chat platform. Companies can add
- * their own resolvers as plugins, see PLUGIN_USER_IDENTITY.md.
+ * their own resolvers as plugins, see docs/PLUGIN_USER_IDENTITY.md.
  */
 export interface UserIdentityResolver {
   /**

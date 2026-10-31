@@ -229,7 +229,7 @@ Create a `.env` file containing the following variables:
 
   Comma-separated list of the resolvers used, in order, to find the Slack user behind a Gitlab user.
   Each entry is either the built-in `emailDomainConvention` or the file name of your own plugin in `plugins/identity/`.
-  Default value is `emailDomainConvention`. See this dedicated [page](./PLUGIN_USER_IDENTITY.md) for more details.
+  Default value is `emailDomainConvention`. See this dedicated [page](./docs/PLUGIN_USER_IDENTITY.md) for more details.
 
 - `GITLAB_URL`
 
@@ -371,11 +371,11 @@ Here is a sample configuration with one project:
 
 ### 8. Add your own release manager
 
-A simple plugin system enables the addition of custom release managers. See this dedicated [page](./PLUGIN_RELEASE.md) for more details.
+A simple plugin system enables the addition of custom release managers. See this dedicated [page](./docs/PLUGIN_RELEASE.md) for more details.
 
 ### 9. Match Gitlab users to Slack users your own way
 
-By default Homer finds a Slack user by trying `<gitlab username>@<domain>` for each domain of `EMAIL_DOMAINS`. If your usernames don't follow your email naming scheme, you can provide your own user identity resolver as a plugin (for instance one that queries your company directory). See this dedicated [page](./PLUGIN_USER_IDENTITY.md) for more details.
+By default Homer finds a Slack user by trying `<gitlab username>@<domain>` for each domain of `EMAIL_DOMAINS`. If your usernames don't follow your email naming scheme, you can provide your own user identity resolver as a plugin (for instance one that queries your company directory). See this dedicated [page](./docs/PLUGIN_USER_IDENTITY.md) for more details.
 
 ### 10. Examples
 

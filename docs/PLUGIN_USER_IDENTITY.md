@@ -10,7 +10,7 @@ A resolver only says **who the person is** (their emails, or their Slack user id
 
 ## Writing a resolver
 
-Create a JavaScript file in a `plugins/identity` directory, for instance `plugins/identity/companyDirectory.js`. It must export an object with a `resolve` function, either with `module.exports = { resolve }` as below, or as the `export default` of a TypeScript file compiled to CommonJS (the types are not published as a package yet, but there is [an interface](./src/core/typings/UserIdentity.ts)).
+Create a JavaScript file in a `plugins/identity` directory, for instance `plugins/identity/companyDirectory.js`. It must export an object with a `resolve` function, either with `module.exports = { resolve }` as below, or as the `export default` of a TypeScript file compiled to CommonJS (the types are not published as a package yet, but there is [an interface](../src/core/typings/UserIdentity.ts)).
 
 `resolve` receives the Gitlab user and returns, or resolves to, one of:
 
@@ -80,7 +80,7 @@ When the variable is not set, only `emailDomainConvention` is used, which is Hom
 
 ## Deploying
 
-As for [release manager plugins](./PLUGIN_RELEASE.md), build a Docker image based on Homer's where your `plugins` directory is copied to `dist/plugins`. See the [deploy example](./examples/deploy/Dockerfile).
+As for [release manager plugins](./PLUGIN_RELEASE.md), build a Docker image based on Homer's where your `plugins` directory is copied to `dist/plugins`. See the [deploy example](../examples/deploy/Dockerfile).
 
 Resolvers run on every merge request event, several times per message (one call per person shown). If yours calls a remote service, keep it fast and consider caching its answers: Homer stops waiting after 2 seconds, because it looks users up before answering GitLab, and GitLab disables webhooks that time out repeatedly.
 

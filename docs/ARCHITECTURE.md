@@ -410,7 +410,7 @@ Auth/secrets:
 
 Mapping/config:
 
-- `USER_IDENTITY_RESOLVERS` — ordered resolvers that map a GitLab user to a Slack user, and optionally back for the personalized `review list` (default `emailDomainConvention`); company resolvers are plugins `import()`-ed from `@root/plugins/identity/<name>` once at startup, see `PLUGIN_USER_IDENTITY.md`
+- `USER_IDENTITY_RESOLVERS` — ordered resolvers that map a GitLab user to a Slack user, and optionally back for the personalized `review list` (default `emailDomainConvention`); company resolvers are plugins `import()`-ed from `@root/plugins/identity/<name>` once at startup, see `docs/PLUGIN_USER_IDENTITY.md`
 - `EMAIL_DOMAINS` — used by the `emailDomainConvention` resolver to derive the Slack user's email from the GitLab username
 - `GITLAB_URL`, `TICKET_MANAGEMENT_URL_PATTERN`
 - `SLACK_SUPPORT_CHANNEL_{ID,NAME}`
