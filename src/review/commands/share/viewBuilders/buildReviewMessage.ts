@@ -136,6 +136,14 @@ function buildHeaderBlock(
       action_id: 'review-message-actions',
       options: [
         {
+          text: { type: 'plain_text', text: 'Refresh' },
+          value: injectActionsParameters(
+            'review-refresh',
+            projectId,
+            mergeRequest.iid,
+          ),
+        },
+        {
           text: { type: 'plain_text', text: 'Create a pipeline' },
           value: injectActionsParameters(
             'review-create-pipeline',
