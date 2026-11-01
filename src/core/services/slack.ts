@@ -2,10 +2,15 @@ import { WebClient } from '@slack/web-api';
 import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
+import type { UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
+import {
+  type ChatUserLookup,
+  findChatUser,
+  findGitUsernameOfChatUser,
+} from './userIdentity';
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
-const EMAIL_DOMAINS = CONFIG.slack.emailDomains;
 
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
@@ -59,10 +64,20 @@ export async function getPermalink(
 }
 
 const USERS_NOT_FOUND_SLACK_ERROR = 'users_not_found';
+// users.info uses a different code than users.lookupByEmail.
+const USER_NOT_FOUND_SLACK_ERROR = 'user_not_found';
 
 /**
  * Tries each email against `users.lookupByEmail` and returns the first match.
- *
+ */
+export async function fetchSlackUserFromEmails(
+  emails: string[],
+): Promise<SlackUser | undefined> {
+  const lookup = await lookUpSlackUserByEmails(emails);
+  return lookup.status === 'found' ? lookup.chatUser : undefined;
+}
+
+/**
  * Logging policy when no user is found:
  *  - All lookups returned `users_not_found` → `logger.info` (expected
  *    operational state: GitLab user left the company / is external / has no
@@ -71,15 +86,15 @@ const USERS_NOT_FOUND_SLACK_ERROR = 'users_not_found';
  *    `logger.warn` with the underlying error, since this may indicate Slack
  *    health rather than user absence.
  */
-export async function fetchSlackUserFromEmails(
+async function lookUpSlackUserByEmails(
   emails: string[],
-): Promise<SlackUser | undefined> {
+): Promise<ChatUserLookup<SlackUser>> {
   let transientError: unknown;
 
   for (const email of emails) {
     try {
       const response = await slackBotWebClient.users.lookupByEmail({ email });
-      return response.user as SlackUser;
+      return { status: 'found', chatUser: response.user as SlackUser };
     } catch (error) {
       if (!isSlackErrorCode(error, USERS_NOT_FOUND_SLACK_ERROR)) {
         transientError = error;
@@ -88,18 +103,18 @@ export async function fetchSlackUserFromEmails(
   }
 
   if (emails.length === 0) {
-    return undefined;
+    return { status: 'not_found' };
   }
 
   if (transientError !== undefined) {
     logger.warn({ err: transientError, emails }, 'slack user lookup failed');
-  } else {
-    logger.info(
-      { emails, slackError: USERS_NOT_FOUND_SLACK_ERROR },
-      'no slack user found for emails',
-    );
+    return { status: 'failed' };
   }
-  return undefined;
+  logger.info(
+    { emails, slackError: USERS_NOT_FOUND_SLACK_ERROR },
+    'no slack user found for emails',
+  );
+  return { status: 'not_found' };
 }
 
 export async function fetchSlackUserFromGitlabUser({
@@ -111,10 +126,37 @@ export async function fetchSlackUserFromGitlabUser({
 export async function fetchSlackUserFromGitlabUsername(
   username: string,
 ): Promise<SlackUser | undefined> {
-  const emails = EMAIL_DOMAINS.split(',').map(
-    (emailDomain) => `${username}@${emailDomain}`,
+  return findChatUser(
+    { provider: 'gitlab', username },
+    fetchSlackUserFromIdentity,
   );
-  return fetchSlackUserFromEmails(emails);
+}
+
+async function fetchSlackUserFromIdentity({
+  chatUserId,
+  emails = [],
+}: UserIdentity): Promise<ChatUserLookup<SlackUser>> {
+  if (chatUserId === undefined) {
+    return lookUpSlackUserByEmails(emails);
+  }
+  try {
+    const chatUser = await fetchSlackUserFromId(chatUserId);
+    return chatUser === undefined
+      ? { status: 'not_found' }
+      : { status: 'found', chatUser };
+  } catch (error) {
+    if (isSlackErrorCode(error, USER_NOT_FOUND_SLACK_ERROR)) {
+      // An explicit id that Slack doesn't know means the resolver's data is
+      // stale, which someone should fix, hence warn rather than info.
+      logger.warn(
+        { err: error, chatUserId },
+        'slack user id from user identity resolver not found',
+      );
+      return { status: 'not_found' };
+    }
+    logger.warn({ err: error, chatUserId }, 'slack user lookup by id failed');
+    return { status: 'failed' };
+  }
 }
 
 export async function fetchSlackUserFromId(
@@ -125,8 +167,8 @@ export async function fetchSlackUserFromId(
 }
 
 /**
- * Reverse of `fetchSlackUserFromGitlabUsername`: the GitLab username is the
- * local part of the Slack email, provided its domain is a configured one.
+ * Reverse of `fetchSlackUserFromGitlabUsername`: asks the user identity
+ * resolvers which GitLab user this Slack user is.
  */
 export async function fetchGitlabUsernameFromSlackUserId(
   userId: string,
@@ -140,11 +182,10 @@ export async function fetchGitlabUsernameFromSlackUserId(
     return undefined;
   }
 
-  const [username, domain] = slackUser?.profile?.email?.split('@') ?? [];
-
-  return username && EMAIL_DOMAINS.split(',').includes(domain)
-    ? username
-    : undefined;
+  return findGitUsernameOfChatUser({
+    chatUserId: userId,
+    email: slackUser?.profile?.email,
+  });
 }
 
 export async function fetchSlackUsersFromGitlabUsers(

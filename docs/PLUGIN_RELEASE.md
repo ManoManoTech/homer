@@ -8,14 +8,12 @@ You can create a project containing a `plugins/release` directory which will con
 ## Steps to Add a Custom Release Manager
 
 1. **Create a New Release Manager**
-
    - Navigate to the `plugins/release` directory in your Homer project.
-   - Create `myOwnReleaseManager.js` and implement the logic(for now the types are not available as a standalone package but you can have the interface [here](./src/release/typings/ReleaseManager.ts)).
-   - You have an implementation example with [defaultReleaseManager](./plugins/release/defaultReleaseManager.ts)
+   - Create `myOwnReleaseManager.js` and implement the logic(for now the types are not available as a standalone package but you can have the interface [here](../src/release/typings/ReleaseManager.ts)).
+   - You have an implementation example with [defaultReleaseManager](../plugins/release/defaultReleaseManager.ts)
 
 2. **Register the Plugin**
-
-   - If you have a project which needs the custom release manager, declare the project in the configuration [file](./config/homer/projects.json)
+   - If you have a project which needs the custom release manager, declare the project in the configuration [file](../config/homer/projects.json)
    - Add an entry for your project (the name of the release manager must correspond to its file name).
      ```json
      {
