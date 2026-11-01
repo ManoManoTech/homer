@@ -15,21 +15,21 @@ const releaseTagManagers: Record<string, ReleaseTagManager> = {
 export default class ConfigHelper {
   private static projectReleaseConfigs: ProjectReleaseConfig[];
 
-  private static async init() {
+  static async init() {
     if (this.projectReleaseConfigs === undefined) {
       this.projectReleaseConfigs = await buildProjectReleaseConfigs(
         projectsConfig,
-        releaseTagManagers
+        releaseTagManagers,
       );
     }
   }
 
   static async getChannelProjectReleaseConfigs(
-    channelId: string
+    channelId: string,
   ): Promise<ProjectReleaseConfig[]> {
     await this.init();
     return this.projectReleaseConfigs.filter(
-      (config) => config.releaseChannelId === channelId
+      (config) => config.releaseChannelId === channelId,
     );
   }
 
@@ -38,11 +38,11 @@ export default class ConfigHelper {
   }
 
   static async getProjectReleaseConfig(
-    projectId: number
+    projectId: number,
   ): Promise<ProjectReleaseConfig> {
     await this.init();
     const projectReleaseConfig = this.projectReleaseConfigs.find(
-      (config) => config.projectId === projectId
+      (config) => config.projectId === projectId,
     );
 
     if (projectReleaseConfig === undefined) {
@@ -51,10 +51,19 @@ export default class ConfigHelper {
     return projectReleaseConfig;
   }
 
+  static async getIgnoredNoteAuthorRegex(
+    projectId: number,
+  ): Promise<RegExp | undefined> {
+    await this.init();
+    return this.projectReleaseConfigs.find(
+      (config) => config.projectId === projectId,
+    )?.ignoredNoteAuthorRegex;
+  }
+
   static async hasProjectReleaseConfig(projectId: number): Promise<boolean> {
     await this.init();
     const projectReleaseConfig = this.projectReleaseConfigs.find(
-      (config) => config.projectId === projectId
+      (config) => config.projectId === projectId,
     );
     return projectReleaseConfig !== undefined;
   }

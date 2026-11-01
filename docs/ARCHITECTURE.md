@@ -223,6 +223,7 @@ The most stateful part of the system.
 - `releaseManager` (string → resolved via `ReleasePluginManager`)
 - `releaseTagManager` (one of `semantic | federation | stableDate`)
 - `hasReleasePipeline?`
+- `ignoredNoteAuthorPattern?` — regex on the Gitlab username of a note's author; the review thread message of matching notes is not posted (the review message is still refreshed). Compiled when the config is built, loaded at startup so an invalid regex fails fast
 
 ### Plugin system
 
@@ -426,6 +427,7 @@ DB: `POSTGRES_HOST/USER/PASSWORD/PORT/DATABASE_NAME/POOL_*`.
 - **`rawBody` capture in `app.ts`** is required for Slack signature verification — preserve it across body-parser refactors.
 - **`REQUEST_BODY_SIZE_LIMIT`** caps the parsed body size for both JSON and URL-encoded requests (default `5mb`). Requests above the limit are dropped at the parser and never reach a handler; bump the env var if production logs show recurring `request body exceeded size limit` entries.
 - **`SLACK_CHANNEL_NOTIFICATION_THRESHOLD`** silently drops MR notifications above the limit; tune per project noise.
+- **`ignoredNoteAuthorPattern`** (per project, in `projects.json`) silently drops thread messages for matching note authors; check it first when asking "why is this comment not in Slack?".
 - **GitLab `Maintainer` role** is required on the token, otherwise releases/tag operations fail.
 - **Release race conditions** are guarded by Sequelize transactions + row-level locks; any change to release state must go through `updateRelease`.
 - **Plugin loading is one-shot** — `ReleasePluginManager.loadReleaseManagerPlugin` rejects re-loading the same manager.
