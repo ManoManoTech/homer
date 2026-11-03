@@ -255,6 +255,32 @@ This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_req
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
   });
 
+  it('should answer no content status whether comment is edited', async () => {
+    // Given
+    await addReviewToChannel({
+      channelId: 'channelId',
+      mergeRequestIid: mergeRequestFixture.iid,
+      projectId: mergeRequestFixture.project_id,
+      ts: 'ts',
+    });
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
+        ...mergeRequestNoteHookFixture,
+        object_attributes: {
+          ...mergeRequestNoteHookFixture.object_attributes,
+          action: 'update',
+        },
+      });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
   it('should answer no content status whether no related review is found', async () => {
     // When
     const response = await request(app)

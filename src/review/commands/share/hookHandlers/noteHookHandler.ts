@@ -24,12 +24,18 @@ export async function noteHookHandler(
       author_id: number;
       iid: number;
     };
-    object_attributes: { author_id: number; note: string; url: string };
+    object_attributes: {
+      action?: 'create' | 'update';
+      author_id: number;
+      note: string;
+      url: string;
+    };
     project: GitlabProjectDetails;
   };
 
-  // Happens whether comment is on commit or issue
-  if (!merge_request) {
+  // merge_request is missing on commit or issue comments, and an edited
+  // comment was already posted when it was created.
+  if (!merge_request || object_attributes.action === 'update') {
     res.sendStatus(HTTP_STATUS_NO_CONTENT);
     return;
   }
