@@ -31,71 +31,80 @@ describe('review > noteHook', () => {
     );
   });
 
-  it('should update related review messages and publish a thread message on them', async () => {
-    // Given
-    const channelId = 'channelId';
+  it.each([undefined, 'create'])(
+    'should update related review messages and publish a thread message on them whether action is %s',
+    async (action) => {
+      // Given
+      const channelId = 'channelId';
 
-    await addReviewToChannel({
-      channelId,
-      mergeRequestIid: mergeRequestFixture.iid,
-      projectId: mergeRequestFixture.project_id,
-      ts: 'ts',
-    });
-    mockBuildReviewMessageCalls();
-    mockGitlabCall(
-      `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
-      userDetailsFixture,
-    );
-    jest.useFakeTimers();
+      await addReviewToChannel({
+        channelId,
+        mergeRequestIid: mergeRequestFixture.iid,
+        projectId: mergeRequestFixture.project_id,
+        ts: 'ts',
+      });
+      mockBuildReviewMessageCalls();
+      mockGitlabCall(
+        `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+        userDetailsFixture,
+      );
+      jest.useFakeTimers();
 
-    // When
-    const response = await request(app)
-      .post('/api/v1/homer/gitlab')
-      .set(getGitlabHeaders())
-      .send(mergeRequestNoteHookFixture);
-    jest.runAllTimers();
-    jest.useRealTimers();
-
-    // Then
-    expect(response.status).toEqual(HTTP_STATUS_OK);
-    expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
-      1,
-      reviewMessageUpdateFixture,
-    );
-    await waitFor(() => {
-      expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
-        blocks: [
-          {
-            text: {
-              text: `This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
-              type: 'mrkdwn',
-            },
-            type: 'section',
+      // When
+      const response = await request(app)
+        .post('/api/v1/homer/gitlab')
+        .set(getGitlabHeaders())
+        .send({
+          ...mergeRequestNoteHookFixture,
+          object_attributes: {
+            ...mergeRequestNoteHookFixture.object_attributes,
+            action,
           },
-          {
-            elements: [
-              {
-                alt_text: 'john_smith.real',
-                image_url: 'image_24',
-                type: 'image',
-              },
-              {
-                text: '*john_smith.real*',
+        });
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      // Then
+      expect(response.status).toEqual(HTTP_STATUS_OK);
+      expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
+        1,
+        reviewMessageUpdateFixture,
+      );
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
+          blocks: [
+            {
+              text: {
+                text: `This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_requests/1#note_1244|View>`,
                 type: 'mrkdwn',
               },
-            ],
-            type: 'context',
-          },
-        ],
-        channel: 'channelId',
-        icon_emoji: ':speech_balloon_blue:',
-        link_names: true,
-        text: ':speech_balloon_blue: This MR needs work.\n',
-        thread_ts: 'ts',
-        unfurl_links: false,
+              type: 'section',
+            },
+            {
+              elements: [
+                {
+                  alt_text: 'john_smith.real',
+                  image_url: 'image_24',
+                  type: 'image',
+                },
+                {
+                  text: '*john_smith.real*',
+                  type: 'mrkdwn',
+                },
+              ],
+              type: 'context',
+            },
+          ],
+          channel: 'channelId',
+          icon_emoji: ':speech_balloon_blue:',
+          link_names: true,
+          text: ':speech_balloon_blue: This MR needs work.\n',
+          thread_ts: 'ts',
+          unfurl_links: false,
+        });
       });
-    });
-  });
+    },
+  );
 
   it('should debounce thread publications to manage Gitlab review submissions', async () => {
     // Given
@@ -249,7 +258,7 @@ This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_req
     const response = await request(app)
       .post('/api/v1/homer/gitlab')
       .set(getGitlabHeaders())
-      .send(mergeRequestNoteHookFixture);
+      .send({ ...mergeRequestNoteHookFixture, merge_request: undefined });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -263,6 +272,12 @@ This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_req
       projectId: mergeRequestFixture.project_id,
       ts: 'ts',
     });
+    mockBuildReviewMessageCalls();
+    mockGitlabCall(
+      `/users/${mergeRequestNoteHookFixture.object_attributes.author_id}`,
+      userDetailsFixture,
+    );
+    jest.useFakeTimers();
 
     // When
     const response = await request(app)
@@ -275,9 +290,13 @@ This MR needs work.\n<https://my-git.domain.com/gitlab-org/gitlab-test/merge_req
           action: 'update',
         },
       });
+    jest.runAllTimers();
+    jest.useRealTimers();
+    await new Promise((resolve) => setImmediate(resolve));
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.update).not.toHaveBeenCalled();
     expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 

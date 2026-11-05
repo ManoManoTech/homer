@@ -25,7 +25,7 @@ export async function noteHookHandler(
       iid: number;
     };
     object_attributes: {
-      action?: 'create' | 'update';
+      action?: string;
       author_id: number;
       note: string;
       url: string;
@@ -33,9 +33,13 @@ export async function noteHookHandler(
     project: GitlabProjectDetails;
   };
 
-  // merge_request is missing on commit or issue comments, and an edited
-  // comment was already posted when it was created.
-  if (!merge_request || object_attributes.action === 'update') {
+  // merge_request is missing on commit or issue comments. Only new comments are
+  // posted; GitLab sends no action before 16.11.
+  if (
+    !merge_request ||
+    (object_attributes.action !== undefined &&
+      object_attributes.action !== 'create')
+  ) {
     res.sendStatus(HTTP_STATUS_NO_CONTENT);
     return;
   }
