@@ -56,6 +56,19 @@ user. It tries, in order:
 
 Users who match none of them are not mentioned.
 
+## Releases
+
+Declare the repository in `config/homer/projects.json` with
+`"provider": "github"` and its numeric repository id as `projectId`. The
+`githubReleaseManager` plugin waits for every workflow run of the default
+branch head to succeed before creating the release, then follows
+`deployment_status` events with the same environments as
+`defaultReleaseManager` (`staging*`, `production*`, `support*`).
+
+Homer creates the tag through a GitHub release on the default branch head.
+Canceling a release renames it `[NOT DEPLOYED] <name>` and cancels the
+workflow runs of the tag.
+
 ## Add a repository to a channel
 
 ```

@@ -7,6 +7,8 @@ import type {
   GithubRepository,
   GithubReview,
   GithubUser,
+  GithubRelease,
+  GithubWorkflowJob,
   GithubWorkflowRun,
 } from '@/core/typings/GithubModels';
 
@@ -245,6 +247,85 @@ export async function updatePullRequestBranch(
     `${await repoPath(repositoryId)}/pulls/${number}/update-branch`,
     { method: 'PUT' },
   );
+}
+
+export async function fetchWorkflowRun(
+  repositoryId: number,
+  runId: number,
+): Promise<GithubWorkflowRun> {
+  return callAPI(`${await repoPath(repositoryId)}/actions/runs/${runId}`);
+}
+
+export async function fetchWorkflowRunJobs(
+  repositoryId: number,
+  runId: number,
+): Promise<GithubWorkflowJob[]> {
+  const { jobs } = await callAPI<{ jobs: GithubWorkflowJob[] }>(
+    `${await repoPath(repositoryId)}/actions/runs/${runId}/jobs?per_page=${PER_PAGE}`,
+  );
+  return jobs;
+}
+
+export async function createRelease(
+  repositoryId: number,
+  commitId: string,
+  tagName: string,
+  description: string,
+): Promise<void> {
+  await callAPI(`${await repoPath(repositoryId)}/releases`, {
+    method: 'POST',
+    body: JSON.stringify({
+      tag_name: tagName,
+      target_commitish: commitId,
+      name: tagName,
+      body: description,
+    }),
+  });
+}
+
+export async function fetchReleaseByTagName(
+  repositoryId: number,
+  tagName: string,
+): Promise<GithubRelease> {
+  return callAPI(
+    `${await repoPath(repositoryId)}/releases/tags/${encodeURIComponent(tagName)}`,
+  );
+}
+
+export async function fetchReleases(
+  repositoryId: number,
+): Promise<GithubRelease[]> {
+  return callAPI(
+    `${await repoPath(repositoryId)}/releases?per_page=${PER_PAGE}`,
+  );
+}
+
+export async function hasTag(
+  repositoryId: number,
+  tagName: string,
+): Promise<boolean> {
+  try {
+    await callAPI(
+      `${await repoPath(repositoryId)}/git/ref/tags/${encodeURIComponent(tagName)}`,
+    );
+    return true;
+  } catch (error) {
+    if (error instanceof GithubApiError && error.status === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+export async function updateRelease(
+  repositoryId: number,
+  releaseId: number,
+  update: { name?: string; body?: string },
+): Promise<void> {
+  await callAPI(`${await repoPath(repositoryId)}/releases/${releaseId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(update),
+  });
 }
 
 interface GraphQLCommitTarget {

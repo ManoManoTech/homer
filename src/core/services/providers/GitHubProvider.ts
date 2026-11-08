@@ -1,7 +1,13 @@
 import { generateGithubChangelog } from '@/changelog/utils/generateGithubChangelog';
 import { CONFIG } from '@/config';
 import {
+  cancelWorkflowRun,
+  createRelease,
   fetchCheckRuns,
+  fetchReleaseByTagName,
+  fetchReleases,
+  hasTag,
+  updateRelease,
   fetchCombinedStatus,
   fetchOpenPullRequestsByBranch,
   fetchPullRequest,
@@ -30,9 +36,11 @@ import type {
   GithubCheckRun,
   GithubCombinedStatus,
   GithubPullRequest,
+  GithubRelease,
   GithubRepository,
   GithubReview,
   GithubUser,
+  GithubWorkflowRun,
 } from '@/core/typings/GithubModels';
 import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
@@ -350,12 +358,12 @@ export class GitHubProvider implements RepositoryProvider {
     return fetchTags(projectId);
   }
 
-  async hasTag(): Promise<boolean> {
-    throw releasesNotSupported();
+  async hasTag(projectId: number, tagName: string): Promise<boolean> {
+    return hasTag(projectId, tagName);
   }
 
-  async fetchReleases(): Promise<UnifiedRelease[]> {
-    throw releasesNotSupported();
+  async fetchReleases(projectId: number): Promise<UnifiedRelease[]> {
+    return (await fetchReleases(projectId)).map(toUnifiedRelease);
   }
 
   async generateChangelog(
@@ -366,32 +374,70 @@ export class GitHubProvider implements RepositoryProvider {
     return generateGithubChangelog(projectId, previousReleaseTagName, filter);
   }
 
-  async fetchBranchLastPipeline(): Promise<UnifiedPipeline> {
-    throw releasesNotSupported();
+  /** Latest workflow run of the branch: one commit has one run per workflow. */
+  async fetchBranchLastPipeline(
+    projectId: number,
+    branchName: string,
+  ): Promise<UnifiedPipeline> {
+    const lastRun = (
+      await fetchWorkflowRuns(projectId, { branch: branchName })
+    ).find(
+      ({ conclusion, event }) =>
+        conclusion !== 'cancelled' && event !== 'schedule',
+    );
+
+    if (lastRun === undefined) {
+      throw new Error(
+        `Unable to find a non cancelled ${branchName} workflow run`,
+      );
+    }
+    return toUnifiedPipeline(lastRun);
   }
 
-  async fetchPipelinesByRef(): Promise<UnifiedPipeline[]> {
-    throw releasesNotSupported();
+  /** Workflow runs triggered by a branch or a tag, newest first. */
+  async fetchPipelinesByRef(
+    projectId: number,
+    ref: string,
+  ): Promise<UnifiedPipeline[]> {
+    return (await fetchWorkflowRuns(projectId, { branch: ref })).map(
+      toUnifiedPipeline,
+    );
   }
 
-  async cancelPipeline(): Promise<void> {
-    throw releasesNotSupported();
+  async cancelPipeline(projectId: number, pipelineId: number): Promise<void> {
+    await cancelWorkflowRun(projectId, pipelineId);
   }
 
-  async createRelease(): Promise<void> {
-    throw releasesNotSupported();
+  async createRelease(
+    projectId: number,
+    commitId: string,
+    tagName: string,
+    description: string,
+  ): Promise<void> {
+    await createRelease(projectId, commitId, tagName, description);
   }
 
-  async fetchRelease(): Promise<UnifiedRelease> {
-    throw releasesNotSupported();
+  async fetchRelease(
+    projectId: number,
+    tagName: string,
+  ): Promise<UnifiedRelease> {
+    return toUnifiedRelease(await fetchReleaseByTagName(projectId, tagName));
   }
 
-  async updateReleaseName(): Promise<void> {
-    throw releasesNotSupported();
+  async updateReleaseName(
+    projectId: number,
+    tagName: string,
+    name: string,
+  ): Promise<void> {
+    const { id } = await fetchReleaseByTagName(projectId, tagName);
+    await updateRelease(projectId, id, { name });
   }
 
-  getReleaseUrl(): string {
-    throw releasesNotSupported();
+  getReleaseUrl(
+    project: Pick<UnifiedProject, 'webUrl'>,
+    tagName: string,
+  ): string {
+    return `${project.webUrl}/releases/tag/${encodeURIComponent(tagName)}`;
   }
 
   private getPullRequest(
@@ -427,10 +473,6 @@ export class GitHubProvider implements RepositoryProvider {
     }
     return this.publicEmails.get(login) ?? undefined;
   }
-}
-
-function releasesNotSupported(): Error {
-  return new Error('Releases are not supported on GitHub yet');
 }
 
 async function ignoreNotFound<T>(promise: Promise<T>): Promise<T | undefined> {
@@ -496,6 +538,23 @@ function getPipelineStatus(
   const priority = ['failed', 'canceled', 'manual', 'running', 'success'];
   const status = priority.find((candidate) => statuses.includes(candidate));
   return status ?? (statuses.length > 0 ? 'skipped' : undefined);
+}
+
+function toUnifiedRelease(release: GithubRelease): UnifiedRelease {
+  return {
+    tagName: release.tag_name,
+    name: release.name || release.tag_name,
+    description: release.body ?? '',
+    releasedAt: release.published_at ?? release.created_at,
+  };
+}
+
+function toUnifiedPipeline({
+  head_sha,
+  html_url,
+  id,
+}: GithubWorkflowRun): UnifiedPipeline {
+  return { id, sha: head_sha, webUrl: html_url };
 }
 
 function toUnifiedPullRequest(

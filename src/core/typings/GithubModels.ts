@@ -112,3 +112,21 @@ export interface GithubWorkflowRun {
   html_url: string;
   created_at: string;
 }
+
+export interface GithubWorkflowJob {
+  id: number;
+  name: string;
+  status: string;
+  conclusion: string | null;
+  html_url: string;
+}
+
+export interface GithubRelease {
+  id: number;
+  tag_name: string;
+  name: string | null;
+  body: string | null;
+  html_url: string;
+  created_at: string;
+  published_at: string | null;
+}

@@ -53,7 +53,7 @@ export async function cancelRelease(
           `${NOT_DEPLOYED_RELEASE_NAME_PREFIX}${name}`,
         ),
         removeRelease(projectId, tagName, providerType),
-        provider.cancelPipeline(projectId, pipeline.id),
+        pipeline && provider.cancelPipeline(projectId, pipeline.id),
       ]);
 
       const releaseNotesUrl = provider.getReleaseUrl(project, tagName);

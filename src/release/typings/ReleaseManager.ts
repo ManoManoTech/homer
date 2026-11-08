@@ -1,6 +1,11 @@
 import type { View } from '@slack/web-api';
 import type { generateChangelog } from '@/changelog/utils/generateChangelog';
 import type {
+  fetchWorkflowRun,
+  fetchWorkflowRunJobs,
+  fetchWorkflowRuns,
+} from '@/core/services/github';
+import type {
   fetchPipelineBridges,
   fetchPipelineJobs,
   fetchProjectTags,
@@ -35,10 +40,16 @@ export interface ReleaseOptions {
     fetchPipelineJobs: typeof fetchPipelineJobs;
     fetchProjectTags: typeof fetchProjectTags;
   };
+  /** Pipeline ids given to GitHub projects are workflow run ids. */
+  github: {
+    fetchWorkflowRun: typeof fetchWorkflowRun;
+    fetchWorkflowRunJobs: typeof fetchWorkflowRunJobs;
+    fetchWorkflowRuns: typeof fetchWorkflowRuns;
+  };
   release: {
     getReleaseManager: (managerName: string) => ReleaseManager | undefined;
     getReleaseTagManager: (
-      tagManagerName: string
+      tagManagerName: string,
     ) => ReleaseTagManager | undefined;
   };
   slack: {
@@ -54,26 +65,26 @@ export interface ReleaseManager {
   blockActionsHandler?(
     payload: BlockActionsPayload,
     action: StaticSelectAction,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<void>;
   buildReleaseModalView?(
     releaseModalData: ReleaseModalData,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<View>;
   filterChangelog?(
     commit: GitlabCommit,
     viewState: any,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): boolean;
   filterReleasesToClean?(
     newRelease: DataRelease,
     oldReleases: DataRelease[],
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): DataRelease[];
   getReleaseStateUpdate(
     release: DataRelease,
     deploymentHook?: GitlabDeploymentHook,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<ReleaseStateUpdate[]>;
   /**
    * Should be used to check whether release preconditions are ok.
@@ -83,6 +94,6 @@ export interface ReleaseManager {
   isReadyToRelease(
     release: DataRelease,
     mainBranchPipelineId: number,
-    options?: ReleaseOptions
+    options?: ReleaseOptions,
   ): Promise<boolean>;
 }
