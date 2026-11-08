@@ -11,6 +11,9 @@ import type {
   GithubReview,
   GithubUser,
 } from '@/core/typings/GithubModels';
+import type { GitlabDeploymentHook } from '@/core/typings/GitlabDeploymentHook';
+import { handleDeploymentEvent } from '@/release/commands/create/hookHandlers/handleDeploymentEvent';
+import ConfigHelper from '@/release/utils/ConfigHelper';
 import { handleNoteEvent } from '@/review/commands/share/events/handleNoteEvent';
 import {
   handlePullRequestEvent,
@@ -34,10 +37,21 @@ interface GithubPushedCommit {
   removed?: string[];
 }
 
+interface GithubDeploymentStatus {
+  state: string;
+  created_at: string;
+  environment: string;
+  target_url?: string | null;
+  log_url?: string | null;
+}
+
 interface GithubHookBody {
   action?: string;
   comment?: GithubComment;
   commits?: GithubPushedCommit[];
+  deployment?: { ref: string; environment: string };
+  deployment_status?: GithubDeploymentStatus;
+  workflow_run?: { html_url: string } | null;
   issue?: { number: number; pull_request?: unknown };
   pull_request?: GithubPullRequest;
   ref?: string;
@@ -92,6 +106,9 @@ export async function githubHookHandler(
 
     case 'push':
       return handlePushHook(body, acknowledge);
+
+    case 'deployment_status':
+      return handleDeploymentStatusHook(body, acknowledge);
 
     default:
       break;
@@ -251,6 +268,60 @@ async function handlePushHook(
           (commit.modified ?? []).length +
           (commit.removed ?? []).length,
       })),
+    },
+    acknowledge,
+  );
+}
+
+// `inactive` is sent when a newer deployment replaces this one: not a failure.
+const DEPLOYMENT_STATUSES: Record<string, 'failed' | 'running' | 'success'> = {
+  error: 'failed',
+  failure: 'failed',
+  in_progress: 'running',
+  success: 'success',
+};
+
+async function handleDeploymentStatusHook(
+  { deployment, deployment_status, repository, workflow_run }: GithubHookBody,
+  acknowledge: (handled: boolean) => void,
+): Promise<void> {
+  const status = DEPLOYMENT_STATUSES[deployment_status?.state ?? ''];
+
+  if (
+    !deployment ||
+    !deployment_status ||
+    status === undefined ||
+    !(await ConfigHelper.hasProjectReleaseConfig(repository.id, 'github'))
+  ) {
+    acknowledge(false);
+    return;
+  }
+
+  const environment = deployment_status.environment || deployment.environment;
+
+  await handleDeploymentEvent(
+    {
+      provider: 'github',
+      projectId: repository.id,
+      project: {
+        path_with_namespace: repository.full_name,
+        web_url: repository.html_url,
+      },
+      environment,
+      status,
+      statusChangedAt: deployment_status.created_at,
+      ref: deployment.ref,
+      pipelineUrl:
+        workflow_run?.html_url ??
+        deployment_status.log_url ??
+        deployment_status.target_url ??
+        undefined,
+      // Plugins only get the fields GitHub can fill.
+      hook: {
+        environment,
+        status,
+        status_changed_at: deployment_status.created_at,
+      } as GitlabDeploymentHook,
     },
     acknowledge,
   );

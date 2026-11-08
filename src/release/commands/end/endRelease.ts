@@ -46,7 +46,8 @@ export async function endRelease(
         slackBotWebClient.chat.postMessage(
           buildReleaseStateNotificationMessage({
             channelId,
-            pipelineUrl: pipeline.webUrl,
+            pipelineUrl: pipeline?.webUrl,
+            provider: providerType,
             projectPathWithNamespace: project.path,
             projectWebUrl: project.webUrl,
             releaseCreator: release.slackAuthor,
@@ -62,7 +63,7 @@ export async function endRelease(
       release,
       releaseStateUpdates,
       project: toReleaseMessageProject(project),
-      pipelineUrl: pipeline.webUrl,
+      pipelineUrl: pipeline?.webUrl,
     });
 
     if (release.ts === undefined || release.ts === null) {

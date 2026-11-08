@@ -84,19 +84,19 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 ## Releases (`/homer release ...`)
 
-| Feature                                                        | Trigger                 | GitLab | GitHub | GitHub notes                                                                            |
-| -------------------------------------------------------------- | ----------------------- | ------ | ------ | --------------------------------------------------------------------------------------- |
-| Release modal, project picker, tag suggestion                  | `/homer release`        | [x]    | [x]    | Tags ordered by tagged commit date (GraphQL).                                           |
-| Tag managers (semantic, stable date, federation)               | `releaseTagManager`     | [x]    | [x]    | Provider independent once tags are fetched.                                             |
-| Wait for main branch pipeline before release                   | `isReadyToRelease`      | [x]    | [x]    | Pipeline id is the latest workflow run id of the default branch.                        |
-| Create the release and its tag                                 | modal submit            | [x]    | [x]    | Releases API with `target_commitish`.                                                   |
-| Wait for the tag pipeline                                      | `hasReleasePipeline`    | [x]    | [x]    | Workflow runs triggered by the tag.                                                     |
-| Deployment tracking (running/success/failed)                   | deployment hook         | [x]    | [ ]    | `deployment_status` event.                                                              |
-| Release state notifications                                    | deployment hook         | [x]    | [ ]    |                                                                                         |
-| Cancel a release (rename to `[NOT DEPLOYED]`, cancel pipeline) | `/homer release cancel` | [x]    | [x]    | Edit release name, cancel workflow runs.                                                |
-| End a release                                                  | `/homer release end`    | [x]    | [ ]    |                                                                                         |
-| Release changelog                                              | button                  | [x]    | [x]    | Release body.                                                                           |
-| Release manager plugins                                        | `plugins/release`       | [x]    | [x]    | Plugins get `github` helpers next to `gitlab`; `githubReleaseManager` ships for GitHub. |
+| Feature                                                        | Trigger                 | GitLab | GitHub | GitHub notes                                                                                   |
+| -------------------------------------------------------------- | ----------------------- | ------ | ------ | ---------------------------------------------------------------------------------------------- |
+| Release modal, project picker, tag suggestion                  | `/homer release`        | [x]    | [x]    | Tags ordered by tagged commit date (GraphQL).                                                  |
+| Tag managers (semantic, stable date, federation)               | `releaseTagManager`     | [x]    | [x]    | Provider independent once tags are fetched.                                                    |
+| Wait for main branch pipeline before release                   | `isReadyToRelease`      | [x]    | [x]    | Pipeline id is the latest workflow run id of the default branch.                               |
+| Create the release and its tag                                 | modal submit            | [x]    | [x]    | Releases API with `target_commitish`.                                                          |
+| Wait for the tag pipeline                                      | `hasReleasePipeline`    | [x]    | [x]    | Workflow runs triggered by the tag.                                                            |
+| Deployment tracking (running/success/failed)                   | deployment hook         | [x]    | [x]    | `deployment_status` event: `in_progress`, `success`, `failure`/`error`. `inactive` is ignored. |
+| Release state notifications                                    | deployment hook         | [x]    | [x]    |                                                                                                |
+| Cancel a release (rename to `[NOT DEPLOYED]`, cancel pipeline) | `/homer release cancel` | [x]    | [x]    | Edit release name, cancel workflow runs.                                                       |
+| End a release                                                  | `/homer release end`    | [x]    | [x]    |                                                                                                |
+| Release changelog                                              | button                  | [x]    | [x]    | Release body.                                                                                  |
+| Release manager plugins                                        | `plugins/release`       | [x]    | [x]    | Plugins get `github` helpers next to `gitlab`; `githubReleaseManager` ships for GitHub.        |
 
 ## Known GitHub limitations
 

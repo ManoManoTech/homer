@@ -1,10 +1,13 @@
 import type { ChatPostMessageArguments } from '@slack/web-api';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { ReleaseStateUpdate } from '../../../typings/ReleaseStateUpdate';
 
 interface ReleaseNotificationMessageData {
   channelId: string;
-  pipelineUrl: string;
+  pipelineUrl?: string;
+  provider?: ProviderType;
   projectPathWithNamespace: string;
   projectWebUrl: string;
   releaseCreator: SlackUser;
@@ -15,12 +18,19 @@ interface ReleaseNotificationMessageData {
 export function buildReleaseStateNotificationMessage({
   channelId,
   pipelineUrl,
+  provider = DEFAULT_PROVIDER,
   projectPathWithNamespace,
   projectWebUrl,
   releaseCreator,
   releaseStateUpdates,
   releaseTagName,
 }: ReleaseNotificationMessageData): ChatPostMessageArguments {
+  const releaseNotesUrl = getProvider(provider).getReleaseUrl(
+    { webUrl: projectWebUrl },
+    releaseTagName,
+  );
+  const pipelineLink = pipelineUrl ? ` - <${pipelineUrl}|pipeline>` : '';
+
   const blocks = releaseStateUpdates.map(
     ({
       deploymentState,
@@ -76,7 +86,7 @@ export function buildReleaseStateNotificationMessage({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `${emoji} ${projectDisplayName} ${formattedEnvironment} - <${pipelineUrl}|pipeline> - <${projectWebUrl}/-/releases/${releaseTagName}|release notes>`,
+          text: `${emoji} ${projectDisplayName} ${formattedEnvironment}${pipelineLink} - <${releaseNotesUrl}|release notes>`,
         },
       };
     },
