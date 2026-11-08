@@ -12,9 +12,12 @@ import {
   fetchRequiredApprovals,
   fetchUserById,
   fetchUserByLogin,
+  fetchWorkflowRuns,
   GithubApiError,
+  rerunWorkflowRun,
   searchOpenPullRequests,
   searchRepositories,
+  updatePullRequestBranch,
 } from '@/core/services/github';
 import {
   fetchSlackUserFromEmails,
@@ -247,12 +250,42 @@ export class GitHubProvider implements RepositoryProvider {
     return ignoreNotFound(fetchUserById(userId).then(toUnifiedUser));
   }
 
-  async runPipeline(): Promise<void> {
-    throw notImplemented();
+  /**
+   * GitHub Actions cannot start every workflow of a branch on demand, so the
+   * latest run of each workflow on the branch head is re-run. `autoDeploy` has
+   * no equivalent and is ignored.
+   */
+  async runPipeline(projectId: number, branchName: string): Promise<void> {
+    const runs = await fetchWorkflowRuns(projectId, { branch: branchName });
+    const headSha = runs[0]?.head_sha;
+    const latestRunByWorkflow = new Map<number, number>();
+
+    // Runs are sorted from the newest.
+    for (const run of runs) {
+      if (
+        run.head_sha === headSha &&
+        !latestRunByWorkflow.has(run.workflow_id)
+      ) {
+        latestRunByWorkflow.set(run.workflow_id, run.id);
+      }
+    }
+
+    if (latestRunByWorkflow.size === 0) {
+      throw new Error(
+        `No workflow run to re-run on branch ${branchName} of repository ${projectId}`,
+      );
+    }
+
+    await Promise.all(
+      [...latestRunByWorkflow.values()].map((runId) =>
+        rerunWorkflowRun(projectId, runId),
+      ),
+    );
   }
 
-  async rebasePullRequest(): Promise<void> {
-    throw notImplemented();
+  /** GitHub merges the base branch into the pull request branch. */
+  async rebasePullRequest(projectId: number, iid: number): Promise<void> {
+    await updatePullRequestBranch(projectId, iid);
   }
 
   /**
@@ -334,10 +367,6 @@ export class GitHubProvider implements RepositoryProvider {
       ([, mappedEmail]) => mappedEmail.toLowerCase() === email.toLowerCase(),
     )?.[0];
   }
-}
-
-function notImplemented(): Error {
-  return new Error('Not supported on GitHub yet');
 }
 
 async function ignoreNotFound<T>(promise: Promise<T>): Promise<T | undefined> {

@@ -44,8 +44,8 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 | Review message: assignees and reviewers   | review message         | [x]    | [x]    | Requested reviewers plus users who reviewed.                                                          |
 | Review message: approvals x/y             | review message         | [x]    | [x]    | Required count read from rulesets, then classic branch protection; 0 when the token cannot read them. |
 | Review message: author as sender          | review message         | [x]    | [x]    | Needs Slack user mapping.                                                                             |
-| Action: create a pipeline                 | overflow menu          | [x]    | [ ]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent.          |
-| Action: rebase source branch              | overflow menu          | [x]    | [ ]    | Uses "update branch", which merges the base branch instead of rebasing.                               |
+| Action: create a pipeline                 | overflow menu          | [x]    | [x]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent.          |
+| Action: rebase source branch              | overflow menu          | [x]    | [x]    | Uses "update branch", which merges the base branch instead of rebasing.                               |
 | Action: delete message                    | overflow menu          | [x]    | [x]    | Provider independent.                                                                                 |
 
 ## Review automation (webhooks)
