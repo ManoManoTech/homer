@@ -74,6 +74,31 @@ describe('core > security > GitHub', () => {
     expect(response.status).toEqual(401);
   });
 
+  it('should not allow GitHub requests on case variants of other routes', async () => {
+    // Given
+    const body = { object_kind: 'push' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/GITLAB/')
+      .set(getGithubHeaders('push', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow Gitlab requests on case variants of the GitHub route', async () => {
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/GitHub/')
+      .set(getGitlabHeaders())
+      .send({});
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
   it('should ignore unhandled GitHub events', async () => {
     // Given
     const body = { action: 'created' };

@@ -111,25 +111,46 @@ function isValidSlackRequest(req: Request): boolean {
   return true;
 }
 
+export type RequestSource = 'github' | 'gitlab' | 'slack';
+
+function getRequestSource(req: Request): RequestSource | undefined {
+  if (isValidGithubRequest(req)) return 'github';
+  if (isValidGitlabRequest(req)) return 'gitlab';
+  if (isValidSlackRequest(req)) return 'slack';
+  return undefined;
+}
+
 /**
- * Allows only secure requests from GitHub, Gitlab or Slack.
+ * Allows only secure requests from GitHub, Gitlab or Slack, and stores the
+ * verified source for `requireRequestSource`.
  */
 export function securityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  // GitHub payloads are only trusted on the GitHub route, and that route only
-  // trusts GitHub signatures.
-  const isGithubRoute = req.path === `${CONFIG.apiBasePath}/github`;
-  const isAuthorized = isGithubRoute
-    ? isValidGithubRequest(req)
-    : isValidGitlabRequest(req) || isValidSlackRequest(req);
+  const source = getRequestSource(req);
 
-  if (!isAuthorized) {
+  if (source === undefined) {
     logger.debug('Unauthorized request received');
     res.status(401).send('Unauthorized');
   } else {
+    res.locals.requestSource = source;
     next();
   }
+}
+
+/**
+ * Restricts a route to requests verified for the given source, so a payload
+ * signed for one provider is never handled as another one.
+ */
+export function requireRequestSource(source: RequestSource) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (res.locals.requestSource !== source) {
+      logger.debug(`Request not verified as coming from ${source}`);
+      res.status(401).send('Unauthorized');
+    } else {
+      next();
+    }
+  };
 }
