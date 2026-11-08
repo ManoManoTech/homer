@@ -19,6 +19,7 @@ See the [support matrix](github-support.md) for what works on GitHub.
     branch protection; rulesets only need Metadata)
 - `GITHUB_SECRET`: any value. Use the same value as the webhook secret so
   Homer can verify that GitHub→Homer calls are authentic.
+- `GITHUB_LOGIN_MATCHES_EMAIL` (default `false`): see [Slack users](#slack-users).
 - `GITHUB_URL` (default `https://github.com`) and `GITHUB_API_URL` (default
   `https://api.github.com`): change them for GitHub Enterprise Server.
 
@@ -49,7 +50,9 @@ user. It tries, in order:
    building your image.
 
 2. The public email of the GitHub profile.
-3. `<login>@<domain>` for each domain of `EMAIL_DOMAINS`, as for GitLab.
+3. `<login>@<domain>` for each domain of `EMAIL_DOMAINS`, as for GitLab, only
+   when `GITHUB_LOGIN_MATCHES_EMAIL=true`. Keep it off on github.com: anyone can
+   register a login that matches a colleague's email and be shown as them.
 
 Users who match none of them are not mentioned.
 

@@ -1,21 +1,21 @@
-import { CONFIG } from '@/config';
+import { CONFIG } from "@/config";
 import {
   fetchRepositoryById,
   fetchRepositoryByName,
   fetchUserByLogin,
   GithubApiError,
   searchRepositories,
-} from '@/core/services/github';
-import { fetchSlackUserFromEmails } from '@/core/services/slack';
-import type { GithubRepository, GithubUser } from '@/core/typings/GithubModels';
-import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
-import type { SlackUser } from '@/core/typings/SlackUser';
+} from "@/core/services/github";
+import { fetchSlackUserFromEmails } from "@/core/services/slack";
+import type { GithubRepository, GithubUser } from "@/core/typings/GithubModels";
+import type { RepositoryProvider } from "@/core/typings/RepositoryProvider";
+import type { SlackUser } from "@/core/typings/SlackUser";
 import type {
   UnifiedApprovalInfo,
   UnifiedProject,
   UnifiedPullRequest,
   UnifiedUser,
-} from '@/core/typings/UnifiedModels';
+} from "@/core/typings/UnifiedModels";
 
 const REPOSITORY_NAME_REGEX = /^[\w.-]+\/[\w.-]+$/;
 
@@ -23,7 +23,7 @@ const REPOSITORY_NAME_REGEX = /^[\w.-]+\/[\w.-]+$/;
 export type GithubUsersMapping = Record<string, string>;
 
 export class GitHubProvider implements RepositoryProvider {
-  readonly type = 'github' as const;
+  readonly type = "github" as const;
 
   private readonly usersMapping: Map<string, string>;
   private readonly publicEmails = new Map<string, string | null>();
@@ -57,7 +57,7 @@ export class GitHubProvider implements RepositoryProvider {
     return (await searchRepositories(query)).map(toUnifiedProject);
   }
 
-  getWebhookSettingsUrl(project: Pick<UnifiedProject, 'path'>): string {
+  getWebhookSettingsUrl(project: Pick<UnifiedProject, "path">): string {
     return `${CONFIG.github.url}/${project.path}/settings/hooks`;
   }
 
@@ -103,16 +103,19 @@ export class GitHubProvider implements RepositoryProvider {
 
   /**
    * Tries, in order: the configured mapping, the public email of the GitHub
-   * profile, then `<login>@<EMAIL_DOMAINS>` like GitLab.
+   * profile (GitHub verifies it), then `<login>@<EMAIL_DOMAINS>` like GitLab
+   * when `GITHUB_LOGIN_MATCHES_EMAIL` allows it.
    */
   async findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined> {
     const login = user.username;
     const emails = [
       this.usersMapping.get(login.toLowerCase()),
       user.email ?? (await this.fetchPublicEmail(login)),
-      ...CONFIG.slack.emailDomains
-        .split(',')
-        .map((emailDomain) => `${login}@${emailDomain}`),
+      ...(CONFIG.github.loginMatchesEmail
+        ? CONFIG.slack.emailDomains
+            .split(",")
+            .map((emailDomain) => `${login}@${emailDomain}`)
+        : []),
     ].filter((email): email is string => !!email);
 
     return fetchSlackUserFromEmails([...new Set(emails)]);
@@ -138,7 +141,7 @@ export class GitHubProvider implements RepositoryProvider {
 }
 
 function notImplemented(): Error {
-  return new Error('Not supported on GitHub yet');
+  return new Error("Not supported on GitHub yet");
 }
 
 /**
@@ -146,8 +149,8 @@ function notImplemented(): Error {
  */
 function getRepositoryName(query: string): string | undefined {
   if (query.startsWith(CONFIG.github.url)) {
-    const name = new URL(query).pathname.split('/').filter(Boolean).slice(0, 2);
-    return name.length === 2 ? name.join('/') : undefined;
+    const name = new URL(query).pathname.split("/").filter(Boolean).slice(0, 2);
+    return name.length === 2 ? name.join("/") : undefined;
   }
   return REPOSITORY_NAME_REGEX.test(query) ? query : undefined;
 }
@@ -164,7 +167,7 @@ export function toUnifiedUser(user: GithubUser): UnifiedUser {
 
 function toUnifiedProject(repository: GithubRepository): UnifiedProject {
   return {
-    provider: 'github',
+    provider: "github",
     id: repository.id,
     path: repository.full_name,
     webUrl: repository.html_url,

@@ -26,6 +26,10 @@ export const CONFIG = {
     apiUrl: getEnvVariable('GITHUB_API_URL', 'https://api.github.com'),
     token: getEnvVariable('GITHUB_TOKEN', ''),
     secret: getEnvVariable('GITHUB_SECRET', ''),
+    // Anyone can pick any login on github.com, so matching logins with emails
+    // is only safe when the organization controls logins (Enterprise, SSO).
+    loginMatchesEmail:
+      getEnvVariable('GITHUB_LOGIN_MATCHES_EMAIL', '') === 'true',
   },
   slack: {
     signingSecret: getEnvVariable('SLACK_SIGNING_SECRET'),

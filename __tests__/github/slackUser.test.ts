@@ -1,3 +1,4 @@
+import { CONFIG } from '@/config';
 import { GitHubProvider } from '@/core/services/providers/GitHubProvider';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { UnifiedUser } from '@/core/typings/UnifiedModels';
@@ -63,6 +64,23 @@ describe('github > Slack user', () => {
 
     // Then
     expect(slackUser).toEqual(slackUserFixture);
+  });
+
+  it('should not match logins with emails unless allowed', async () => {
+    // Given
+    const provider = new GitHubProvider();
+    mockGithubCall('/users/Octocat', { message: 'Not Found' }, 404);
+    mockSlackUser('Octocat@ext.my-domain.com');
+    (CONFIG.github as { loginMatchesEmail: boolean }).loginMatchesEmail = false;
+
+    // When
+    const slackUser = await provider.findSlackUser(user).finally(() => {
+      (CONFIG.github as { loginMatchesEmail: boolean }).loginMatchesEmail =
+        true;
+    });
+
+    // Then
+    expect(slackUser).toBeUndefined();
   });
 
   it('should return undefined when nothing matches', async () => {
