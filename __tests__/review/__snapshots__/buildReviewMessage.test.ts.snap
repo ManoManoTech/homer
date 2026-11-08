@@ -40,7 +40,7 @@ exports[`buildReviewMessage renders the closed merge request payload 1`] = `
     {
       "elements": [
         {
-          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "text": "Project: :gitlab: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
           "type": "mrkdwn",
         },
         {
@@ -135,7 +135,7 @@ exports[`buildReviewMessage renders the fully-approved payload (no approvals lef
     {
       "elements": [
         {
-          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "text": "Project: :gitlab: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
           "type": "mrkdwn",
         },
         {
@@ -230,7 +230,7 @@ exports[`buildReviewMessage renders the merged merge request payload 1`] = `
     {
       "elements": [
         {
-          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "text": "Project: :gitlab: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
           "type": "mrkdwn",
         },
         {
@@ -325,7 +325,7 @@ exports[`buildReviewMessage renders the post payload for an open merge request 1
     {
       "elements": [
         {
-          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "text": "Project: :gitlab: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
           "type": "mrkdwn",
         },
         {
@@ -420,7 +420,7 @@ exports[`buildReviewMessage renders the update payload (with ts) for an open mer
     {
       "elements": [
         {
-          "text": "Project: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
+          "text": "Project: :gitlab: _<https://my-git.domain.com/diaspora/diaspora-project-site|diaspora/diaspora-project-site>_",
           "type": "mrkdwn",
         },
         {

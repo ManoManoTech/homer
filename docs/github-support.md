@@ -14,7 +14,7 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 | Webhook endpoint                | `POST /api/v1/homer/gitlab` / `/github`  | [x]    | [x]    |                                                                                                                  |
 | Webhook authentication          | `X-Gitlab-Token` / `X-Hub-Signature-256` | [x]    | [x]    | GitHub signs the raw body with HMAC SHA-256 (`GITHUB_SECRET`).                                                   |
 | Webhook ping                    | GitHub `ping` event                      | [-]    | [x]    | Answer 200 so GitHub marks the hook healthy.                                                                     |
-| Provider icon on Slack messages | review message                           | [ ]    | [ ]    | Shows which provider a review comes from.                                                                        |
+| Provider icon on Slack messages | review message                           | [x]    | [x]    | `:gitlab:` / `:github:` emoji next to the project name.                                                          |
 
 ## Projects (`/homer project ...`)
 

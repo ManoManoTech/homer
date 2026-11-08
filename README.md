@@ -163,6 +163,10 @@ Homer uses custom emojis when posting messages. To have them properly
 displayed, you will need to add all the emojis under [emojis](./emojis) to your
 Slack organisation.
 
+Review messages also show the `:gitlab:` or `:github:` emoji next to the
+project name. Add them with the logo of each provider if your workspace does not
+have them yet.
+
 ![Customize menu](docs/assets/slack/customize-menu.png)
 
 ### 3. Prerequisites

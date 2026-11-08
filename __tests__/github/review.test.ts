@@ -59,7 +59,10 @@ export const githubReviewMessageFixture = {
     {
       type: 'context',
       elements: [
-        { type: 'mrkdwn', text: `Project: _<${html_url}|${full_name}>_` },
+        {
+          type: 'mrkdwn',
+          text: `Project: :github: _<${html_url}|${full_name}>_`,
+        },
         { type: 'mrkdwn', text: 'Target branch: `main`' },
         { type: 'mrkdwn', text: 'Open discussion(s): `5`' },
         { type: 'mrkdwn', text: 'Changes: `7`' },

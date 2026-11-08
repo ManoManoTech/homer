@@ -188,7 +188,7 @@ function buildContextBlock(
     elements: [
       {
         type: 'mrkdwn',
-        text: `Project: _<${project.webUrl}|${project.path}>_`,
+        text: `Project: :${project.provider}: _<${project.webUrl}|${project.path}>_`,
       },
       {
         type: 'mrkdwn',
