@@ -205,6 +205,7 @@ describe('updateChangelog', () => {
     ).options;
     expect(buildChangelogModalView).toHaveBeenCalledWith({
       projectId: 101,
+      provider: 'gitlab',
       projectOptions: expectedProjectOptions,
       releaseTagName: 'v1.0.0',
     });
@@ -248,6 +249,7 @@ describe('updateChangelog', () => {
     ).options;
     expect(buildChangelogModalView).toHaveBeenCalledWith({
       projectId: 201,
+      provider: 'gitlab',
       projectOptions: expectedProjectOptions,
       releaseTagName: undefined,
     });

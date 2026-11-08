@@ -47,3 +47,23 @@ export interface UnifiedApprovalInfo {
   approvalsRequired: number;
   approvalsLeft: number;
 }
+
+export interface UnifiedTag {
+  name: string;
+  /** Date of the tagged commit. */
+  commitDate: string;
+}
+
+/** GitLab pipeline or GitHub Actions workflow run. */
+export interface UnifiedPipeline {
+  id: number;
+  sha: string;
+  webUrl: string;
+}
+
+export interface UnifiedRelease {
+  tagName: string;
+  name: string;
+  description: string;
+  releasedAt: string;
+}

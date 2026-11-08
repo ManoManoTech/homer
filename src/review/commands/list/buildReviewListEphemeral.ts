@@ -141,7 +141,7 @@ async function buildPersonalizedSections(
       const { author, iid, provider } = item.mergeRequest;
       const username = usernames.get(provider);
 
-      if (username !== undefined && author.username === username) {
+      if (username !== undefined && isSameUser(author.username, username)) {
         authored.push(item);
         return;
       }
@@ -153,7 +153,7 @@ async function buildPersonalizedSections(
             projectId,
             iid,
           )
-        ).includes(username);
+        ).some((reviewer) => isSameUser(reviewer, username));
 
       (isWaitingForReview ? waitingForReview : others).push(item);
     }),
@@ -164,6 +164,11 @@ async function buildPersonalizedSections(
     { title: 'Your merge requests', items: authored },
     { title: 'Other reviews', items: others },
   ];
+}
+
+// GitHub logins are case insensitive.
+function isSameUser(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
 }
 
 function formatItem({ link, mergeRequest }: ReviewListItem): string {

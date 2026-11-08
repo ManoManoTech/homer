@@ -4,11 +4,11 @@ import {
   removeRelease,
   updateRelease,
 } from '@/core/services/data';
-import { fetchProjectById } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { DatabaseEntry, DataRelease } from '@/core/typings/Data';
-import { getBranchLastPipeline } from '@/release/commands/create/utils/getBranchLastPipeline';
+import { getReleaseProjectRef } from '@/core/utils/projectRef';
 import { startRelease } from '@/release/commands/create/utils/startRelease';
 import getReleaseOptions from '@/release/releaseOptions';
 import type { ReleaseManager } from '@/release/typings/ReleaseManager';
@@ -23,24 +23,24 @@ export async function waitForReadinessAndStartRelease(
 ): Promise<void> {
   const { createdAt, projectId, slackAuthor, tagName } =
     release as DatabaseEntry<DataRelease>;
+  const { provider } = getReleaseProjectRef(release);
 
   if (Date.now() - new Date(createdAt).getTime() > READINESS_TIMEOUT_DELAY_MS) {
     logger.error(
       `The release ${tagName} of project ${projectId} is obsolete because it has already reached timeout so it will be removed.`,
     );
-    await removeRelease(projectId, tagName);
+    await removeRelease(projectId, tagName, provider);
     return;
   }
 
   const { releaseChannelId, releaseManager, hasReleasePipeline } =
-    await ConfigHelper.getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId, provider);
 
-  const project = await fetchProjectById(projectId);
+  const project = await getProvider(provider).fetchProject(projectId);
 
-  const mainBranchPipeline = await getBranchLastPipeline(
-    projectId,
-    project.default_branch,
-  );
+  const mainBranchPipeline = await getProvider(
+    provider,
+  ).fetchBranchLastPipeline(projectId, project.defaultBranch);
 
   let hasReachedTimeout = false;
   let isReady = await releaseManager.isReadyToRelease(
@@ -57,12 +57,13 @@ export async function waitForReadinessAndStartRelease(
             channel: releaseChannelId,
             user: slackAuthor.id,
             text: `The preconditions to launch a release are not yet met, I will \
-wait for them and start the release automatically (<${mainBranchPipeline.web_url}|pipeline>) :homer-donut:`,
+wait for them and start the release automatically (<${mainBranchPipeline.webUrl}|pipeline>) :homer-donut:`,
           })
         : Promise.resolve(),
     ]);
 
-    const releaseState = (await getProjectRelease(projectId, tagName))?.state;
+    const releaseState = (await getProjectRelease(projectId, tagName, provider))
+      ?.state;
 
     if (releaseState !== 'notYetReady') {
       logger.error(
@@ -79,17 +80,19 @@ wait for them and start the release automatically (<${mainBranchPipeline.web_url
       release,
       hasReleasePipeline,
     });
-    await updateRelease(project.id, tagName, () => ({
-      state: 'created',
-      ts,
-    }));
+    await updateRelease(
+      project.id,
+      tagName,
+      () => ({ state: 'created', ts }),
+      provider,
+    );
   } else if (hasReachedTimeout) {
     await Promise.all([
-      removeRelease(projectId, tagName),
+      removeRelease(projectId, tagName, provider),
       slackBotWebClient.chat.postEphemeral({
         channel: releaseChannelId,
         user: slackAuthor.id,
-        text: `Timeout has been reached while waiting for the <${mainBranchPipeline.web_url}|pipeline> to be ready :homer-stressed: Please launch a new release :homer-donut:`,
+        text: `Timeout has been reached while waiting for the <${mainBranchPipeline.webUrl}|pipeline> to be ready :homer-stressed: Please launch a new release :homer-donut:`,
       }),
     ]);
   }
@@ -112,7 +115,11 @@ async function waitForReadiness(
   }, READINESS_TIMEOUT_DELAY_MS);
 
   while (!hasReachedTimeout) {
-    const doesReleaseExist = await hasRelease(projectId, tagName);
+    const doesReleaseExist = await hasRelease(
+      projectId,
+      tagName,
+      getReleaseProjectRef(release).provider,
+    );
 
     if (!doesReleaseExist) {
       clearTimeout(timeout);

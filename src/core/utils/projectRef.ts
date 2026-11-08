@@ -30,3 +30,14 @@ export function parseProjectRef(value: string): ProjectRef {
   }
   return { provider: 'github', projectId: parseInt(id, 10) };
 }
+
+/** Project reference of a release, which has no provider before GitHub. */
+export function getReleaseProjectRef(release: {
+  projectId: number;
+  provider?: ProviderType;
+}): ProjectRef {
+  return {
+    projectId: release.projectId,
+    provider: release.provider ?? DEFAULT_PROVIDER,
+  };
+}

@@ -1,6 +1,10 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
-import { fetchProjectById } from '@/core/services/gitlab';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import type { DataRelease } from '@/core/typings/Data';
+import {
+  formatProjectRef,
+  getReleaseProjectRef,
+} from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
@@ -21,9 +25,9 @@ export async function buildReleaseSelectionEphemeral({
 
   await Promise.all(
     releases.map(async (release) => {
-      const { path_with_namespace: projectPath } = await fetchProjectById(
-        release.projectId,
-      );
+      const { projectId, provider } = getReleaseProjectRef(release);
+      const { path: projectPath } =
+        await getProvider(provider).fetchProject(projectId);
       if (releaseGroups[projectPath] === undefined) {
         releaseGroups[projectPath] = [];
       }
@@ -58,13 +62,17 @@ export async function buildReleaseSelectionEphemeral({
                 type: 'plain_text',
                 text: truncateProjectPath(projectPath),
               },
-              options: projectReleases.map(({ projectId, tagName }) => ({
+              options: projectReleases.map((release) => ({
                 text: {
                   type: 'plain_text',
-                  text: tagName,
+                  text: release.tagName,
                   emoji: true,
                 },
-                value: injectActionsParameters('release', projectId, tagName),
+                value: injectActionsParameters(
+                  'release',
+                  formatProjectRef(getReleaseProjectRef(release)),
+                  release.tagName,
+                ),
               })),
             })),
         },

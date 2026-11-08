@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
-import { hasProjectTag } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { createRelease } from './commands/create/utils/createRelease';
 import { buildReleaseModalView } from './commands/create/viewBuilders/buildReleaseModalView';
 
@@ -71,17 +72,21 @@ async function getPreviousReleaseTagError(state: {
     return undefined;
   }
 
-  const projectId = parseInt(
+  const selectedProject: string | undefined =
     state.values['release-project-block']?.['release-select-project-action']
-      ?.selected_option?.value,
-    10,
-  );
+      ?.selected_option?.value;
+
+  if (selectedProject === undefined) {
+    return undefined;
+  }
+
+  const { projectId, provider } = parseProjectRef(selectedProject);
 
   if (Number.isNaN(projectId)) {
     return undefined;
   }
 
-  return (await hasProjectTag(projectId, previousReleaseTagName))
+  return (await getProvider(provider).hasTag(projectId, previousReleaseTagName))
     ? undefined
     : `Tag ${previousReleaseTagName} does not belong to this project. Please select another previous release tag.`;
 }

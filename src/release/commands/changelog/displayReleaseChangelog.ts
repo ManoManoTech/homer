@@ -1,9 +1,10 @@
 import { GENERIC_ERROR_MESSAGE } from '@/constants';
 import { getProjectRelease } from '@/core/services/data';
-import { fetchReleaseByTagName } from '@/core/services/gitlab';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { extractActionParameters } from '@/core/utils/slackActions';
 import { buildReleaseChangelogModalView } from '@/release/commands/changelog/viewBuilders/buildReleaseChangelogModalView';
 
@@ -12,18 +13,21 @@ export async function displayReleaseChangelog(
   action: ButtonAction,
 ) {
   const { container, trigger_id, user } = payload;
-  const [projectIdAsString, tagName] = extractActionParameters(action.value);
-  const projectId = parseInt(projectIdAsString, 10);
+  const [projectRef, tagName] = extractActionParameters(action.value);
+  const { projectId, provider } = parseProjectRef(projectRef);
 
   let description: string | undefined;
 
-  const databaseRelease = await getProjectRelease(projectId, tagName);
+  const databaseRelease = await getProjectRelease(projectId, tagName, provider);
 
   if (databaseRelease) {
     description = databaseRelease.description;
   } else {
-    const gitlabRelease = await fetchReleaseByTagName(projectId, tagName);
-    description = gitlabRelease.description;
+    const release = await getProvider(provider).fetchRelease(
+      projectId,
+      tagName,
+    );
+    description = release.description;
   }
 
   if (description === undefined) {

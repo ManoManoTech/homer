@@ -1,16 +1,19 @@
 import type { Block, KnownBlock, View } from '@slack/types';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import { getProjectsByChannelId } from '@/core/services/data';
-import { fetchProjectById, fetchProjectTags } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
-import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import type { SlackOption } from '@/core/typings/SlackOption';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
+import { formatProjectRef, parseProjectRef } from '@/core/utils/projectRef';
 import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
 interface ChangelogModalData {
   channelId?: string;
   projectId?: number;
+  provider?: ProviderType;
   projectOptions?: SlackOption[];
   releaseTagName?: string;
 }
@@ -18,16 +21,19 @@ interface ChangelogModalData {
 export async function buildChangelogModalView({
   channelId,
   projectId,
+  provider = DEFAULT_PROVIDER,
   projectOptions,
   releaseTagName,
 }: ChangelogModalData): Promise<View> {
   if (channelId !== undefined && projectOptions === undefined) {
     const dataProjects = await getProjectsByChannelId(channelId);
-    const projects: GitlabProjectDetails[] = (
+    const projects: UnifiedProject[] = (
       await Promise.all(
         dataProjects.map(async (dataProject) => {
           try {
-            return await fetchProjectById(Number(dataProject.projectId));
+            return await getProvider(dataProject.provider).fetchProject(
+              Number(dataProject.projectId),
+            );
           } catch (error) {
             logger.error(
               error,
@@ -37,18 +43,19 @@ export async function buildChangelogModalView({
           }
         }),
       )
-    ).filter((project): project is GitlabProjectDetails => project !== null);
+    ).filter((project): project is UnifiedProject => project !== null);
 
     projectOptions = projects
-      .sort((a, b) =>
-        a.path_with_namespace.localeCompare(b.path_with_namespace),
-      )
+      .sort((a, b) => a.path.localeCompare(b.path))
       .map((project) => ({
         text: {
           type: 'plain_text',
-          text: truncateProjectPath(project.path_with_namespace),
+          text: truncateProjectPath(project.path),
         },
-        value: project.id.toString(),
+        value: formatProjectRef({
+          provider: project.provider,
+          projectId: project.id,
+        }),
       })) as SlackOption[];
   }
 
@@ -59,13 +66,18 @@ export async function buildChangelogModalView({
   }
 
   if (projectId === undefined) {
-    projectId = parseInt(projectOptions[0].value, 10);
+    ({ projectId, provider } = parseProjectRef(projectOptions[0].value));
   }
 
-  const tags = (await fetchProjectTags(projectId)).slice(0, 3);
+  const tags = (await getProvider(provider).fetchTags(projectId)).slice(0, 3);
   const previousReleaseTagName = releaseTagName ?? tags[0]?.name;
   const changelog = previousReleaseTagName
-    ? await generateChangelog(projectId, previousReleaseTagName)
+    ? await generateChangelog(
+        projectId,
+        previousReleaseTagName,
+        undefined,
+        provider,
+      )
     : '';
 
   const previousReleaseOptions = tags.map(({ name }) => ({

@@ -1,10 +1,12 @@
+import type { ProviderType } from './Provider';
+
 /**
  * A user of the git provider, as Homer knows them from a webhook or an API
- * response. GitLab is the only provider today; the field is there so that
- * resolvers can tell providers apart once others are supported.
+ * response. Resolvers that only know GitLab users should return `undefined`
+ * for GitHub ones.
  */
 export interface GitUser {
-  provider: 'gitlab';
+  provider: ProviderType;
   username: string;
 }
 

@@ -1,3 +1,5 @@
+import type { DataRelease } from '@/core/typings/Data';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import { federationReleaseTagManager } from '@/release/commands/create/managers/federationReleaseTagManager';
 import { semanticReleaseTagManager } from '@/release/commands/create/managers/semanticReleaseTagManager';
 import { stableDateReleaseTagManager } from '@/release/commands/create/managers/stableDateReleaseTagManager';
@@ -19,17 +21,17 @@ export default class ConfigHelper {
     if (this.projectReleaseConfigs === undefined) {
       this.projectReleaseConfigs = await buildProjectReleaseConfigs(
         projectsConfig,
-        releaseTagManagers
+        releaseTagManagers,
       );
     }
   }
 
   static async getChannelProjectReleaseConfigs(
-    channelId: string
+    channelId: string,
   ): Promise<ProjectReleaseConfig[]> {
     await this.init();
     return this.projectReleaseConfigs.filter(
-      (config) => config.releaseChannelId === channelId
+      (config) => config.releaseChannelId === channelId,
     );
   }
 
@@ -38,11 +40,12 @@ export default class ConfigHelper {
   }
 
   static async getProjectReleaseConfig(
-    projectId: number
+    projectId: number,
+    provider: ProviderType = DEFAULT_PROVIDER,
   ): Promise<ProjectReleaseConfig> {
     await this.init();
-    const projectReleaseConfig = this.projectReleaseConfigs.find(
-      (config) => config.projectId === projectId
+    const projectReleaseConfig = this.projectReleaseConfigs.find((config) =>
+      isConfigOf(config, projectId, provider),
     );
 
     if (projectReleaseConfig === undefined) {
@@ -51,11 +54,35 @@ export default class ConfigHelper {
     return projectReleaseConfig;
   }
 
-  static async hasProjectReleaseConfig(projectId: number): Promise<boolean> {
+  static async hasProjectReleaseConfig(
+    projectId: number,
+    provider: ProviderType = DEFAULT_PROVIDER,
+  ): Promise<boolean> {
     await this.init();
-    const projectReleaseConfig = this.projectReleaseConfigs.find(
-      (config) => config.projectId === projectId
+    const projectReleaseConfig = this.projectReleaseConfigs.find((config) =>
+      isConfigOf(config, projectId, provider),
     );
     return projectReleaseConfig !== undefined;
   }
+}
+
+function isConfigOf(
+  config: ProjectReleaseConfig,
+  projectId: number,
+  provider: ProviderType,
+): boolean {
+  return (
+    config.projectId === projectId &&
+    (config.provider ?? DEFAULT_PROVIDER) === provider
+  );
+}
+
+/** GitLab and GitHub project ids can collide: the provider must match too. */
+export function isChannelRelease(
+  release: DataRelease,
+  channelConfigs: ProjectReleaseConfig[],
+): boolean {
+  return channelConfigs.some((config) =>
+    isConfigOf(config, release.projectId, release.provider ?? DEFAULT_PROVIDER),
+  );
 }

@@ -7,9 +7,15 @@ import type {
   TextObject,
 } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import type { DataRelease } from '@/core/typings/Data';
 import type { SlackUser } from '@/core/typings/SlackUser';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 import { capitalizeFirstLetter } from '@/core/utils/capitalizeFirstLetter';
+import {
+  formatProjectRef,
+  getReleaseProjectRef,
+} from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 import type {
   DeploymentState,
@@ -28,6 +34,12 @@ interface ReleaseMessageData {
 interface ReleaseMessageProjectData {
   path_with_namespace: string;
   web_url: string;
+}
+
+export function toReleaseMessageProject(
+  project: Pick<UnifiedProject, 'path' | 'webUrl'>,
+): ReleaseMessageProjectData {
+  return { path_with_namespace: project.path, web_url: project.webUrl };
 }
 
 interface ReleaseCanceledMessageData extends ReleaseMessageData {
@@ -57,7 +69,13 @@ export function buildReleaseMessage({
 
   const blocks = [
     headerBlock,
-    ...buildReleaseDataBlocks(web_url, slackAuthor, tagName, description),
+    ...buildReleaseDataBlocks(
+      release,
+      web_url,
+      slackAuthor,
+      tagName,
+      description,
+    ),
     buildInformationActionBlock(release, pipelineUrl),
   ] as KnownBlock[];
 
@@ -109,6 +127,7 @@ export function buildReleaseCanceledMessage({
   const blocks = [
     headerBlock,
     ...buildReleaseDataBlocks(
+      release,
       web_url,
       slackAuthor,
       tagName,
@@ -150,6 +169,7 @@ function buildHeaderBlock(
 }
 
 function buildReleaseDataBlocks(
+  release: DataRelease,
   projectWebUrl: string,
   releaseCreator: SlackUser,
   releaseTagName: string,
@@ -162,7 +182,12 @@ function buildReleaseDataBlocks(
       fields: [
         {
           type: 'mrkdwn',
-          text: `*Version:*\n<${projectWebUrl}/-/releases/${releaseTagName}|${releaseTagName}>`,
+          text: `*Version:*\n<${getProvider(
+            getReleaseProjectRef(release).provider,
+          ).getReleaseUrl(
+            { webUrl: projectWebUrl },
+            releaseTagName,
+          )}|${releaseTagName}>`,
         },
         {
           type: 'mrkdwn',
@@ -221,7 +246,7 @@ function buildInformationActionBlock(
               },
               value: injectActionsParameters(
                 'release',
-                release.projectId,
+                formatProjectRef(getReleaseProjectRef(release)),
                 release.tagName,
               ),
             },
@@ -394,7 +419,7 @@ function buildDeploymentActionBlock(
       action_id: 'release-button-cancel-action',
       value: injectActionsParameters(
         'release',
-        release.projectId,
+        formatProjectRef(getReleaseProjectRef(release)),
         release.tagName,
       ),
       text: {
@@ -436,7 +461,7 @@ function buildDeploymentActionBlock(
       action_id: 'release-button-end-action',
       value: injectActionsParameters(
         'release',
-        release.projectId,
+        formatProjectRef(getReleaseProjectRef(release)),
         release.tagName,
       ),
       text: {

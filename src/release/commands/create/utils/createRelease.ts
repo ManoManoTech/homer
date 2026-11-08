@@ -8,6 +8,7 @@ import {
 import { fetchSlackUserFromId } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReadinessAndStartRelease } from './waitForReadinessAndStartRelease';
@@ -18,10 +19,9 @@ export async function createRelease(
   const { user, view } = payload;
   const { values } = view.state;
 
-  const projectId = parseInt(
+  const { projectId, provider } = parseProjectRef(
     values['release-project-block']['release-select-project-action']
       .selected_option.value,
-    10,
   );
 
   const releaseTagName: string =
@@ -31,14 +31,17 @@ export async function createRelease(
     values['release-previous-tag-block']?.['release-select-previous-tag-action']
       ?.selected_option?.value;
 
-  const { releaseManager } =
-    await ConfigHelper.getProjectReleaseConfig(projectId);
+  const { releaseManager } = await ConfigHelper.getProjectReleaseConfig(
+    projectId,
+    provider,
+  );
 
   const [description, slackAuthor] = await Promise.all([
     generateChangelog(
       projectId,
       previousReleaseTagName,
       (commit) => releaseManager.filterChangelog?.(commit, view.state) ?? true,
+      provider,
     ),
     fetchSlackUserFromId(user.id),
     getReleaseOptions(),
@@ -54,6 +57,7 @@ export async function createRelease(
     description,
     failedDeployments: [],
     projectId,
+    provider,
     slackAuthor,
     startedDeployments: [],
     state: 'notYetReady',
@@ -64,7 +68,7 @@ export async function createRelease(
 
   // Clean previous release to prevent conflicts
   if (releaseManager.filterReleasesToClean) {
-    const projectReleases = await getProjectReleases(projectId);
+    const projectReleases = await getProjectReleases(projectId, provider);
     const tagNames = releaseManager
       .filterReleasesToClean(releaseData, projectReleases, getReleaseOptions())
       .map(({ tagName }) => tagName);
@@ -72,11 +76,12 @@ export async function createRelease(
     if (tagNames.length > 0) {
       await cleanReleases({
         projectId,
+        provider,
         tagName: { [Op.or]: tagNames },
       });
     }
   } else {
-    await cleanReleases({ projectId });
+    await cleanReleases({ projectId, provider });
   }
 
   const release = await createReleaseEntry(releaseData);

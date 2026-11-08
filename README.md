@@ -378,6 +378,9 @@ Here is a sample configuration with one project:
 }
 ```
 
+`provider` (`gitlab` or `github`, default `gitlab`) tells Homer where
+`projectId` lives. For GitHub, `projectId` is the numeric repository id.
+
 ### 8. Add your own release manager
 
 A simple plugin system enables the addition of custom release managers. See this dedicated [page](./docs/PLUGIN_RELEASE.md) for more details.

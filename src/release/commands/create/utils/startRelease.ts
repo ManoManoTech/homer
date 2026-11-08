@@ -1,14 +1,18 @@
 import type { ChatPostMessageArguments } from '@slack/web-api';
-import { createRelease as createGitlabRelease } from '@/core/services/gitlab';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
-import type { GitlabProject } from '@/core/typings/GitlabProject';
-import { buildReleaseMessage } from '@/release/commands/create/viewBuilders/buildReleaseMessage';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
+import { getReleaseProjectRef } from '@/core/utils/projectRef';
+import {
+  buildReleaseMessage,
+  toReleaseMessageProject,
+} from '@/release/commands/create/viewBuilders/buildReleaseMessage';
 import ConfigHelper from '../../../utils/ConfigHelper';
 import { waitForReleasePipeline } from './waitForReleasePipeline';
 
 interface StartReleaseData {
-  project: GitlabProject;
+  project: UnifiedProject;
   commitId: string;
   release: DataRelease;
   hasReleasePipeline: boolean | undefined;
@@ -20,11 +24,13 @@ export async function startRelease({
   release,
   hasReleasePipeline = true,
 }: StartReleaseData): Promise<string> {
+  const { provider } = getReleaseProjectRef(release);
   const { releaseChannelId } = await ConfigHelper.getProjectReleaseConfig(
     project.id,
+    provider,
   );
 
-  await createGitlabRelease(
+  await getProvider(provider).createRelease(
     project.id,
     commitId,
     release.tagName,
@@ -33,8 +39,12 @@ export async function startRelease({
 
   let pipelineUrl = undefined;
   if (hasReleasePipeline) {
-    const pipeline = await waitForReleasePipeline(project.id, release.tagName);
-    pipelineUrl = pipeline?.web_url;
+    const pipeline = await waitForReleasePipeline(
+      project.id,
+      release.tagName,
+      provider,
+    );
+    pipelineUrl = pipeline?.webUrl;
   }
 
   const { ts } = await slackBotWebClient.chat.postMessage(
@@ -42,7 +52,7 @@ export async function startRelease({
       releaseChannelId,
       release,
       releaseStateUpdates: [],
-      project,
+      project: toReleaseMessageProject(project),
       pipelineUrl,
     }) as ChatPostMessageArguments,
   );

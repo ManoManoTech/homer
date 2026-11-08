@@ -1,5 +1,15 @@
+import { generateGitlabChangelog } from '@/changelog/utils/generateGitlabChangelog';
 import { CONFIG } from '@/config';
 import {
+  cancelPipeline,
+  createRelease,
+  fetchBranchPipelines,
+  fetchPipelinesByRef,
+  fetchProjectReleases,
+  fetchProjectTags,
+  fetchReleaseByTagName,
+  hasProjectTag,
+  updateReleaseName,
   fetchMergeRequestApprovers,
   fetchMergeRequestByIid,
   fetchMergeRequestCommits,
@@ -18,20 +28,26 @@ import {
   fetchSlackUserFromGitlabUsername,
 } from '@/core/services/slack';
 import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type {
   GitlabMergeRequest,
   GitlabMergeRequestDetails,
   GitlabMergeRequestState,
 } from '@/core/typings/GitlabMergeRequest';
+import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
 import type { GitlabProject } from '@/core/typings/GitlabProject';
+import type { GitlabRelease } from '@/core/typings/GitlabRelease';
 import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
   UnifiedApprovalInfo,
+  UnifiedPipeline,
   UnifiedProject,
   UnifiedPullRequest,
   UnifiedPullRequestState,
+  UnifiedRelease,
+  UnifiedTag,
   UnifiedUser,
 } from '@/core/typings/UnifiedModels';
 
@@ -134,6 +150,104 @@ export class GitLabProvider implements RepositoryProvider {
   async findGitUsername(slackUserId: string): Promise<string | undefined> {
     return fetchGitlabUsernameFromSlackUserId(slackUserId);
   }
+  async fetchTags(projectId: number): Promise<UnifiedTag[]> {
+    return (await fetchProjectTags(projectId)).map(({ commit, name }) => ({
+      name,
+      commitDate: commit?.created_at ?? '',
+    }));
+  }
+
+  async hasTag(projectId: number, tagName: string): Promise<boolean> {
+    return hasProjectTag(projectId, tagName);
+  }
+
+  async generateChangelog(
+    projectId: number,
+    previousReleaseTagName: string | undefined,
+    filter: (commit: GitlabCommit) => boolean,
+  ): Promise<string> {
+    return generateGitlabChangelog(projectId, previousReleaseTagName, filter);
+  }
+
+  async fetchBranchLastPipeline(
+    projectId: number,
+    branchName: string,
+  ): Promise<UnifiedPipeline> {
+    const lastPipeline = (
+      await fetchBranchPipelines(projectId, branchName)
+    ).find(
+      (pipeline) =>
+        pipeline.status !== 'canceled' && pipeline.source !== 'schedule',
+    );
+
+    if (lastPipeline === undefined) {
+      throw new Error(`Unable to find a non cancelled ${branchName} pipeline`);
+    }
+    return toUnifiedPipeline(lastPipeline);
+  }
+
+  async fetchPipelinesByRef(
+    projectId: number,
+    ref: string,
+  ): Promise<UnifiedPipeline[]> {
+    return (await fetchPipelinesByRef(projectId, ref)).map(toUnifiedPipeline);
+  }
+
+  async cancelPipeline(projectId: number, pipelineId: number): Promise<void> {
+    await cancelPipeline(projectId, pipelineId);
+  }
+
+  async createRelease(
+    projectId: number,
+    commitId: string,
+    tagName: string,
+    description: string,
+  ): Promise<void> {
+    await createRelease(projectId, commitId, tagName, description);
+  }
+
+  async fetchRelease(
+    projectId: number,
+    tagName: string,
+  ): Promise<UnifiedRelease> {
+    return toUnifiedRelease(await fetchReleaseByTagName(projectId, tagName));
+  }
+
+  async fetchReleases(projectId: number): Promise<UnifiedRelease[]> {
+    return (await fetchProjectReleases(projectId)).map(toUnifiedRelease);
+  }
+
+  async updateReleaseName(
+    projectId: number,
+    tagName: string,
+    name: string,
+  ): Promise<void> {
+    await updateReleaseName(projectId, tagName, name);
+  }
+
+  getReleaseUrl(
+    project: Pick<UnifiedProject, 'webUrl'>,
+    tagName: string,
+  ): string {
+    return `${project.webUrl}/-/releases/${tagName}`;
+  }
+}
+
+function toUnifiedRelease({
+  description,
+  name,
+  released_at,
+  tag_name,
+}: GitlabRelease): UnifiedRelease {
+  return { tagName: tag_name, name, description, releasedAt: released_at };
+}
+
+function toUnifiedPipeline({
+  id,
+  sha,
+  web_url,
+}: GitlabPipeline): UnifiedPipeline {
+  return { id, sha, webUrl: web_url };
 }
 
 export function toUnifiedUser(

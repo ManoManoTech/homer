@@ -52,6 +52,11 @@ const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
   description: { type: DataTypes.TEXT, allowNull: true }, // TODO change this when possible
   failedDeployments: { type: DataTypes.TEXT, allowNull: false },
   projectId: { type: DataTypes.INTEGER, allowNull: false },
+  provider: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: DEFAULT_PROVIDER,
+  },
   slackAuthor: { type: DataTypes.TEXT, allowNull: false },
   startedDeployments: { type: DataTypes.TEXT, allowNull: false },
   state: { type: DataTypes.STRING, allowNull: false },
@@ -164,6 +169,7 @@ export async function createRelease(
   const [releaseModel] = await Release.findOrCreate({
     where: {
       projectId: release.projectId,
+      provider: release.provider ?? DEFAULT_PROVIDER,
       tagName: release.tagName,
       description: release.description,
       state: release.state,
@@ -179,9 +185,10 @@ export async function createRelease(
 export async function getProjectRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease | undefined> {
   const releaseModel = await Release.findOne({
-    where: { projectId, tagName },
+    where: { projectId, provider, tagName },
   });
   if (!releaseModel) {
     return undefined;
@@ -191,10 +198,11 @@ export async function getProjectRelease(
 
 export async function getProjectReleases(
   projectId: number,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease[]> {
   return (
     await Release.findAll({
-      where: { projectId },
+      where: { projectId, provider },
     })
   ).map(formatRelease);
 }
@@ -258,8 +266,9 @@ export async function countChannelsByProjectId(
 export async function hasRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<boolean> {
-  return (await getProjectRelease(projectId, tagName)) !== undefined;
+  return (await getProjectRelease(projectId, tagName, provider)) !== undefined;
 }
 
 export async function removeProjectFromChannel(
@@ -275,9 +284,10 @@ export async function removeProjectFromChannel(
 export async function removeRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<void> {
   await Release.destroy({
-    where: { projectId, tagName },
+    where: { projectId, provider, tagName },
   });
 }
 
@@ -301,12 +311,13 @@ export async function updateRelease(
   projectId: number,
   tagName: string,
   updatedReleaseDataGetter: (release: DataRelease) => Partial<DataRelease>,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease> {
   // The transaction prevents race conditions when multiple calls to updateRelease are made at the
   // same time.
   return sequelize.transaction(async (transaction) => {
     const releaseModel = await Release.findOne({
-      where: { projectId, tagName },
+      where: { projectId, provider, tagName },
       lock: transaction.LOCK.UPDATE,
       transaction,
     });

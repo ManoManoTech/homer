@@ -21,6 +21,7 @@ import {
 } from '@/core/services/github';
 import {
   fetchSlackUserFromEmails,
+  fetchSlackUserFromGitUser,
   fetchSlackUserFromId,
 } from '@/core/services/slack';
 import type {
@@ -35,8 +36,11 @@ import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
   UnifiedApprovalInfo,
+  UnifiedPipeline,
   UnifiedProject,
   UnifiedPullRequest,
+  UnifiedRelease,
+  UnifiedTag,
   UnifiedUser,
 } from '@/core/typings/UnifiedModels';
 
@@ -218,6 +222,15 @@ export class GitHubProvider implements RepositoryProvider {
     };
   }
 
+  /** Requested reviewers have not reviewed since the request. */
+  async fetchPendingReviewerUsernames(
+    projectId: number,
+    iid: number,
+  ): Promise<string[]> {
+    const { requested_reviewers } = await this.getPullRequest(projectId, iid);
+    return requested_reviewers.map(({ login }) => login);
+  }
+
   /** Requested reviewers and users who already reviewed. */
   async fetchReviewers(projectId: number, iid: number): Promise<UnifiedUser[]> {
     const [pullRequest, reviews] = await Promise.all([
@@ -235,15 +248,6 @@ export class GitHubProvider implements RepositoryProvider {
       }
     }
     return [...reviewers.values()].map(toUnifiedUser);
-  }
-
-  /** Requested reviewers have not reviewed since the request. */
-  async fetchPendingReviewerUsernames(
-    projectId: number,
-    iid: number,
-  ): Promise<string[]> {
-    const { requested_reviewers } = await this.getPullRequest(projectId, iid);
-    return requested_reviewers.map(({ login }) => login);
   }
 
   async fetchUser(userId: number): Promise<UnifiedUser | undefined> {
@@ -289,23 +293,45 @@ export class GitHubProvider implements RepositoryProvider {
   }
 
   /**
-   * Tries, in order: the configured mapping, the public email of the GitHub
-   * profile (GitHub verifies it), then `<login>@<EMAIL_DOMAINS>` like GitLab
-   * when `GITHUB_LOGIN_MATCHES_EMAIL` allows it.
+   * Tries, in order: `config/homer/githubUsers.json`, the user identity
+   * resolvers (`USER_IDENTITY_RESOLVERS`), then the public email of the GitHub
+   * profile, which GitHub verifies.
    */
   async findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined> {
     const login = user.username;
-    const emails = [
-      this.usersMapping.get(login.toLowerCase()),
-      user.email ?? (await this.fetchPublicEmail(login)),
-      ...(CONFIG.github.loginMatchesEmail
-        ? CONFIG.slack.emailDomains
-            .split(',')
-            .map((emailDomain) => `${login}@${emailDomain}`)
-        : []),
-    ].filter((email): email is string => !!email);
+    const mappedEmail = this.usersMapping.get(login.toLowerCase());
 
-    return fetchSlackUserFromEmails([...new Set(emails)]);
+    if (mappedEmail !== undefined) {
+      return fetchSlackUserFromEmails([mappedEmail]);
+    }
+
+    const slackUser = await fetchSlackUserFromGitUser({
+      provider: 'github',
+      username: login,
+    });
+    if (slackUser !== undefined) {
+      return slackUser;
+    }
+
+    const publicEmail = user.email ?? (await this.fetchPublicEmail(login));
+    return publicEmail ? fetchSlackUserFromEmails([publicEmail]) : undefined;
+  }
+
+  /** Only `githubUsers.json` knows GitHub logins from Slack users. */
+  async findGitUsername(slackUserId: string): Promise<string | undefined> {
+    let email: string | undefined;
+
+    try {
+      email = (await fetchSlackUserFromId(slackUserId))?.profile?.email;
+    } catch {
+      return undefined;
+    }
+    if (email === undefined) {
+      return undefined;
+    }
+    return [...this.usersMapping].find(
+      ([, mappedEmail]) => mappedEmail.toLowerCase() === email.toLowerCase(),
+    )?.[0];
   }
 
   /** Called when GitHub notifies a change, so the next read is fresh. */
@@ -315,6 +341,50 @@ export class GitHubProvider implements RepositoryProvider {
     } else {
       this.pullRequests.delete(`${projectId}#${iid}`);
     }
+  }
+
+  async fetchTags(): Promise<UnifiedTag[]> {
+    throw releasesNotSupported();
+  }
+
+  async hasTag(): Promise<boolean> {
+    throw releasesNotSupported();
+  }
+
+  async fetchReleases(): Promise<UnifiedRelease[]> {
+    throw releasesNotSupported();
+  }
+
+  async generateChangelog(): Promise<string> {
+    throw releasesNotSupported();
+  }
+
+  async fetchBranchLastPipeline(): Promise<UnifiedPipeline> {
+    throw releasesNotSupported();
+  }
+
+  async fetchPipelinesByRef(): Promise<UnifiedPipeline[]> {
+    throw releasesNotSupported();
+  }
+
+  async cancelPipeline(): Promise<void> {
+    throw releasesNotSupported();
+  }
+
+  async createRelease(): Promise<void> {
+    throw releasesNotSupported();
+  }
+
+  async fetchRelease(): Promise<UnifiedRelease> {
+    throw releasesNotSupported();
+  }
+
+  async updateReleaseName(): Promise<void> {
+    throw releasesNotSupported();
+  }
+
+  getReleaseUrl(): string {
+    throw releasesNotSupported();
   }
 
   private getPullRequest(
@@ -350,23 +420,10 @@ export class GitHubProvider implements RepositoryProvider {
     }
     return this.publicEmails.get(login) ?? undefined;
   }
+}
 
-  /** Only `githubUsers.json` knows GitHub logins from Slack users. */
-  async findGitUsername(slackUserId: string): Promise<string | undefined> {
-    let email: string | undefined;
-
-    try {
-      email = (await fetchSlackUserFromId(slackUserId))?.profile?.email;
-    } catch {
-      return undefined;
-    }
-    if (email === undefined) {
-      return undefined;
-    }
-    return [...this.usersMapping].find(
-      ([, mappedEmail]) => mappedEmail.toLowerCase() === email.toLowerCase(),
-    )?.[0];
-  }
+function releasesNotSupported(): Error {
+  return new Error('Releases are not supported on GitHub yet');
 }
 
 async function ignoreNotFound<T>(promise: Promise<T>): Promise<T | undefined> {

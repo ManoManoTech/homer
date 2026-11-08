@@ -18,6 +18,11 @@ const projectSchema: JSONSchemaType<ProjectConfigJSON> = {
   properties: {
     notificationChannelIds: { type: 'array', items: { type: 'string' } },
     projectId: { type: 'number' },
+    provider: {
+      type: 'string',
+      enum: ['gitlab', 'github'],
+      nullable: true,
+    },
     releaseChannelId: { type: 'string' },
     releaseManager: { type: 'string' },
     releaseTagManager: { type: 'string', nullable: true },
@@ -49,12 +54,15 @@ const validateProjectReleaseConfig = ajv.compile(configsSchema);
 
 export async function buildProjectReleaseConfigs(
   configs: ProjectConfigurationsJSON,
-  releaseTagManagers: Record<string, ReleaseTagManager>
+  releaseTagManagers: Record<string, ReleaseTagManager>,
 ) {
   if (!validateProjectReleaseConfig(configs)) {
-    logger.error({errors : validateProjectReleaseConfig.errors}, 'The config file validation failed');
+    logger.error(
+      { errors: validateProjectReleaseConfig.errors },
+      'The config file validation failed',
+    );
     throw new Error(
-      'The config file should contain an array of valid project configurations'
+      'The config file should contain an array of valid project configurations',
     );
   }
   const projects: ProjectReleaseConfig[] = [];
@@ -62,7 +70,7 @@ export async function buildProjectReleaseConfigs(
     const { releaseManager, releaseTagManager, ...ids } = project;
     if (ReleasePluginManager.getReleaseManager(releaseManager) === undefined) {
       await ReleasePluginManager.loadReleaseManagerPlugin(
-        `@root/plugins/release/${releaseManager}`
+        `@root/plugins/release/${releaseManager}`,
       );
     }
     projects.push({

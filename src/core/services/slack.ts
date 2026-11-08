@@ -4,7 +4,7 @@ import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { UnifiedUser } from '@/core/typings/UnifiedModels';
-import type { UserIdentity } from '@/core/typings/UserIdentity';
+import type { GitUser, UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
 import {
   type ChatUserLookup,
@@ -128,10 +128,13 @@ export async function fetchSlackUserFromGitlabUser({
 export async function fetchSlackUserFromGitlabUsername(
   username: string,
 ): Promise<SlackUser | undefined> {
-  return findChatUser(
-    { provider: 'gitlab', username },
-    fetchSlackUserFromIdentity,
-  );
+  return fetchSlackUserFromGitUser({ provider: 'gitlab', username });
+}
+
+export async function fetchSlackUserFromGitUser(
+  user: GitUser,
+): Promise<SlackUser | undefined> {
+  return findChatUser(user, fetchSlackUserFromIdentity);
 }
 
 async function fetchSlackUserFromIdentity({

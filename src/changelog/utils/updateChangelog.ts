@@ -3,13 +3,14 @@ import { slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { SlackOption } from '@/core/typings/SlackOption';
 import { cleanViewState } from '@/core/utils/cleanViewState';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { buildChangelogModalView } from '../buildChangelogModalView';
 
 export async function updateChangelog(payload: BlockActionsPayload) {
   const { blocks, callback_id, id, state, submit, title, type } = payload.view;
   const currentView = { blocks, callback_id, submit, title, type };
   const releaseTagInfoBlockIndex = blocks.findIndex(
-    (block) => block.block_id === 'changelog-release-tag-info-block'
+    (block) => block.block_id === 'changelog-release-tag-info-block',
   );
 
   if (releaseTagInfoBlockIndex !== -1) {
@@ -25,10 +26,9 @@ export async function updateChangelog(payload: BlockActionsPayload) {
     },
   });
 
-  const projectId = parseInt(
+  const { projectId, provider } = parseProjectRef(
     state.values['changelog-project-block']?.['changelog-select-project-action']
       ?.selected_option?.value,
-    10
   );
 
   const releaseTagName =
@@ -38,6 +38,7 @@ export async function updateChangelog(payload: BlockActionsPayload) {
 
   const viewPromise = buildChangelogModalView({
     projectId,
+    provider,
     projectOptions: ((blocks[0] as InputBlock).element as StaticSelect)
       .options as SlackOption[],
     releaseTagName,

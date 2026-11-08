@@ -13,6 +13,8 @@ export interface DataRelease {
   description: string;
   failedDeployments: ReleaseDeploymentInfo[];
   projectId: number;
+  /** Missing on releases created before GitHub support: they are GitLab. */
+  provider?: ProviderType;
   slackAuthor: SlackUser;
   startedDeployments: ReleaseDeploymentInfo[];
   state: ReleaseState;
