@@ -98,14 +98,28 @@ export async function githubHookHandler(
       if (body.action !== 'created' || !body.pull_request || !body.comment) {
         break;
       }
-      return handleCommentHook(body, body.pull_request.number, acknowledge);
+      return handleCommentHook(
+        body,
+        body.comment,
+        body.pull_request.number,
+        acknowledge,
+      );
 
     case 'issue_comment':
       // Pull request comments are sent as issue comments.
-      if (body.action !== 'created' || !body.issue?.pull_request) {
+      if (
+        body.action !== 'created' ||
+        !body.issue?.pull_request ||
+        !body.comment
+      ) {
         break;
       }
-      return handleCommentHook(body, body.issue.number, acknowledge);
+      return handleCommentHook(
+        body,
+        body.comment,
+        body.issue.number,
+        acknowledge,
+      );
 
     case 'push':
       return handlePushHook(body, acknowledge);
@@ -228,7 +242,8 @@ async function handlePullRequestReviewHook(
 }
 
 async function handleCommentHook(
-  { comment, repository }: GithubHookBody,
+  { repository }: GithubHookBody,
+  comment: GithubComment,
   iid: number,
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
@@ -238,9 +253,9 @@ async function handleCommentHook(
       projectId: repository.id,
       iid,
       note: {
-        author_id: comment!.user.id,
-        note: comment!.body,
-        url: comment!.html_url,
+        author_id: comment.user.id,
+        note: comment.body,
+        url: comment.html_url,
       },
     },
     acknowledge,

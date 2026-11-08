@@ -299,6 +299,18 @@ describe('github > review hooks', () => {
     });
   });
 
+  it('should ignore pull request comment events without a comment', async () => {
+    // When
+    const response = await sendHook('issue_comment', {
+      action: 'created',
+      issue: { number: iid, pull_request: {} },
+      sender: githubApproverFixture,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  });
+
   it('should ignore issue comments', async () => {
     // When
     const response = await sendHook('issue_comment', {
