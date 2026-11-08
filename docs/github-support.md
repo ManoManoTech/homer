@@ -52,19 +52,19 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 | Feature                                              | Trigger                   | GitLab | GitHub | GitHub notes                                                                       |
 | ---------------------------------------------------- | ------------------------- | ------ | ------ | ---------------------------------------------------------------------------------- |
-| Auto-share on `homer-review` label                   | MR/PR event               | [x]    | [ ]    | `pull_request` `labeled`/`opened`.                                                 |
-| Auto-share on `homer-mergeable` label when mergeable | MR/PR event               | [x]    | [ ]    |                                                                                    |
-| Respect channel threshold on auto-share              | MR/PR event               | [x]    | [ ]    |                                                                                    |
-| Refresh review message on MR/PR update               | MR/PR event               | [x]    | [ ]    | `pull_request` `edited`, `synchronize`, `review_requested`, etc.                   |
-| Thread message: approved                             | MR approval / PR review   | [x]    | [ ]    | `pull_request_review` `submitted` with state `approved`.                           |
-| Thread message: unapproved                           | MR unapproval / PR review | [x]    | [ ]    | `pull_request_review` `dismissed` or `changes_requested`.                          |
-| Thread message: closed                               | MR/PR event               | [x]    | [ ]    |                                                                                    |
-| Thread message: merged                               | MR/PR event               | [x]    | [ ]    | `closed` with `merged: true`.                                                      |
-| Stop tracking closed/merged reviews                  | MR/PR event               | [x]    | [ ]    | Also fixes deletion scope: today reviews are deleted by iid only, across projects. |
-| Comments posted in thread                            | note / PR comment         | [x]    | [ ]    | `issue_comment`, `pull_request_review_comment`, `pull_request_review` body.        |
-| Comment debounce (3 s) per author                    | note / PR comment         | [x]    | [ ]    |                                                                                    |
-| New commits posted in thread                         | push / PR synchronize     | [x]    | [ ]    | `push` event, matched against PR commits.                                          |
-| Commit author resolved from commit email             | push                      | [x]    | [ ]    |                                                                                    |
+| Auto-share on `homer-review` label                   | MR/PR event               | [x]    | [x]    | `pull_request` `labeled`/`opened`.                                                 |
+| Auto-share on `homer-mergeable` label when mergeable | MR/PR event               | [x]    | [x]    |                                                                                    |
+| Respect channel threshold on auto-share              | MR/PR event               | [x]    | [x]    |                                                                                    |
+| Refresh review message on MR/PR update               | MR/PR event               | [x]    | [x]    | `pull_request` `edited`, `synchronize`, `review_requested`, etc.                   |
+| Thread message: approved                             | MR approval / PR review   | [x]    | [x]    | `pull_request_review` `submitted` with state `approved`.                           |
+| Thread message: unapproved                           | MR unapproval / PR review | [x]    | [-]    | GitHub has no unapprove event. "Changes requested" reviews are posted instead.     |
+| Thread message: closed                               | MR/PR event               | [x]    | [x]    |                                                                                    |
+| Thread message: merged                               | MR/PR event               | [x]    | [x]    | `closed` with `merged: true`.                                                      |
+| Stop tracking closed/merged reviews                  | MR/PR event               | [x]    | [x]    | Also fixes deletion scope: today reviews are deleted by iid only, across projects. |
+| Comments posted in thread                            | note / PR comment         | [x]    | [x]    | `issue_comment`, `pull_request_review_comment`, `pull_request_review` body.        |
+| Comment debounce (3 s) per author                    | note / PR comment         | [x]    | [x]    |                                                                                    |
+| New commits posted in thread                         | push / PR synchronize     | [x]    | [x]    | `push` event, matched against PR commits.                                          |
+| Commit author resolved from commit email             | push                      | [x]    | [x]    |                                                                                    |
 
 ## Slack user mapping
 

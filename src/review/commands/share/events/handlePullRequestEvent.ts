@@ -16,6 +16,7 @@ import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 export type PullRequestAction =
   | 'approval'
   | 'approved'
+  | 'changes_requested'
   | 'close'
   | 'merge'
   | 'open'
@@ -36,7 +37,7 @@ export interface PullRequestEvent {
   action: PullRequestAction;
   labels: string[];
   /** Whether the pull request can be merged once approved. */
-  isMergeable: boolean;
+  isMergeable: boolean | (() => Promise<boolean>);
   /** User who triggered the event. */
   actor: UnifiedUser;
 }
@@ -60,7 +61,10 @@ export async function handlePullRequestEvent(
   if (reviews.length === 0) {
     const hasReviewLabel = labels.includes(REVIEW_LABELS.REVIEW);
     const isMergeable =
-      labels.includes(REVIEW_LABELS.MERGEABLE) && event.isMergeable;
+      labels.includes(REVIEW_LABELS.MERGEABLE) &&
+      (typeof event.isMergeable === 'function'
+        ? await event.isMergeable()
+        : event.isMergeable);
 
     if (hasReviewLabel || isMergeable) {
       await handleNewReview(provider, projectId, iid);
@@ -172,6 +176,10 @@ function getThreadMessage(
   const messages: Partial<Record<PullRequestAction, ThreadMessage>> = {
     approval: approved,
     approved,
+    changes_requested: {
+      text: `*${userName}* has requested changes on this merge request.`,
+      icon_emoji: ':thumbsdown_blue:',
+    },
     close: {
       text: `*${userName}* has closed this merge request.`,
       icon_emoji: ':closed_book_blue:',

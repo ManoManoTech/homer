@@ -69,3 +69,16 @@ afterAll(async () => {
   await stopServer();
   process.removeAllListeners();
 });
+
+beforeEach(async () => {
+  const { getProvider } = await import(
+    '@/core/services/providers/ProviderFactory'
+  );
+  const { GitHubProvider } = await import(
+    '@/core/services/providers/GitHubProvider'
+  );
+  const provider = getProvider('github');
+  if (provider instanceof GitHubProvider) {
+    provider.forgetPullRequest();
+  }
+});

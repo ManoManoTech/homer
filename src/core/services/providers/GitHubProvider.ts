@@ -2,7 +2,9 @@ import { CONFIG } from '@/config';
 import {
   fetchCheckRuns,
   fetchCombinedStatus,
+  fetchOpenPullRequestsByBranch,
   fetchPullRequest,
+  fetchPullRequestCommits,
   fetchPullRequestByName,
   fetchPullRequestReviews,
   fetchRepositoryById,
@@ -38,7 +40,8 @@ import type {
 const REPOSITORY_NAME_REGEX = /^[\w.-]+\/[\w.-]+$/;
 const PULL_REQUEST_NUMBER_REGEX = /^[#!]?\d+$/;
 // Building a review message fetches the same pull request several times.
-const PULL_REQUEST_CACHE_TTL_MS = 5000;
+// Webhooks clear the entry, so a short TTL only absorbs these duplicates.
+const PULL_REQUEST_CACHE_TTL_MS = 2000;
 
 /** GitHub login to email, used when logins do not match emails. */
 export type GithubUsersMapping = Record<string, string>;
@@ -154,12 +157,42 @@ export class GitHubProvider implements RepositoryProvider {
     );
   }
 
-  async fetchOpenPullRequestsByBranch(): Promise<UnifiedPullRequest[]> {
-    throw notImplemented();
+  async fetchOpenPullRequestsByBranch(
+    projectId: number,
+    branchName: string,
+  ): Promise<UnifiedPullRequest[]> {
+    return (await fetchOpenPullRequestsByBranch(projectId, branchName)).map(
+      (pullRequest) => toUnifiedPullRequest(pullRequest, projectId),
+    );
   }
 
-  async fetchPullRequestCommitIds(): Promise<string[]> {
-    throw notImplemented();
+  async fetchPullRequestCommitIds(
+    projectId: number,
+    iid: number,
+  ): Promise<string[]> {
+    return (await fetchPullRequestCommits(projectId, iid)).map(
+      ({ sha }) => sha,
+    );
+  }
+
+  /**
+   * GitLab's "mergeable" label means "only approvals are missing". GitHub
+   * computes `mergeable_state` asynchronously, so it is read from the API.
+   */
+  async isWaitingForApprovals(
+    projectId: number,
+    iid: number,
+  ): Promise<boolean> {
+    const { mergeable, mergeable_state } = await fetchPullRequest(
+      projectId,
+      iid,
+    );
+    return (
+      mergeable !== false &&
+      ['blocked', 'clean', 'has_hooks', 'unstable'].includes(
+        mergeable_state ?? '',
+      )
+    );
   }
 
   async fetchApprovalInfo(
@@ -240,6 +273,15 @@ export class GitHubProvider implements RepositoryProvider {
     ].filter((email): email is string => !!email);
 
     return fetchSlackUserFromEmails([...new Set(emails)]);
+  }
+
+  /** Called when GitHub notifies a change, so the next read is fresh. */
+  forgetPullRequest(projectId?: number, iid?: number): void {
+    if (projectId === undefined || iid === undefined) {
+      this.pullRequests.clear();
+    } else {
+      this.pullRequests.delete(`${projectId}#${iid}`);
+    }
   }
 
   private getPullRequest(
