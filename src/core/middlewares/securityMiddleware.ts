@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
 
+const GITHUB_SECRET = CONFIG.github.secret;
 const GITLAB_SECRET = CONFIG.gitlab.secret;
 const SLACK_SIGNING_SECRET = CONFIG.slack.signingSecret;
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
@@ -25,6 +26,47 @@ function isValidGitlabRequest(req: Request): boolean {
     if (projectPath) {
       logger.error(
         `Gitlab request received with wrong secret from '${projectPath}'`,
+      );
+    }
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Validates requests from GitHub.
+ *
+ * @see https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+ */
+function isValidGithubRequest(req: Request): boolean {
+  const isGithubRequest = req.header('X-GitHub-Event') !== undefined;
+
+  if (!isGithubRequest) {
+    return false;
+  }
+
+  if (GITHUB_SECRET === '') {
+    logger.error('GitHub request received but GITHUB_SECRET is not set');
+    return false;
+  }
+
+  const signature = Buffer.from(req.header('X-Hub-Signature-256') ?? '');
+  const expectedSignature = Buffer.from(
+    `sha256=${crypto
+      .createHmac('sha256', GITHUB_SECRET)
+      .update((req as any).rawBody ?? '')
+      .digest('hex')}`,
+  );
+
+  if (
+    signature.length !== expectedSignature.length ||
+    !crypto.timingSafeEqual(signature, expectedSignature)
+  ) {
+    const repositoryName = req.body?.repository?.full_name;
+
+    if (repositoryName) {
+      logger.error(
+        `GitHub request received with wrong signature from '${repositoryName}'`,
       );
     }
     return false;
@@ -70,14 +112,18 @@ function isValidSlackRequest(req: Request): boolean {
 }
 
 /**
- * Allows only secure requests from Gitlab or Slack.
+ * Allows only secure requests from GitHub, Gitlab or Slack.
  */
 export function securityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  if (!isValidGitlabRequest(req) && !isValidSlackRequest(req)) {
+  if (
+    !isValidGitlabRequest(req) &&
+    !isValidGithubRequest(req) &&
+    !isValidSlackRequest(req)
+  ) {
     logger.debug('Unauthorized request received');
     res.status(401).send('Unauthorized');
   } else {

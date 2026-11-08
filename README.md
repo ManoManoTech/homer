@@ -267,6 +267,9 @@ Create a `.env` file containing the following variables:
   `request body exceeded size limit` error is logged with the
   request's `Content-Length` for observability.
 
+To use Homer with **GitHub** repositories, see the
+[GitHub setup](docs/github.md) and set the `GITHUB_*` variables it lists.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 

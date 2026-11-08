@@ -10,10 +10,10 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 | Feature                         | Trigger                                  | GitLab | GitHub | GitHub notes                                                                                                     |
 | ------------------------------- | ---------------------------------------- | ------ | ------ | ---------------------------------------------------------------------------------------------------------------- |
-| API client and token            | `GITLAB_TOKEN` / `GITHUB_TOKEN`          | [x]    | [ ]    | Personal access token or fine-grained token. GitHub variables are optional so GitLab-only installs keep booting. |
-| Webhook endpoint                | `POST /api/v1/homer/gitlab` / `/github`  | [x]    | [ ]    |                                                                                                                  |
-| Webhook authentication          | `X-Gitlab-Token` / `X-Hub-Signature-256` | [x]    | [ ]    | GitHub signs the raw body with HMAC SHA-256 (`GITHUB_SECRET`).                                                   |
-| Webhook ping                    | GitHub `ping` event                      | [-]    | [ ]    | Answer 200 so GitHub marks the hook healthy.                                                                     |
+| API client and token            | `GITLAB_TOKEN` / `GITHUB_TOKEN`          | [x]    | [x]    | Personal access token or fine-grained token. GitHub variables are optional so GitLab-only installs keep booting. |
+| Webhook endpoint                | `POST /api/v1/homer/gitlab` / `/github`  | [x]    | [x]    |                                                                                                                  |
+| Webhook authentication          | `X-Gitlab-Token` / `X-Hub-Signature-256` | [x]    | [x]    | GitHub signs the raw body with HMAC SHA-256 (`GITHUB_SECRET`).                                                   |
+| Webhook ping                    | GitHub `ping` event                      | [-]    | [x]    | Answer 200 so GitHub marks the hook healthy.                                                                     |
 | Provider icon on Slack messages | review message                           | [ ]    | [ ]    | Shows which provider a review comes from.                                                                        |
 
 ## Projects (`/homer project ...`)
