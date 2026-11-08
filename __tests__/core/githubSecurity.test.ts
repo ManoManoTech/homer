@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '@/app';
 import { getGithubHeaders } from '../utils/getGithubHeaders';
+import { getGitlabHeaders } from '../utils/getGitlabHeaders';
 
 describe('core > security > GitHub', () => {
   it('should allow signed GitHub requests', async () => {
@@ -43,6 +44,31 @@ describe('core > security > GitHub', () => {
       .post('/api/v1/homer/github')
       .set(headers)
       .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow GitHub requests on other routes', async () => {
+    // Given
+    const body = { object_kind: 'push' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGithubHeaders('push', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow Gitlab requests on the GitHub route', async () => {
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(getGitlabHeaders())
+      .send({});
 
     // Then
     expect(response.status).toEqual(401);

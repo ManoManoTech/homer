@@ -119,11 +119,14 @@ export function securityMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  if (
-    !isValidGitlabRequest(req) &&
-    !isValidGithubRequest(req) &&
-    !isValidSlackRequest(req)
-  ) {
+  // GitHub payloads are only trusted on the GitHub route, and that route only
+  // trusts GitHub signatures.
+  const isGithubRoute = req.path === `${CONFIG.apiBasePath}/github`;
+  const isAuthorized = isGithubRoute
+    ? isValidGithubRequest(req)
+    : isValidGitlabRequest(req) || isValidSlackRequest(req);
+
+  if (!isAuthorized) {
     logger.debug('Unauthorized request received');
     res.status(401).send('Unauthorized');
   } else {
