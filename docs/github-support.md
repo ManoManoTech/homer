@@ -101,5 +101,13 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 ## Known GitHub limitations
 
 - "Rebase source branch" merges the base branch into the PR (GitHub "update branch").
-- "Create a pipeline" cannot pass `AUTO_DEPLOY`; it re-runs existing workflow runs.
-- Approvals required needs read access to branch protection rules.
+- "Create a pipeline" re-runs the latest workflow runs of the branch head and
+  cannot pass `AUTO_DEPLOY`.
+- Required approvals come from rulesets, then classic branch protection (which
+  needs the Administration read permission); 0 when neither is readable.
+- GitHub has no "unapprove" event: "changes requested" reviews are posted
+  instead.
+- Logins are matched with `EMAIL_DOMAINS` only when
+  `GITHUB_LOGIN_MATCHES_EMAIL=true`; otherwise use `config/homer/githubUsers.json`
+  or public profile emails.
+- Repository ids are stored in an `INTEGER` column, like GitLab project ids.
