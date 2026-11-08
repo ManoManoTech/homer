@@ -32,6 +32,27 @@ In the repository (or organization) settings, add a webhook:
 - Events: pull requests, pull request reviews, pull request review comments,
   issue comments, pushes and deployment statuses.
 
+## Slack users
+
+Homer mentions people on Slack, so it needs the Slack account of each GitHub
+user. It tries, in order:
+
+1. `config/homer/githubUsers.json`, which maps GitHub logins to Slack emails:
+
+   ```json
+   {
+     "octocat": "john.doe@my-domain.com"
+   }
+   ```
+
+   Like `projects.json`, this file is bundled at build time: override it when
+   building your image.
+
+2. The public email of the GitHub profile.
+3. `<login>@<domain>` for each domain of `EMAIL_DOMAINS`, as for GitLab.
+
+Users who match none of them are not mentioned.
+
 ## Add a repository to a channel
 
 ```

@@ -68,10 +68,10 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 ## Slack user mapping
 
-| Feature                           | Trigger       | GitLab                       | GitHub | GitHub notes                                                                                                                                                     |
-| --------------------------------- | ------------- | ---------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Git user to Slack user            | every message | [x] `username@EMAIL_DOMAINS` | [ ]    | GitHub logins rarely match emails. Resolution order: `config/homer/githubUsers.json` (`{"login": "email"}`), GitHub public profile email, `login@EMAIL_DOMAINS`. |
-| Fallback when no Slack user found | every message | [x] user hidden              | [ ]    | Show the GitHub login instead of hiding the user.                                                                                                                |
+| Feature                           | Trigger       | GitLab                       | GitHub          | GitHub notes                                                                                                                                                     |
+| --------------------------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Git user to Slack user            | every message | [x] `username@EMAIL_DOMAINS` | [x]             | GitHub logins rarely match emails. Resolution order: `config/homer/githubUsers.json` (`{"login": "email"}`), GitHub public profile email, `login@EMAIL_DOMAINS`. |
+| Fallback when no Slack user found | every message | [x] user hidden              | [x] user hidden | Same as GitLab.                                                                                                                                                  |
 
 ## Changelog (`/homer changelog`)
 

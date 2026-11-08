@@ -2,10 +2,12 @@ import { CONFIG } from '@/config';
 import {
   fetchRepositoryById,
   fetchRepositoryByName,
+  fetchUserByLogin,
   GithubApiError,
   searchRepositories,
 } from '@/core/services/github';
-import type { GithubRepository } from '@/core/typings/GithubModels';
+import { fetchSlackUserFromEmails } from '@/core/services/slack';
+import type { GithubRepository, GithubUser } from '@/core/typings/GithubModels';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
@@ -17,8 +19,23 @@ import type {
 
 const REPOSITORY_NAME_REGEX = /^[\w.-]+\/[\w.-]+$/;
 
+/** GitHub login to email, used when logins do not match emails. */
+export type GithubUsersMapping = Record<string, string>;
+
 export class GitHubProvider implements RepositoryProvider {
   readonly type = 'github' as const;
+
+  private readonly usersMapping: Map<string, string>;
+  private readonly publicEmails = new Map<string, string | null>();
+
+  constructor(usersMapping: GithubUsersMapping = {}) {
+    this.usersMapping = new Map(
+      Object.entries(usersMapping).map(([login, email]) => [
+        login.toLowerCase(),
+        email,
+      ]),
+    );
+  }
 
   async fetchProject(projectId: number): Promise<UnifiedProject> {
     return toUnifiedProject(await fetchRepositoryById(projectId));
@@ -84,8 +101,35 @@ export class GitHubProvider implements RepositoryProvider {
     throw notImplemented();
   }
 
-  async findSlackUser(): Promise<SlackUser | undefined> {
-    throw notImplemented();
+  /**
+   * Tries, in order: the configured mapping, the public email of the GitHub
+   * profile, then `<login>@<EMAIL_DOMAINS>` like GitLab.
+   */
+  async findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined> {
+    const login = user.username;
+    const emails = [
+      this.usersMapping.get(login.toLowerCase()),
+      user.email ?? (await this.fetchPublicEmail(login)),
+      ...CONFIG.slack.emailDomains
+        .split(',')
+        .map((emailDomain) => `${login}@${emailDomain}`),
+    ].filter((email): email is string => !!email);
+
+    return fetchSlackUserFromEmails([...new Set(emails)]);
+  }
+
+  private async fetchPublicEmail(login: string): Promise<string | undefined> {
+    if (!this.publicEmails.has(login)) {
+      try {
+        this.publicEmails.set(
+          login,
+          (await fetchUserByLogin(login)).email ?? null,
+        );
+      } catch {
+        this.publicEmails.set(login, null);
+      }
+    }
+    return this.publicEmails.get(login) ?? undefined;
   }
 
   async findGitUsername(): Promise<string | undefined> {
@@ -106,6 +150,16 @@ function getRepositoryName(query: string): string | undefined {
     return name.length === 2 ? name.join('/') : undefined;
   }
   return REPOSITORY_NAME_REGEX.test(query) ? query : undefined;
+}
+
+export function toUnifiedUser(user: GithubUser): UnifiedUser {
+  return {
+    id: user.id,
+    username: user.login,
+    name: user.name || user.login,
+    webUrl: user.html_url,
+    email: user.email || undefined,
+  };
 }
 
 function toUnifiedProject(repository: GithubRepository): UnifiedProject {
