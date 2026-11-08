@@ -23,12 +23,21 @@ export function parseProjectRef(value: string): ProjectRef {
   const [prefix, id] = value.split(PREFIX_SEPARATOR);
 
   if (id === undefined) {
-    return { provider: DEFAULT_PROVIDER, projectId: parseInt(prefix, 10) };
+    return { provider: DEFAULT_PROVIDER, projectId: parseId(prefix, value) };
   }
   if (prefix !== 'github') {
     throw new Error(`Unknown provider in project reference: ${value}`);
   }
-  return { provider: 'github', projectId: parseInt(id, 10) };
+  return { provider: 'github', projectId: parseId(id, value) };
+}
+
+function parseId(id: string, value: string): number {
+  const projectId = Number(id);
+
+  if (id === '' || !Number.isSafeInteger(projectId)) {
+    throw new Error(`Invalid project reference: ${value}`);
+  }
+  return projectId;
 }
 
 /** Project reference of a release, which has no provider before GitHub. */

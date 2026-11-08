@@ -82,10 +82,6 @@ async function getPreviousReleaseTagError(state: {
 
   const { projectId, provider } = parseProjectRef(selectedProject);
 
-  if (Number.isNaN(projectId)) {
-    return undefined;
-  }
-
   return (await getProvider(provider).hasTag(projectId, previousReleaseTagName))
     ? undefined
     : `Tag ${previousReleaseTagName} does not belong to this project. Please select another previous release tag.`;

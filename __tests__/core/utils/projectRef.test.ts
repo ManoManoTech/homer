@@ -22,4 +22,13 @@ describe('projectRef', () => {
   it('rejects unknown providers', () => {
     expect(() => parseProjectRef('bitbucket:12')).toThrow();
   });
+
+  it.each(['', 'abc', '12abc', 'github:', 'github:abc'])(
+    'rejects the malformed reference %p',
+    (value) => {
+      expect(() => parseProjectRef(value)).toThrow(
+        `Invalid project reference: ${value}`,
+      );
+    },
+  );
 });
