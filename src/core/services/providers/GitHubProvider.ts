@@ -374,16 +374,20 @@ export class GitHubProvider implements RepositoryProvider {
     return generateGithubChangelog(projectId, previousReleaseTagName, filter);
   }
 
-  /** Latest workflow run of the branch: one commit has one run per workflow. */
+  /**
+   * Latest push workflow run of the branch. Fork pull requests can use the
+   * same branch name, so only pushes to this repository count: the release is
+   * created on the commit of this run.
+   */
   async fetchBranchLastPipeline(
     projectId: number,
     branchName: string,
   ): Promise<UnifiedPipeline> {
     const lastRun = (
-      await fetchWorkflowRuns(projectId, { branch: branchName })
+      await fetchWorkflowRuns(projectId, { branch: branchName, event: 'push' })
     ).find(
-      ({ conclusion, event }) =>
-        conclusion !== 'cancelled' && event !== 'schedule',
+      (run) =>
+        run.conclusion !== 'cancelled' && isFromRepository(run, projectId),
     );
 
     if (lastRun === undefined) {
@@ -399,9 +403,9 @@ export class GitHubProvider implements RepositoryProvider {
     projectId: number,
     ref: string,
   ): Promise<UnifiedPipeline[]> {
-    return (await fetchWorkflowRuns(projectId, { branch: ref })).map(
-      toUnifiedPipeline,
-    );
+    return (await fetchWorkflowRuns(projectId, { branch: ref }))
+      .filter((run) => isFromRepository(run, projectId))
+      .map(toUnifiedPipeline);
   }
 
   async cancelPipeline(projectId: number, pipelineId: number): Promise<void> {
@@ -547,6 +551,13 @@ function toUnifiedRelease(release: GithubRelease): UnifiedRelease {
     description: release.body ?? '',
     releasedAt: release.published_at ?? release.created_at,
   };
+}
+
+export function isFromRepository(
+  run: GithubWorkflowRun,
+  repositoryId: number,
+): boolean {
+  return run.head_repository?.id === repositoryId;
 }
 
 function toUnifiedPipeline({

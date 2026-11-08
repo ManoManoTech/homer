@@ -33,6 +33,7 @@ function run(id: number, overrides: Record<string, unknown> = {}) {
     workflow_id: id,
     head_branch: 'main',
     head_sha: 'mainsha',
+    head_repository: { id: projectId },
     event: 'push',
     status: 'completed',
     conclusion: 'success',
@@ -81,8 +82,14 @@ describe('github > release', () => {
         },
       ],
     });
-    mockGithubCall(`${repo}/actions/runs?per_page=100&branch=main`, {
-      workflow_runs: [run(2), run(1), run(0, { head_sha: 'oldsha' })],
+    mockGithubCall(`${repo}/actions/runs?per_page=100&branch=main&event=push`, {
+      workflow_runs: [
+        // A fork pull request whose branch is also named main.
+        run(9, { head_sha: 'forksha', head_repository: { id: 1 } }),
+        run(2),
+        run(1),
+        run(0, { head_sha: 'oldsha' }),
+      ],
     });
     mockGithubCall(`${repo}/actions/runs/2`, run(2));
     mockGithubCall(`${repo}/git/ref/tags/v1.0.0`, { ref: 'refs/tags/v1.0.0' });
@@ -162,7 +169,7 @@ describe('github > release', () => {
   it('should not be ready while a default branch workflow is running', async () => {
     // Given
     mockGithubCall(`${repo}/actions/runs/2`, run(2));
-    mockGithubCall(`${repo}/actions/runs?per_page=100&branch=main`, {
+    mockGithubCall(`${repo}/actions/runs?per_page=100&branch=main&event=push`, {
       workflow_runs: [
         run(2),
         run(1, { status: 'in_progress', conclusion: null }),

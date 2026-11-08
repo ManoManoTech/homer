@@ -106,6 +106,8 @@ export interface GithubWorkflowRun {
   workflow_id: number;
   head_branch: string;
   head_sha: string;
+  /** Repository the commit comes from: a fork for fork pull requests. */
+  head_repository?: { id: number } | null;
   event: string;
   status: string;
   conclusion: string | null;

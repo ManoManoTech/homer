@@ -1,3 +1,4 @@
+import { isFromRepository } from '@/core/services/providers/GitHubProvider';
 import type { DataRelease } from '@/core/typings/Data';
 import type {
   ReleaseManager,
@@ -23,9 +24,12 @@ async function isReadyToRelease(
     projectId,
     mainBranchPipelineId,
   );
+  // Only pushes to the repository: fork pull requests can share branch names.
   const runs = (
-    await fetchWorkflowRuns(projectId, { branch: head_branch })
-  ).filter((run) => run.head_sha === head_sha && run.event !== 'schedule');
+    await fetchWorkflowRuns(projectId, { branch: head_branch, event: 'push' })
+  ).filter(
+    (run) => run.head_sha === head_sha && isFromRepository(run, projectId),
+  );
 
   return (
     runs.length > 0 &&
