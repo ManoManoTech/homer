@@ -51,7 +51,10 @@ interface GithubHookBody {
   commits?: GithubPushedCommit[];
   deployment?: { ref: string; environment: string };
   deployment_status?: GithubDeploymentStatus;
-  workflow_run?: { html_url: string } | null;
+  workflow_run?: {
+    html_url: string;
+    head_repository?: { id: number } | null;
+  } | null;
   issue?: { number: number; pull_request?: unknown };
   pull_request?: GithubPullRequest;
   ref?: string;
@@ -287,10 +290,16 @@ async function handleDeploymentStatusHook(
 ): Promise<void> {
   const status = DEPLOYMENT_STATUSES[deployment_status?.state ?? ''];
 
+  // Jobs of fork pull requests can deploy too, with a branch name as ref.
+  const isFromFork =
+    workflow_run?.head_repository != null &&
+    workflow_run.head_repository.id !== repository.id;
+
   if (
     !deployment ||
     !deployment_status ||
     status === undefined ||
+    isFromFork ||
     !(await ConfigHelper.hasProjectReleaseConfig(repository.id, 'github'))
   ) {
     acknowledge(false);
@@ -311,11 +320,11 @@ async function handleDeploymentStatusHook(
       status,
       statusChangedAt: deployment_status.created_at,
       ref: deployment.ref,
-      pipelineUrl:
+      pipelineUrl: toSafeUrl(
         workflow_run?.html_url ??
-        deployment_status.log_url ??
-        deployment_status.target_url ??
-        undefined,
+          deployment_status.log_url ??
+          deployment_status.target_url,
+      ),
       // Plugins only get the fields GitHub can fill.
       hook: {
         environment,
@@ -325,6 +334,11 @@ async function handleDeploymentStatusHook(
     },
     acknowledge,
   );
+}
+
+/** Deployment URLs are free text: keep https URLs that cannot break mrkdwn. */
+function toSafeUrl(url: string | null | undefined): string | undefined {
+  return url && /^https:\/\/[^\s<>|]+$/.test(url) ? url : undefined;
 }
 
 function getGithubProvider(): GitHubProvider {

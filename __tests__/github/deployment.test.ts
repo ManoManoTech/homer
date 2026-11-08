@@ -31,7 +31,11 @@ async function createRelease(state: ReleaseState) {
   });
 }
 
-async function sendDeploymentStatus(state: string, environment = 'production') {
+async function sendDeploymentStatus(
+  state: string,
+  environment = 'production',
+  headRepositoryId = projectId,
+) {
   const body = {
     action: 'created',
     deployment: { ref: tagName, environment },
@@ -41,7 +45,10 @@ async function sendDeploymentStatus(state: string, environment = 'production') {
       created_at: '2026-01-01T10:00:00Z',
       target_url: `${html_url}/actions/runs/7`,
     },
-    workflow_run: { html_url: `${html_url}/actions/runs/7` },
+    workflow_run: {
+      html_url: `${html_url}/actions/runs/7`,
+      head_repository: { id: headRepositoryId },
+    },
     repository: githubRepositoryFixture,
     sender: { id: 1, login: 'octocat', html_url: '' },
   };
@@ -118,6 +125,18 @@ describe('github > deployment', () => {
 
     // When
     const response = await sendDeploymentStatus('inactive');
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('should ignore deployments from fork pull requests', async () => {
+    // Given
+    await createRelease('created');
+
+    // When
+    const response = await sendDeploymentStatus('success', 'production', 1);
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
