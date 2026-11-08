@@ -276,7 +276,7 @@ describe('github > review hooks', () => {
       action: 'created',
       issue: { number: iid, pull_request: {} },
       comment: {
-        body: 'Nice catch',
+        body: 'Nice catch <!channel>',
         html_url: `${githubPullRequestFixture.html_url}#issuecomment-1`,
         user: githubApproverFixture,
       },
@@ -290,7 +290,9 @@ describe('github > review hooks', () => {
     await waitFor(() => {
       expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(':speech_balloon_blue: Nice catch'),
+          text: expect.stringContaining(
+            ':speech_balloon_blue: Nice catch &lt;!channel&gt;',
+          ),
           thread_ts: 'ts',
         }),
       );

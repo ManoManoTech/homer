@@ -51,7 +51,7 @@ export async function buildNoteMessage(
     icon_emoji: ':speech_balloon_blue:',
     text: slackifyText(
       noteAttributes
-        .map(({ note }) => `:speech_balloon_blue: ${note}`)
+        .map(({ note }) => `:speech_balloon_blue: ${escapeText(note)}`)
         .join('\n\n'),
       '*⚠️ Notes truncated due to Slack limitations.*',
     ),
