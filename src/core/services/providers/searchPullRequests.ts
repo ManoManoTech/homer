@@ -1,3 +1,4 @@
+import { CONFIG } from '@/config';
 import type { DataProject } from '@/core/typings/Data';
 import type { ProviderType } from '@/core/typings/Provider';
 import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
@@ -17,7 +18,7 @@ export async function searchPullRequests(
   // A URL is enough to find the pull request, even outside channel projects.
   if (isUrl) {
     projectIdsByProvider.set(
-      new URL(query).hostname === 'github.com' ? 'github' : 'gitlab',
+      query.startsWith(`${CONFIG.github.url}/`) ? 'github' : 'gitlab',
       [],
     );
   }

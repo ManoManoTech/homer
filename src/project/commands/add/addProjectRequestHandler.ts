@@ -1,5 +1,7 @@
 import type { Response } from 'express';
+import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
+import { isGithubConfigured } from '@/core/services/github';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { ProviderType } from '@/core/typings/Provider';
@@ -13,7 +15,6 @@ import { addProject } from './addProject';
 import { buildAddProjectSelectionEphemeral } from './buildAddProjectSelectionEphemeral';
 
 const GITHUB_KEYWORD = 'github';
-const GITHUB_URL_REGEX = /^https:\/\/github\.com\//;
 
 export async function addProjectRequestHandler(
   req: SlackExpressRequest,
@@ -29,6 +30,15 @@ export async function addProjectRequestHandler(
   }
 
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
+
+  if (provider === 'github' && !isGithubConfigured()) {
+    await slackBotWebClient.chat.postEphemeral({
+      channel: channel_id,
+      user: user_id,
+      text: 'GitHub is not configured on this Homer instance :homer-stressed:',
+    });
+    return;
+  }
 
   let projects: UnifiedProject[] = [];
 
@@ -84,7 +94,7 @@ function parseQuery(words: string[]): {
 
   const query = words.join(' ');
   return {
-    provider: GITHUB_URL_REGEX.test(query) ? 'github' : 'gitlab',
+    provider: query.startsWith(`${CONFIG.github.url}/`) ? 'github' : 'gitlab',
     query,
   };
 }

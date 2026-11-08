@@ -20,13 +20,13 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 | Feature                                   | Trigger                                | GitLab | GitHub | GitHub notes                             |
 | ----------------------------------------- | -------------------------------------- | ------ | ------ | ---------------------------------------- |
-| Add a project by id                       | `/homer project add <id>`              | [x]    | [ ]    | GitHub repository numeric id.            |
-| Add a project by path                     | `/homer project add <group/name>`      | [x]    | [ ]    | `owner/repo`.                            |
-| Add a project by search, pick from a list | `/homer project add <text>`            | [x]    | [ ]    | GitHub repository search.                |
-| Webhook setup hint after add              | ephemeral message                      | [x]    | [ ]    | Link to the repository webhook settings. |
-| Channel threshold warning                 | `SLACK_CHANNEL_NOTIFICATION_THRESHOLD` | [x]    | [ ]    |                                          |
-| List channel projects                     | `/homer project list`                  | [x]    | [ ]    |                                          |
-| Remove a project                          | `/homer project remove`                | [x]    | [ ]    |                                          |
+| Add a project by id                       | `/homer project add <id>`              | [x]    | [x]    | GitHub repository numeric id.            |
+| Add a project by path                     | `/homer project add <group/name>`      | [x]    | [x]    | `owner/repo`.                            |
+| Add a project by search, pick from a list | `/homer project add <text>`            | [x]    | [x]    | GitHub repository search.                |
+| Webhook setup hint after add              | ephemeral message                      | [x]    | [x]    | Link to the repository webhook settings. |
+| Channel threshold warning                 | `SLACK_CHANNEL_NOTIFICATION_THRESHOLD` | [x]    | [x]    |                                          |
+| List channel projects                     | `/homer project list`                  | [x]    | [x]    |                                          |
+| Remove a project                          | `/homer project remove`                | [x]    | [x]    |                                          |
 
 ## Reviews (`/homer review ...`)
 

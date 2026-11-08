@@ -1,5 +1,6 @@
 import { type ProviderType, toProviderType } from '@/core/typings/Provider';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
+import { GitHubProvider } from './GitHubProvider';
 import { GitLabProvider } from './GitLabProvider';
 
 const providers: Partial<Record<ProviderType, RepositoryProvider>> = {};
@@ -15,7 +16,8 @@ export function getProvider(providerType: ProviderType): RepositoryProvider {
         provider = new GitLabProvider();
         break;
       case 'github':
-        throw new Error('GitHub provider is not available yet');
+        provider = new GitHubProvider();
+        break;
     }
     providers[type] = provider;
   }
