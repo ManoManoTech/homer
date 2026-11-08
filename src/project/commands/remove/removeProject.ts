@@ -5,19 +5,21 @@ import {
 } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { extractActionParameters } from '@/core/utils/slackActions';
 
 export async function removeProject(
   payload: BlockActionsPayload,
-  action: StaticSelectAction
+  action: StaticSelectAction,
 ) {
   const { container, response_url, user } = payload;
   const { channel_id } = container;
-  const [projectId, projectName] = extractActionParameters(
-    action.selected_option.value
+  const [projectRef, projectName] = extractActionParameters(
+    action.selected_option.value,
   );
+  const { projectId, provider } = parseProjectRef(projectRef);
 
-  await removeProjectFromChannel(parseInt(projectId, 10), channel_id);
+  await removeProjectFromChannel(projectId, channel_id, provider);
   await deleteEphemeralMessage(response_url);
   await slackBotWebClient.chat.postEphemeral({
     channel: channel_id,

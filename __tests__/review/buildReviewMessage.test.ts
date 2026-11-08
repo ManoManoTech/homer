@@ -35,13 +35,13 @@ describe('buildReviewMessage', () => {
   });
 
   it('renders the post payload for an open merge request', async () => {
-    const message = await buildReviewMessage(channelId, project_id, iid);
+    const message = await buildReviewMessage(channelId, 'gitlab', project_id, iid);
 
     expect(message).toMatchSnapshot();
   });
 
   it('renders the update payload (with ts) for an open merge request', async () => {
-    const message = await buildReviewMessage(channelId, project_id, iid, 'ts');
+    const message = await buildReviewMessage(channelId, 'gitlab', project_id, iid, 'ts');
 
     expect(message).toMatchSnapshot();
   });
@@ -52,7 +52,7 @@ describe('buildReviewMessage', () => {
       state: 'closed',
     });
 
-    const message = await buildReviewMessage(channelId, project_id, iid);
+    const message = await buildReviewMessage(channelId, 'gitlab', project_id, iid);
 
     expect(message).toMatchSnapshot();
   });
@@ -63,7 +63,7 @@ describe('buildReviewMessage', () => {
       state: 'merged',
     });
 
-    const message = await buildReviewMessage(channelId, project_id, iid);
+    const message = await buildReviewMessage(channelId, 'gitlab', project_id, iid);
 
     expect(message).toMatchSnapshot();
   });
@@ -75,7 +75,7 @@ describe('buildReviewMessage', () => {
       approvals_left: 0,
     });
 
-    const message = await buildReviewMessage(channelId, project_id, iid);
+    const message = await buildReviewMessage(channelId, 'gitlab', project_id, iid);
 
     expect(message).toMatchSnapshot();
   });

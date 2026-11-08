@@ -14,7 +14,14 @@ import type {
   DataReleaseInternal,
   DataReview,
 } from '@/core/typings/Data';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
+
+/** Data created before GitHub support has no provider: it is GitLab. */
+type WithOptionalProvider<T extends { provider: ProviderType }> = Omit<
+  T,
+  'provider'
+> & { provider?: ProviderType };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
@@ -34,6 +41,11 @@ export const sequelize = new Sequelize({
 const Project = sequelize.define<Model<DataProject>>('Project', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   projectId: { type: DataTypes.INTEGER, allowNull: false },
+  provider: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: DEFAULT_PROVIDER,
+  },
 });
 
 const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
@@ -52,6 +64,11 @@ const Review = sequelize.define<Model<DataReview>>('Review', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   mergeRequestIid: { type: DataTypes.INTEGER, allowNull: false },
   projectId: { type: DataTypes.INTEGER, allowNull: false },
+  provider: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: DEFAULT_PROVIDER,
+  },
   ts: { type: DataTypes.STRING, allowNull: false },
 });
 
@@ -110,9 +127,10 @@ export async function checkDatabaseConnection(): Promise<void> {
 export async function addProjectToChannel({
   channelId,
   projectId,
-}: DataProject): Promise<void> {
+  provider = DEFAULT_PROVIDER,
+}: WithOptionalProvider<DataProject>): Promise<void> {
   await Project.findOrCreate({
-    where: { channelId, projectId },
+    where: { channelId, projectId, provider },
   });
 }
 
@@ -120,16 +138,23 @@ export async function addReviewToChannel({
   channelId,
   mergeRequestIid,
   projectId,
+  provider = DEFAULT_PROVIDER,
   ts,
-}: DataReview): Promise<void> {
+}: WithOptionalProvider<DataReview>): Promise<void> {
   const review = await Review.findOne({
-    where: { channelId, mergeRequestIid, projectId },
+    where: { channelId, mergeRequestIid, projectId, provider },
   });
 
   if (review !== null) {
     await review.update({ ts });
   } else {
-    await Review.create({ channelId, mergeRequestIid, projectId, ts });
+    await Review.create({
+      channelId,
+      mergeRequestIid,
+      projectId,
+      provider,
+      ts,
+    });
   }
 }
 
@@ -203,27 +228,30 @@ export async function getReviewsByChannelId(
 export async function getReviewsByMergeRequestIid(
   projectId: number,
   mergeRequestIid: number,
+  provider: ProviderType,
 ): Promise<DataReview[]> {
   const reviews = await Review.findAll({
-    where: { mergeRequestIid, projectId },
+    where: { mergeRequestIid, projectId, provider },
   });
   return reviews.map(toJSON);
 }
 
 export async function getChannelsByProjectId(
   projectId: number,
+  provider: ProviderType,
 ): Promise<DataProject[]> {
   const projects = await Project.findAll({
-    where: { projectId },
+    where: { projectId, provider },
   });
   return projects.map(toJSON);
 }
 
 export async function countChannelsByProjectId(
   projectId: number,
+  provider: ProviderType,
 ): Promise<number> {
   return Project.count({
-    where: { projectId },
+    where: { projectId, provider },
   });
 }
 
@@ -237,9 +265,10 @@ export async function hasRelease(
 export async function removeProjectFromChannel(
   projectId: number,
   channelId: string,
+  provider: ProviderType,
 ) {
   await Project.destroy({
-    where: { channelId, projectId },
+    where: { channelId, projectId, provider },
   });
 }
 
@@ -259,11 +288,12 @@ export async function removeReview(ts: string): Promise<void> {
 }
 
 export async function removeReviewsByMergeRequestIid(
-  mergeRequestIid: number,
   projectId: number,
+  mergeRequestIid: number,
+  provider: ProviderType,
 ): Promise<void> {
   await Review.destroy({
-    where: { mergeRequestIid, projectId },
+    where: { mergeRequestIid, projectId, provider },
   });
 }
 

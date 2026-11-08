@@ -1,19 +1,25 @@
 import type { ChatPostMessageArguments, KnownBlock } from '@slack/web-api';
-import { fetchUserById } from '@/core/services/gitlab';
-import {
-  escapeText,
-  fetchSlackUserFromGitlabUser,
-} from '@/core/services/slack';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { escapeText } from '@/core/services/slack';
+import type { ProviderType } from '@/core/typings/Provider';
 import { SLACK_CHARACTER_LIMIT, slackifyText } from '@/core/utils/slackifyText';
 
+export interface Note {
+  author_id: number;
+  note: string;
+  url: string;
+}
+
 export async function buildNoteMessage(
+  providerType: ProviderType,
   channelId: string,
   reviewMessageTs: string,
-  noteAttributes: { author_id: number; note: string; url: string }[],
+  noteAttributes: Note[],
 ): Promise<ChatPostMessageArguments> {
-  const author = await fetchUserById(noteAttributes[0].author_id).then(
-    (user) => (user ? fetchSlackUserFromGitlabUser(user) : undefined),
-  );
+  const provider = getProvider(providerType);
+  const author = await provider
+    .fetchUser(noteAttributes[0].author_id)
+    .then((user) => (user ? provider.findSlackUser(user) : undefined));
   return {
     blocks: [
       ...noteAttributes.map(({ note, url }) => ({

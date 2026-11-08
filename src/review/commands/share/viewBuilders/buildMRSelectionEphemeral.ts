@@ -1,12 +1,13 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
-import type { GitlabMergeRequest } from '@/core/typings/GitlabMergeRequest';
+import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
+import { formatProjectRef } from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 const MAX_OPTION_TEXT_LENGTH = 31;
 
 interface MRSelectionEphemeralData {
   channelId: string;
-  mergeRequests: GitlabMergeRequest[];
+  mergeRequests: UnifiedPullRequest[];
   query: string;
   userId: string;
 }
@@ -48,8 +49,8 @@ export function buildMRSelectionEphemeral({
             },
             value: injectActionsParameters(
               'merge-request',
-              mergeRequest.project_id,
-              mergeRequest.iid
+              formatProjectRef(mergeRequest),
+              mergeRequest.iid,
             ),
           })),
         },

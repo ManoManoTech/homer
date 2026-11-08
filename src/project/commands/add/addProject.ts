@@ -4,19 +4,24 @@ import {
   addProjectToChannel,
   countChannelsByProjectId,
 } from '@/core/services/data';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 
 export async function addProject(
-  projectId: number,
+  project: Pick<UnifiedProject, 'id' | 'path' | 'provider'>,
   channelId: string,
   userId: string,
-  projectPath: string,
 ): Promise<void> {
-  await addProjectToChannel({ projectId, channelId });
-  const numberOfChannelsLinkedToProject =
-    await countChannelsByProjectId(projectId);
+  const { id: projectId, path: projectPath, provider } = project;
 
-  await sendSuccessMessage(channelId, userId, projectPath);
+  await addProjectToChannel({ projectId, channelId, provider });
+  const numberOfChannelsLinkedToProject = await countChannelsByProjectId(
+    projectId,
+    provider,
+  );
+
+  await sendSuccessMessage(channelId, userId, project);
 
   if (
     numberOfChannelsLinkedToProject > CONFIG.slack.channelNotificationThreshold
@@ -33,17 +38,25 @@ export async function addProject(
 async function sendSuccessMessage(
   channelId: string,
   userId: string,
-  projectPath: string,
+  project: Pick<UnifiedProject, 'path' | 'provider'>,
 ): Promise<void> {
+  const webhookSettingsUrl = getProvider(
+    project.provider,
+  ).getWebhookSettingsUrl(project);
+  const documentation =
+    project.provider === 'github'
+      ? `in your GitHub repository by following the \
+<${HOMER_GIT_URL}/blob/main/docs/github.md|dedicated documentation>.`
+      : `in your Gitlab project by following the \
+<${HOMER_GIT_URL}/#1-make-homer-notified-of-changes-happening-in-the-gitlab-project|dedicated documentation>.`;
+
   await slackBotWebClient.chat.postEphemeral({
     channel: channelId,
     user: userId,
     text: `\
-\`${projectPath}\` added to this channel :homer-happy:
+\`${project.path}\` added to this channel :homer-happy:
 
-Don't forget to <${CONFIG.gitlab.url}/${projectPath}/-/hooks|set up a webhook> \
-in your Gitlab project by following the \
-<${HOMER_GIT_URL}/#1-make-homer-notified-of-changes-happening-in-the-gitlab-project|dedicated documentation>.
+Don't forget to <${webhookSettingsUrl}|set up a webhook> ${documentation}
 `,
   });
 }

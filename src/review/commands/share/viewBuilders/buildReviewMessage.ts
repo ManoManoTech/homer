@@ -10,31 +10,27 @@ import {
   MERGE_REQUEST_CLOSE_STATES,
   MERGE_REQUEST_OPEN_STATES,
 } from '@/constants';
-import {
-  fetchMergeRequestApprovers,
-  fetchMergeRequestByIid,
-  fetchProjectById,
-  fetchReviewers,
-} from '@/core/services/gitlab';
-import {
-  escapeText,
-  fetchSlackUserFromGitlabUser,
-  fetchSlackUsersFromGitlabUsers,
-} from '@/core/services/slack';
-import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
-import type { GitlabPipelineStatus } from '@/core/typings/GitlabPipeline';
-import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { escapeText, fetchSlackUsers } from '@/core/services/slack';
+import type { ProviderType } from '@/core/typings/Provider';
 import { type SlackUser } from '@/core/typings/SlackUser';
+import type {
+  UnifiedProject,
+  UnifiedPullRequest,
+} from '@/core/typings/UnifiedModels';
+import { formatProjectRef } from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 
 export function buildReviewMessage(
   channelId: string,
+  provider: ProviderType,
   projectId: number,
   mergeRequestIid: number,
 ): Promise<ChatPostMessageArguments>;
 
 export function buildReviewMessage(
   channelId: string,
+  provider: ProviderType,
   projectId: number,
   mergeRequestIid: number,
   ts: string,
@@ -42,11 +38,16 @@ export function buildReviewMessage(
 
 export async function buildReviewMessage(
   channelId: string,
+  providerType: ProviderType,
   projectId: number,
   mergeRequestIid: number,
   ts?: string,
 ) {
-  const mergeRequest = await fetchMergeRequestByIid(projectId, mergeRequestIid);
+  const provider = getProvider(providerType);
+  const mergeRequest = await provider.fetchPullRequest(
+    projectId,
+    mergeRequestIid,
+  );
   const [
     slackAssignees,
     approvalInfo,
@@ -54,19 +55,19 @@ export async function buildReviewMessage(
     slackReviewers,
     project,
   ] = await Promise.all([
-    fetchSlackUsersFromGitlabUsers(mergeRequest.assignees),
-    fetchMergeRequestApprovers(projectId, mergeRequestIid).then(
-      async (info) => ({
-        approvers: await fetchSlackUsersFromGitlabUsers(info.approvers),
-        approvals_required: info.approvals_required,
-        approvals_left: info.approvals_left,
-      }),
-    ),
-    fetchSlackUserFromGitlabUser(mergeRequest.author),
-    fetchReviewers(projectId, mergeRequestIid).then(
-      fetchSlackUsersFromGitlabUsers,
-    ),
-    fetchProjectById(projectId),
+    fetchSlackUsers(provider, mergeRequest.assignees),
+    provider
+      .fetchApprovalInfo(projectId, mergeRequestIid)
+      .then(async (info) => ({
+        approvers: await fetchSlackUsers(provider, info.approvers),
+        approvals_required: info.approvalsRequired,
+        approvals_left: info.approvalsLeft,
+      })),
+    provider.findSlackUser(mergeRequest.author),
+    provider
+      .fetchReviewers(projectId, mergeRequestIid)
+      .then((reviewers) => fetchSlackUsers(provider, reviewers)),
+    provider.fetchProject(projectId),
   ]);
 
   const mergeRequestTitle = MERGE_REQUEST_CLOSE_STATES.includes(
@@ -82,7 +83,7 @@ export async function buildReviewMessage(
     : ` (${mergeRequest.state})`;
 
   const blocks = [
-    buildHeaderBlock(mergeRequest, projectId),
+    buildHeaderBlock(mergeRequest, providerType, projectId),
     buildContextBlock(mergeRequest, project),
   ] as KnownBlock[];
 
@@ -98,7 +99,7 @@ export async function buildReviewMessage(
   const message: ChatPostMessageArguments = {
     channel: channelId,
     link_names: true,
-    text: `${mergeRequestTitle} ${mergeRequest.web_url}${mergeRequestStatus}`,
+    text: `${mergeRequestTitle} ${mergeRequest.webUrl}${mergeRequestStatus}`,
     blocks,
   };
 
@@ -115,9 +116,11 @@ export async function buildReviewMessage(
 }
 
 function buildHeaderBlock(
-  mergeRequest: GitlabMergeRequestDetails,
+  mergeRequest: UnifiedPullRequest,
+  provider: ProviderType,
   projectId: number,
 ): SectionBlock {
+  const projectRef = formatProjectRef({ provider, projectId });
   const isClosed = MERGE_REQUEST_CLOSE_STATES.includes(mergeRequest.state);
   const title = escapeText(mergeRequest.title);
   const formattedTitle = isClosed ? `~${title}~` : title;
@@ -129,7 +132,7 @@ function buildHeaderBlock(
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `*<${mergeRequest.web_url}|${formattedTitle}${status}>*`,
+      text: `*<${mergeRequest.webUrl}|${formattedTitle}${status}>*`,
     },
     accessory: {
       type: 'overflow',
@@ -139,15 +142,15 @@ function buildHeaderBlock(
           text: { type: 'plain_text', text: 'Create a pipeline' },
           value: injectActionsParameters(
             'review-create-pipeline',
-            projectId,
-            mergeRequest.source_branch,
+            projectRef,
+            mergeRequest.sourceBranch,
           ),
         },
         {
           text: { type: 'plain_text', text: 'Rebase source branch' },
           value: injectActionsParameters(
             'review-rebase-source-branch',
-            projectId,
+            projectRef,
             mergeRequest.iid,
           ),
         },
@@ -161,10 +164,10 @@ function buildHeaderBlock(
 }
 
 function buildContextBlock(
-  mergeRequest: GitlabMergeRequestDetails,
-  project: GitlabProjectDetails,
+  mergeRequest: UnifiedPullRequest,
+  project: UnifiedProject,
 ): ContextBlock {
-  const getPipelineStatus = (status?: GitlabPipelineStatus) => {
+  const getPipelineStatus = (status?: string) => {
     const emojiMap: Record<string, string> = {
       success: '✅',
       manual: '⚙️',
@@ -177,35 +180,35 @@ function buildContextBlock(
     return status ? `${emojiMap[status] || ''} ${status}` : 'None';
   };
 
-  const getMergeableStatus = (mergeStatus: string) =>
-    mergeStatus === 'can_be_merged' ? '✅ Yes' : '⚠️ No';
+  const getMergeableStatus = (mergeable: boolean) =>
+    mergeable ? '✅ Yes' : '⚠️ No';
 
   return {
     type: 'context',
     elements: [
       {
         type: 'mrkdwn',
-        text: `Project: _<${project.web_url}|${project.path_with_namespace}>_`,
+        text: `Project: _<${project.webUrl}|${project.path}>_`,
       },
       {
         type: 'mrkdwn',
-        text: `Target branch: \`${mergeRequest.target_branch}\``,
+        text: `Target branch: \`${mergeRequest.targetBranch}\``,
       },
       {
         type: 'mrkdwn',
-        text: `Open discussion(s): \`${mergeRequest.user_notes_count || 0}\``,
+        text: `Open discussion(s): \`${mergeRequest.discussionsCount}\``,
       },
       {
         type: 'mrkdwn',
-        text: `Changes: \`${(mergeRequest as GitlabMergeRequestDetails).changes_count}\``,
+        text: `Changes: \`${mergeRequest.changesCount}\``,
       },
       {
         type: 'mrkdwn',
-        text: `Pipeline: ${getPipelineStatus(mergeRequest.head_pipeline?.status)}`,
+        text: `Pipeline: ${getPipelineStatus(mergeRequest.pipelineStatus)}`,
       },
       {
         type: 'mrkdwn',
-        text: `Mergeable: ${getMergeableStatus(mergeRequest.merge_status)}`,
+        text: `Mergeable: ${getMergeableStatus(mergeRequest.mergeable)}`,
       },
     ],
   };

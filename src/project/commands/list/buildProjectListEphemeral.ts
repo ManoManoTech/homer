@@ -1,11 +1,11 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import slackifyMarkdown from 'slackify-markdown';
-import type { GitlabProject } from '@/core/typings/GitlabProject';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 
 interface BuildProjectListEphemeralData {
   channelId: string;
   displayTitle: boolean;
-  projects: GitlabProject[];
+  projects: UnifiedProject[];
   userId: string;
 }
 
@@ -16,15 +16,10 @@ export function buildProjectListEphemeral({
   userId,
 }: BuildProjectListEphemeralData): ChatPostEphemeralArguments {
   const formattedProjects = projects
-    .map(
-      ({ path_with_namespace, web_url }) =>
-        `- [${path_with_namespace}](${web_url})`
-    )
+    .map(({ path, webUrl }) => `- [${path}](${webUrl})`)
     .join('\n');
 
-  const formattedProjectsFallback = projects
-    .map(({ path_with_namespace }) => path_with_namespace)
-    .join(', ');
+  const formattedProjectsFallback = projects.map(({ path }) => path).join(', ');
 
   return {
     channel: channelId,
@@ -45,7 +40,7 @@ export function buildProjectListEphemeral({
               ? slackifyMarkdown(
                   displayTitle
                     ? `**Channel projects:**\n${formattedProjects}`
-                    : formattedProjects
+                    : formattedProjects,
                 )
               : 'No project has been added to this channel yet :homer-metal:',
         },

@@ -1,11 +1,12 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
-import type { GitlabProject } from '@/core/typings/GitlabProject';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
+import { formatProjectRef } from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
 interface AddProjectSelectionEphemeralData {
   channelId: string;
-  projects: GitlabProject[];
+  projects: UnifiedProject[];
   query: string;
   userId: string;
 }
@@ -36,18 +37,19 @@ export function buildAddProjectSelectionEphemeral({
             text: 'Choose a project',
           },
           options: projects
-            .sort((a, b) =>
-              a.path_with_namespace.localeCompare(b.path_with_namespace),
-            )
+            .sort((a, b) => a.path.localeCompare(b.path))
             .map((project) => ({
               text: {
                 type: 'plain_text',
-                text: truncateProjectPath(project.path_with_namespace),
+                text: truncateProjectPath(project.path),
               },
               value: injectActionsParameters(
                 'project',
-                project.id,
-                project.path_with_namespace,
+                formatProjectRef({
+                  provider: project.provider,
+                  projectId: project.id,
+                }),
+                project.path,
               ),
             })),
         },

@@ -76,7 +76,7 @@ describe('data service', () => {
       ts: 'ts-p2',
     });
 
-    await removeReviewsByMergeRequestIid(sharedIid, 1);
+    await removeReviewsByMergeRequestIid(1, sharedIid, 'gitlab');
 
     const { hasModelEntry } = (await import('sequelize')) as any;
     expect(

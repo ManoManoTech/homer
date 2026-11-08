@@ -1,10 +1,8 @@
-import { fetchMergeRequestCommits } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
 import { waitForMergeRequestCommits } from '@/review/commands/share/utils/waitForMergeRequestCommits';
 
-jest.mock('@/core/services/gitlab');
-
-const mockFetch = fetchMergeRequestCommits as jest.Mock;
+const mockFetch = jest.fn();
+const provider = { fetchPullRequestCommitIds: mockFetch };
 
 describe('review > waitForMergeRequestCommits', () => {
   beforeEach(() => {
@@ -17,52 +15,54 @@ describe('review > waitForMergeRequestCommits', () => {
   });
 
   it('returns immediately when a pushed commit is found on the first fetch', async () => {
-    const commits = [{ id: 'abc' }, { id: 'def' }];
-    mockFetch.mockResolvedValue(commits);
+    const commitIds = ['abc', 'def'];
+    mockFetch.mockResolvedValue(commitIds);
 
-    const result = await waitForMergeRequestCommits(1, 42, new Set(['abc']));
+    const result = await waitForMergeRequestCommits(
+      provider,
+      1,
+      42,
+      new Set(['abc']),
+    );
 
-    expect(result).toBe(commits);
+    expect(result).toBe(commitIds);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('retries until a pushed commit appears in the MR', async () => {
-    const matchingCommits = [{ id: 'abc' }];
+    const matchingCommitIds = ['abc'];
     mockFetch
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-      .mockResolvedValue(matchingCommits);
+      .mockResolvedValue(matchingCommitIds);
 
-    const promise = waitForMergeRequestCommits(1, 42, new Set(['abc']));
+    const promise = waitForMergeRequestCommits(
+      provider,
+      1,
+      42,
+      new Set(['abc']),
+    );
     await jest.advanceTimersByTimeAsync(2000);
 
-    expect(await promise).toBe(matchingCommits);
+    expect(await promise).toBe(matchingCommitIds);
     expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
-  it('retries when GitLab returns a non-2xx response', async () => {
-    const matchingCommits = [{ id: 'abc' }];
-    mockFetch
-      .mockResolvedValueOnce({ message: '503 Service Unavailable' })
-      .mockResolvedValue(matchingCommits);
-
-    const promise = waitForMergeRequestCommits(1, 42, new Set(['abc']));
-    await jest.advanceTimersByTimeAsync(1000);
-
-    expect(await promise).toBe(matchingCommits);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('retries after a network error', async () => {
-    const matchingCommits = [{ id: 'abc' }];
+  it('retries after an API error', async () => {
+    const matchingCommitIds = ['abc'];
     mockFetch
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValue(matchingCommits);
+      .mockResolvedValue(matchingCommitIds);
 
-    const promise = waitForMergeRequestCommits(1, 42, new Set(['abc']));
+    const promise = waitForMergeRequestCommits(
+      provider,
+      1,
+      42,
+      new Set(['abc']),
+    );
     await jest.advanceTimersByTimeAsync(1000);
 
-    expect(await promise).toBe(matchingCommits);
+    expect(await promise).toBe(matchingCommitIds);
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Failed to fetch commits for MR !42'),
@@ -72,7 +72,12 @@ describe('review > waitForMergeRequestCommits', () => {
   it('returns last known commits after timeout and logs a warning', async () => {
     mockFetch.mockResolvedValue([]);
 
-    const promise = waitForMergeRequestCommits(1, 42, new Set(['abc']));
+    const promise = waitForMergeRequestCommits(
+      provider,
+      1,
+      42,
+      new Set(['abc']),
+    );
     await jest.advanceTimersByTimeAsync(6000);
 
     expect(await promise).toEqual([]);

@@ -1,17 +1,11 @@
 import type { SectionBlock } from '@slack/types';
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
-import {
-  fetchMergeRequestByIid,
-  fetchMergeRequestReviewers,
-} from '@/core/services/gitlab';
-import {
-  escapeText,
-  fetchGitlabUsernameFromSlackUserId,
-  getPermalink,
-} from '@/core/services/slack';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { escapeText, getPermalink } from '@/core/services/slack';
 import type { DataReview } from '@/core/typings/Data';
-import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
+import type { ProviderType } from '@/core/typings/Provider';
+import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
 
 // Slack refuses a longer section text with invalid_blocks.
 const SECTION_TEXT_MAX_LENGTH = 3000;
@@ -24,7 +18,7 @@ interface BuildReviewListEphemeralData {
 
 interface ReviewListItem {
   link: string;
-  mergeRequest: GitlabMergeRequestDetails;
+  mergeRequest: UnifiedPullRequest;
   projectId: number;
 }
 
@@ -38,15 +32,16 @@ export async function buildReviewListEphemeral({
   reviews,
   userId,
 }: BuildReviewListEphemeralData): Promise<ChatPostEphemeralArguments> {
-  const [items, gitlabUsername] = await Promise.all([
-    fetchOpenedReviewItems(channelId, reviews),
-    fetchGitlabUsernameFromSlackUserId(userId),
-  ]);
+  const items = await fetchOpenedReviewItems(channelId, reviews);
+  const usernames = await findGitUsernames(
+    userId,
+    new Set(items.map(({ mergeRequest }) => mergeRequest.provider)),
+  );
 
   const sections =
-    gitlabUsername === undefined
+    usernames.size === 0
       ? [{ title: 'Ongoing reviews', items }]
-      : await buildPersonalizedSections(items, gitlabUsername);
+      : await buildPersonalizedSections(items, usernames);
 
   const nonEmptySections = sections
     .filter((section) => section.items.length > 0)
@@ -88,8 +83,8 @@ async function fetchOpenedReviewItems(
   reviews: DataReview[],
 ): Promise<ReviewListItem[]> {
   const items = await Promise.all(
-    reviews.map(async ({ projectId, mergeRequestIid, ts }) => {
-      const mergeRequest = await fetchMergeRequestByIid(
+    reviews.map(async ({ projectId, provider, mergeRequestIid, ts }) => {
+      const mergeRequest = await getProvider(provider).fetchPullRequest(
         projectId,
         mergeRequestIid,
       );
@@ -108,6 +103,24 @@ async function fetchOpenedReviewItems(
   return items.filter((item): item is ReviewListItem => item !== undefined);
 }
 
+/** Git username of the Slack user on each provider of the listed reviews. */
+async function findGitUsernames(
+  slackUserId: string,
+  providers: Set<ProviderType>,
+): Promise<Map<ProviderType, string>> {
+  const usernames = new Map<ProviderType, string>();
+
+  await Promise.all(
+    [...providers].map(async (provider) => {
+      const username = await getProvider(provider).findGitUsername(slackUserId);
+      if (username !== undefined) {
+        usernames.set(provider, username);
+      }
+    }),
+  );
+  return usernames;
+}
+
 /**
  * Splits reviews into:
  *  - those the user is a reviewer of and has not reviewed yet,
@@ -116,7 +129,7 @@ async function fetchOpenedReviewItems(
  */
 async function buildPersonalizedSections(
   items: ReviewListItem[],
-  gitlabUsername: string,
+  usernames: Map<ProviderType, string>,
 ): Promise<ReviewListSection[]> {
   const waitingForReview: ReviewListItem[] = [];
   const authored: ReviewListItem[] = [];
@@ -124,18 +137,23 @@ async function buildPersonalizedSections(
 
   await Promise.all(
     items.map(async (item) => {
-      const { author, iid } = item.mergeRequest;
+      const { projectId } = item;
+      const { author, iid, provider } = item.mergeRequest;
+      const username = usernames.get(provider);
 
-      if (author.username === gitlabUsername) {
+      if (username !== undefined && author.username === username) {
         authored.push(item);
         return;
       }
 
-      const reviewers = await fetchMergeRequestReviewers(item.projectId, iid);
-      const isWaitingForReview = reviewers.some(
-        ({ state, user }) =>
-          user.username === gitlabUsername && state === 'unreviewed',
-      );
+      const isWaitingForReview =
+        username !== undefined &&
+        (
+          await getProvider(provider).fetchPendingReviewerUsernames(
+            projectId,
+            iid,
+          )
+        ).includes(username);
 
       (isWaitingForReview ? waitingForReview : others).push(item);
     }),

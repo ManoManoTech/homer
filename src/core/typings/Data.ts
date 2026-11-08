@@ -1,3 +1,4 @@
+import type { ProviderType } from '@/core/typings/Provider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
 import type { ReleaseState } from '@/release/typings/ReleaseState';
@@ -5,6 +6,7 @@ import type { ReleaseState } from '@/release/typings/ReleaseState';
 export interface DataProject {
   channelId: string;
   projectId: number;
+  provider: ProviderType;
 }
 
 export interface DataRelease {
@@ -37,6 +39,7 @@ export interface DataReview {
   channelId: string;
   mergeRequestIid: number;
   projectId: number;
+  provider: ProviderType;
   ts: string;
 }
 

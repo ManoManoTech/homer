@@ -1,7 +1,9 @@
 import { WebClient } from '@slack/web-api';
 import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
+import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
+import type { UnifiedUser } from '@/core/typings/UnifiedModels';
 import type { UserIdentity } from '@/core/typings/UserIdentity';
 import { logger } from './logger';
 import {
@@ -193,6 +195,16 @@ export async function fetchSlackUsersFromGitlabUsers(
 ): Promise<SlackUser[]> {
   const slackUsers = await Promise.all(
     gitlabUsers.map(fetchSlackUserFromGitlabUser),
+  );
+  return slackUsers.filter(Boolean) as SlackUser[];
+}
+
+export async function fetchSlackUsers(
+  provider: Pick<RepositoryProvider, 'findSlackUser'>,
+  users: UnifiedUser[],
+): Promise<SlackUser[]> {
+  const slackUsers = await Promise.all(
+    users.map((user) => provider.findSlackUser(user)),
   );
   return slackUsers.filter(Boolean) as SlackUser[];
 }

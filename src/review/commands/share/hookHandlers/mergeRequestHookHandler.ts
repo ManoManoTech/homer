@@ -1,21 +1,13 @@
 import type { Request, Response } from 'express';
-import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
+import { toUnifiedUser } from '@/core/services/providers/GitLabProvider';
+import type { GitlabUser } from '@/core/typings/GitlabUser';
 import {
-  addReviewToChannel,
-  getChannelsByProjectId,
-  getReviewsByMergeRequestIid,
-  removeReviewsByMergeRequestIid,
-} from '@/core/services/data';
-import { logger } from '@/core/services/logger';
-import {
-  fetchSlackUserFromGitlabUsername,
-  slackBotWebClient,
-} from '@/core/services/slack';
-import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
-import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
+  handlePullRequestEvent,
+  type PullRequestAction,
+} from '../events/handlePullRequestEvent';
 
-const VALID_ACTIONS = [
+const VALID_ACTIONS: readonly PullRequestAction[] = [
   'approval',
   'approved',
   'close',
@@ -25,16 +17,7 @@ const VALID_ACTIONS = [
   'open',
   'unapproval',
   'unapproved',
-] as const;
-const LABELS = {
-  REVIEW: 'homer-review',
-  MERGEABLE: 'homer-mergeable',
-} as const;
-
-interface ThreadMessage {
-  text: string;
-  icon_emoji: string;
-}
+];
 
 export async function mergeRequestHookHandler(
   req: Request,
@@ -44,139 +27,36 @@ export async function mergeRequestHookHandler(
     object_attributes: { detailed_merge_status, action, iid },
     labels,
     project: { id: projectId },
-    user: { username },
-  } = req.body;
-
-  if (!VALID_ACTIONS.includes(action as any)) {
-    res.sendStatus(HTTP_STATUS_NO_CONTENT);
-    return;
-  }
-
-  const reviews = await getReviewsByMergeRequestIid(projectId, iid);
-
-  if (reviews.length === 0) {
-    const hasReviewLabel = labels.some(
-      (label: { title: string }) => label.title === LABELS.REVIEW,
-    );
-    const isMergeable =
-      labels.some(
-        (label: { title: string }) => label.title === LABELS.MERGEABLE,
-      ) && ['mergeable', 'not_approved'].includes(detailed_merge_status);
-
-    if (hasReviewLabel || isMergeable) {
-      await handleNewReview(projectId, iid);
-      res.sendStatus(HTTP_STATUS_OK);
-      return;
-    }
-    res.sendStatus(HTTP_STATUS_NO_CONTENT);
-    return;
-  }
-
-  const user = await fetchSlackUserFromGitlabUsername(username);
-  if (!user) {
-    res.sendStatus(HTTP_STATUS_NO_CONTENT);
-    return;
-  }
-
-  res.sendStatus(HTTP_STATUS_OK);
-
-  const threadMessage = getThreadMessage(action, user.real_name);
-
-  await Promise.all(
-    reviews.map(async ({ channelId, ts }) => {
-      try {
-        await Promise.all(
-          [
-            buildReviewMessage(channelId, projectId, iid, ts).then(
-              slackBotWebClient.chat.update,
-            ),
-            threadMessage &&
-              slackBotWebClient.chat.postMessage({
-                channel: channelId,
-                thread_ts: ts,
-                ...threadMessage,
-              }),
-          ].filter(Boolean),
-        );
-      } catch (err) {
-        await handleReviewWebhookError(err, {
-          hook: 'merge_request',
-          mrIid: iid,
-          projectId,
-          channelId,
-          reviewTs: ts,
-        });
-      }
-    }),
-  );
-
-  if (['close', 'merge'].includes(action)) {
-    await removeReviewsByMergeRequestIid(iid, projectId);
-  }
-}
-
-async function handleNewReview(projectId: number, iid: number): Promise<void> {
-  const configuredChannels = await getChannelsByProjectId(projectId);
-
-  if (configuredChannels.length === 0) {
-    return;
-  }
-
-  if (configuredChannels.length > CONFIG.slack.channelNotificationThreshold) {
-    logger.warn(`Too many channels linked to project ${projectId}`);
-    return;
-  }
-
-  await Promise.all(
-    configuredChannels.map(async ({ channelId }) => {
-      try {
-        const { ts } = await slackBotWebClient.chat.postMessage(
-          await buildReviewMessage(channelId, projectId, iid),
-        );
-        await addReviewToChannel({
-          channelId,
-          mergeRequestIid: iid,
-          projectId,
-          ts: ts as string,
-        });
-      } catch (err) {
-        await handleReviewWebhookError(err, {
-          hook: 'merge_request',
-          mrIid: iid,
-          projectId,
-          channelId,
-        });
-      }
-    }),
-  );
-}
-
-function getThreadMessage(
-  action: string,
-  userName: string,
-): ThreadMessage | undefined {
-  const approved = {
-    text: `*${userName}* has approved this merge request.`,
-    icon_emoji: ':thumbsup_blue:',
+    user,
+  } = req.body as {
+    object_attributes: {
+      action: PullRequestAction;
+      detailed_merge_status: string;
+      iid: number;
+    };
+    labels: { title: string }[];
+    project: { id: number };
+    user: Pick<GitlabUser, 'name' | 'username'> & Partial<GitlabUser>;
   };
-  const unapproved = {
-    text: `*${userName}* has unapproved this merge request.`,
-    icon_emoji: ':thumbsdown_blue:',
-  };
-  // GitLab sends approved and unapproved only when the required approvals are reached or lost.
-  const messages: Record<string, ThreadMessage> = {
-    approval: approved,
-    approved,
-    close: {
-      text: `*${userName}* has closed this merge request.`,
-      icon_emoji: ':closed_book_blue:',
+
+  if (!VALID_ACTIONS.includes(action)) {
+    res.sendStatus(HTTP_STATUS_NO_CONTENT);
+    return;
+  }
+
+  await handlePullRequestEvent(
+    {
+      provider: 'gitlab',
+      projectId,
+      iid,
+      action,
+      labels: labels.map(({ title }) => title),
+      isMergeable: ['mergeable', 'not_approved'].includes(
+        detailed_merge_status,
+      ),
+      actor: toUnifiedUser({ id: 0, web_url: '', ...user } as GitlabUser),
     },
-    merge: {
-      text: `*${userName}* has merged this merge request.`,
-      icon_emoji: ':git-merge:',
-    },
-    unapproval: unapproved,
-    unapproved,
-  };
-  return messages[action];
+    (handled) =>
+      res.sendStatus(handled ? HTTP_STATUS_OK : HTTP_STATUS_NO_CONTENT),
+  );
 }
