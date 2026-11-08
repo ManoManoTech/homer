@@ -75,18 +75,18 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 ## Changelog (`/homer changelog`)
 
-| Feature                                        | Trigger | GitLab | GitHub | GitHub notes                                                               |
-| ---------------------------------------------- | ------- | ------ | ------ | -------------------------------------------------------------------------- |
-| Changelog between two tags                     | modal   | [x]    | [ ]    | Compare API (`/compare/<tag>...<ref>`).                                    |
-| Group commits by merge request                 | modal   | [x]    | [ ]    | GitLab parses `See merge request !N`; GitHub uses "list PRs for a commit". |
-| Squash commits support                         | modal   | [x]    | [ ]    |                                                                            |
-| Ticket links (`TICKET_MANAGEMENT_URL_PATTERN`) | modal   | [x]    | [ ]    | Provider independent.                                                      |
+| Feature                                        | Trigger | GitLab | GitHub | GitHub notes                                                                                          |
+| ---------------------------------------------- | ------- | ------ | ------ | ----------------------------------------------------------------------------------------------------- |
+| Changelog between two tags                     | modal   | [x]    | [x]    | Compare API (`/compare/<tag>...<ref>`).                                                               |
+| Group commits by merge request                 | modal   | [x]    | [x]    | GitLab parses `See merge request !N`; GitHub parses `Merge pull request #N` and `(#N)` squash titles. |
+| Squash commits support                         | modal   | [x]    | [x]    |                                                                                                       |
+| Ticket links (`TICKET_MANAGEMENT_URL_PATTERN`) | modal   | [x]    | [x]    | Provider independent.                                                                                 |
 
 ## Releases (`/homer release ...`)
 
 | Feature                                                        | Trigger                 | GitLab | GitHub | GitHub notes                                                                                                                    |
 | -------------------------------------------------------------- | ----------------------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Release modal, project picker, tag suggestion                  | `/homer release`        | [x]    | [ ]    | Tags from the tags API.                                                                                                         |
+| Release modal, project picker, tag suggestion                  | `/homer release`        | [x]    | [ ]    | Tags ordered by tagged commit date (GraphQL).                                                                                   |
 | Tag managers (semantic, stable date, federation)               | `releaseTagManager`     | [x]    | [ ]    | Provider independent once tags are fetched.                                                                                     |
 | Wait for main branch pipeline before release                   | `isReadyToRelease`      | [x]    | [ ]    | Workflow runs of the default branch.                                                                                            |
 | Create the release and its tag                                 | modal submit            | [x]    | [ ]    | Releases API with `target_commitish`.                                                                                           |

@@ -247,6 +247,111 @@ export async function updatePullRequestBranch(
   );
 }
 
+interface GraphQLCommitTarget {
+  committedDate?: string;
+  /** Set on annotated tags, which point at a tag object. */
+  target?: { committedDate?: string };
+}
+
+/** Newest first, ordered by the date of the tagged commit. */
+export async function fetchTags(
+  repositoryId: number,
+): Promise<{ name: string; commitDate: string }[]> {
+  const [owner, name] = (await getRepositoryName(repositoryId)).split('/');
+  const data = await callGraphQL<{
+    repository: {
+      refs: { nodes: { name: string; target: GraphQLCommitTarget }[] };
+    };
+  }>(
+    `query($owner: String!, $name: String!) {
+      repository(owner: $owner, name: $name) {
+        refs(refPrefix: "refs/tags/", first: 100, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
+          nodes {
+            name
+            target {
+              ... on Commit { committedDate }
+              ... on Tag { target { ... on Commit { committedDate } } }
+            }
+          }
+        }
+      }
+    }`,
+    { owner, name },
+  );
+  return data.repository.refs.nodes.map((node) => ({
+    name: node.name,
+    commitDate:
+      node.target?.committedDate ?? node.target?.target?.committedDate ?? '',
+  }));
+}
+
+const MAX_COMMIT_PAGES = 10;
+
+/** Commits of `head` that are not in `base`, oldest first. */
+export async function fetchComparedCommits(
+  repositoryId: number,
+  base: string,
+  head: string,
+): Promise<GithubCommit[]> {
+  const path = `${await repoPath(repositoryId)}/compare/${encodeURIComponent(
+    base,
+  )}...${encodeURIComponent(head)}`;
+  const commits: GithubCommit[] = [];
+
+  for (let page = 1; page <= MAX_COMMIT_PAGES; page += 1) {
+    const response = await callAPI<{ commits: GithubCommit[] }>(
+      `${path}?per_page=${PER_PAGE}&page=${page}`,
+    );
+    commits.push(...response.commits);
+
+    if (response.commits.length < PER_PAGE) {
+      break;
+    }
+  }
+  return commits;
+}
+
+/** Last commits of a branch, newest first. */
+export async function fetchBranchCommits(
+  repositoryId: number,
+  branchName: string,
+): Promise<GithubCommit[]> {
+  return callAPI(
+    `${await repoPath(repositoryId)}/commits?sha=${encodeURIComponent(
+      branchName,
+    )}&per_page=${PER_PAGE}`,
+  );
+}
+
+async function callGraphQL<T>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  // GitHub Enterprise serves GraphQL on /api/graphql, next to /api/v3.
+  const graphQLUrl = `${CONFIG.github.apiUrl.replace(/\/v3\/?$/, '')}/graphql`;
+  const response = await fetch(graphQLUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${CONFIG.github.token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const body = (await response.json()) as {
+    data?: T;
+    errors?: { message: string }[];
+  };
+
+  if (!response.ok || body.errors?.length || body.data === undefined) {
+    throw new GithubApiError(
+      response.status,
+      '/graphql',
+      JSON.stringify(body.errors ?? body),
+    );
+  }
+  return body.data;
+}
+
 export async function callAPI<T>(
   path: string,
   options: RequestInit = {},

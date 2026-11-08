@@ -1,3 +1,4 @@
+import { generateGithubChangelog } from '@/changelog/utils/generateGithubChangelog';
 import { CONFIG } from '@/config';
 import {
   fetchCheckRuns,
@@ -10,6 +11,7 @@ import {
   fetchRepositoryById,
   fetchRepositoryByName,
   fetchRequiredApprovals,
+  fetchTags,
   fetchUserById,
   fetchUserByLogin,
   fetchWorkflowRuns,
@@ -32,6 +34,7 @@ import type {
   GithubReview,
   GithubUser,
 } from '@/core/typings/GithubModels';
+import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
@@ -343,8 +346,8 @@ export class GitHubProvider implements RepositoryProvider {
     }
   }
 
-  async fetchTags(): Promise<UnifiedTag[]> {
-    throw releasesNotSupported();
+  async fetchTags(projectId: number): Promise<UnifiedTag[]> {
+    return fetchTags(projectId);
   }
 
   async hasTag(): Promise<boolean> {
@@ -355,8 +358,12 @@ export class GitHubProvider implements RepositoryProvider {
     throw releasesNotSupported();
   }
 
-  async generateChangelog(): Promise<string> {
-    throw releasesNotSupported();
+  async generateChangelog(
+    projectId: number,
+    previousReleaseTagName: string | undefined,
+    filter: (commit: GitlabCommit) => boolean,
+  ): Promise<string> {
+    return generateGithubChangelog(projectId, previousReleaseTagName, filter);
   }
 
   async fetchBranchLastPipeline(): Promise<UnifiedPipeline> {
