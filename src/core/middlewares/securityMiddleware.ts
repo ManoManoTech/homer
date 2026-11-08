@@ -50,11 +50,21 @@ function isValidGithubRequest(req: Request): boolean {
     return false;
   }
 
+  const rawBody: Buffer | undefined = (req as any).rawBody;
+
+  // The body parsers capture it; without it every signature looks wrong.
+  if (rawBody === undefined) {
+    logger.error(
+      'GitHub request received without raw body, check the body parser setup',
+    );
+    return false;
+  }
+
   const signature = Buffer.from(req.header('X-Hub-Signature-256') ?? '');
   const expectedSignature = Buffer.from(
     `sha256=${crypto
       .createHmac('sha256', GITHUB_SECRET)
-      .update((req as any).rawBody ?? '')
+      .update(rawBody)
       .digest('hex')}`,
   );
 

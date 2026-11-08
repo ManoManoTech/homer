@@ -49,6 +49,24 @@ describe('core > security > GitHub', () => {
     expect(response.status).toEqual(401);
   });
 
+  it('should log GitHub requests without raw body', async () => {
+    // Given
+    const { logger } = await import('@/core/services/logger');
+    const headers = getGithubHeaders('ping', {});
+    delete headers['Content-Type'];
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(headers);
+
+    // Then
+    expect(response.status).toEqual(401);
+    expect(logger.error).toHaveBeenCalledWith(
+      'GitHub request received without raw body, check the body parser setup',
+    );
+  });
+
   it('should not allow GitHub requests on other routes', async () => {
     // Given
     const body = { object_kind: 'push' };
