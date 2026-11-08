@@ -30,23 +30,23 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 ## Reviews (`/homer review ...`)
 
-| Feature                                   | Trigger                | GitLab | GitHub | GitHub notes                                                                                 |
-| ----------------------------------------- | ---------------------- | ------ | ------ | -------------------------------------------------------------------------------------------- |
-| Share a review by search                  | `/homer review <text>` | [x]    | [ ]    | Searches open PRs of the channel repositories.                                               |
-| Pick among several matches                | select menu            | [x]    | [ ]    |                                                                                              |
-| List channel reviews                      | `/homer review list`   | [x]    | [ ]    |                                                                                              |
-| Review message: title, link, state        | review message         | [x]    | [ ]    | `merged` / `closed` states struck through.                                                   |
-| Review message: project and target branch | review message         | [x]    | [ ]    |                                                                                              |
-| Review message: open discussions count    | review message         | [x]    | [ ]    | Sum of PR comments and review comments.                                                      |
-| Review message: changes count             | review message         | [x]    | [ ]    | Changed files count.                                                                         |
-| Review message: pipeline status           | review message         | [x]    | [ ]    | Combined check runs status of the head commit.                                               |
-| Review message: mergeable                 | review message         | [x]    | [ ]    | `mergeable_state`.                                                                           |
-| Review message: assignees and reviewers   | review message         | [x]    | [ ]    | Requested reviewers plus users who reviewed.                                                 |
-| Review message: approvals x/y             | review message         | [x]    | [ ]    | Required count read from branch protection; falls back to 1 when the token cannot read it.   |
-| Review message: author as sender          | review message         | [x]    | [ ]    | Needs Slack user mapping.                                                                    |
-| Action: create a pipeline                 | overflow menu          | [x]    | [ ]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent. |
-| Action: rebase source branch              | overflow menu          | [x]    | [ ]    | Uses "update branch", which merges the base branch instead of rebasing.                      |
-| Action: delete message                    | overflow menu          | [x]    | [ ]    | Provider independent.                                                                        |
+| Feature                                   | Trigger                | GitLab | GitHub | GitHub notes                                                                                          |
+| ----------------------------------------- | ---------------------- | ------ | ------ | ----------------------------------------------------------------------------------------------------- |
+| Share a review by search                  | `/homer review <text>` | [x]    | [x]    | Searches open PRs of the channel repositories.                                                        |
+| Pick among several matches                | select menu            | [x]    | [x]    |                                                                                                       |
+| List channel reviews                      | `/homer review list`   | [x]    | [x]    |                                                                                                       |
+| Review message: title, link, state        | review message         | [x]    | [x]    | `merged` / `closed` states struck through.                                                            |
+| Review message: project and target branch | review message         | [x]    | [x]    |                                                                                                       |
+| Review message: open discussions count    | review message         | [x]    | [x]    | Sum of PR comments and review comments.                                                               |
+| Review message: changes count             | review message         | [x]    | [x]    | Changed files count.                                                                                  |
+| Review message: pipeline status           | review message         | [x]    | [x]    | Combined check runs status of the head commit.                                                        |
+| Review message: mergeable                 | review message         | [x]    | [x]    | `mergeable_state`.                                                                                    |
+| Review message: assignees and reviewers   | review message         | [x]    | [x]    | Requested reviewers plus users who reviewed.                                                          |
+| Review message: approvals x/y             | review message         | [x]    | [x]    | Required count read from rulesets, then classic branch protection; 0 when the token cannot read them. |
+| Review message: author as sender          | review message         | [x]    | [x]    | Needs Slack user mapping.                                                                             |
+| Action: create a pipeline                 | overflow menu          | [x]    | [ ]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent.          |
+| Action: rebase source branch              | overflow menu          | [x]    | [ ]    | Uses "update branch", which merges the base branch instead of rebasing.                               |
+| Action: delete message                    | overflow menu          | [x]    | [x]    | Provider independent.                                                                                 |
 
 ## Review automation (webhooks)
 
