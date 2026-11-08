@@ -2,6 +2,7 @@ import { generateGithubChangelog } from '@/changelog/utils/generateGithubChangel
 import { CONFIG } from '@/config';
 import {
   cancelWorkflowRun,
+  clearRepositoryNames,
   createRelease,
   fetchCheckRuns,
   fetchReleaseByTagName,
@@ -346,12 +347,15 @@ export class GitHubProvider implements RepositoryProvider {
   }
 
   /** Called when GitHub notifies a change, so the next read is fresh. */
-  forgetPullRequest(projectId?: number, iid?: number): void {
-    if (projectId === undefined || iid === undefined) {
-      this.pullRequests.clear();
-    } else {
-      this.pullRequests.delete(`${projectId}#${iid}`);
-    }
+  forgetPullRequest(projectId: number, iid: number): void {
+    this.pullRequests.delete(`${projectId}#${iid}`);
+  }
+
+  /** Empties every cache, for tests that mock GitHub differently. */
+  clearCaches(): void {
+    this.pullRequests.clear();
+    this.publicEmails.clear();
+    clearRepositoryNames();
   }
 
   async fetchTags(projectId: number): Promise<UnifiedTag[]> {

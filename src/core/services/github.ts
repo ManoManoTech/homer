@@ -32,6 +32,10 @@ export function isGithubConfigured(): boolean {
 // and resolves names through this cache.
 const repositoryNames = new Map<number, string>();
 
+export function clearRepositoryNames(): void {
+  repositoryNames.clear();
+}
+
 export async function fetchRepositoryById(
   id: number,
 ): Promise<GithubRepository> {

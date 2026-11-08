@@ -79,6 +79,6 @@ beforeEach(async () => {
   );
   const provider = getProvider('github');
   if (provider instanceof GitHubProvider) {
-    provider.forgetPullRequest();
+    provider.clearCaches();
   }
 });
