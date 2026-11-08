@@ -49,12 +49,19 @@ user. It tries, in order:
    Like `projects.json`, this file is bundled at build time: override it when
    building your image.
 
-2. The public email of the GitHub profile.
-3. `<login>@<domain>` for each domain of `EMAIL_DOMAINS`, as for GitLab, only
-   when `GITHUB_LOGIN_MATCHES_EMAIL=true`. Keep it off on github.com: anyone can
-   register a login that matches a colleague's email and be shown as them.
+2. The user identity resolvers of `USER_IDENTITY_RESOLVERS` (see
+   [PLUGIN_USER_IDENTITY.md](PLUGIN_USER_IDENTITY.md)), called with
+   `provider: 'github'`. The built-in `emailDomainConvention` tries
+   `<login>@<domain>` only when `GITHUB_LOGIN_MATCHES_EMAIL=true`. Keep it off on
+   github.com: anyone can register a login that matches a colleague's email and
+   be shown as them.
+3. The public email of the GitHub profile, which GitHub verifies.
 
-Users who match none of them are not mentioned.
+`/homer review list` puts GitHub pull requests waiting for you first only when
+`githubUsers.json` maps your Slack email to your login.
+
+Users who match none of them are not mentioned, and their actions are not
+posted in review threads.
 
 ## Releases
 
