@@ -287,7 +287,7 @@ describe('github > review hooks', () => {
       commits: [
         {
           id: 'newsha',
-          message: 'fix: typo\n\nDetails',
+          message: 'fix: <!channel> typo\n\nDetails',
           url: 'https://github.com/commit/newsha',
           author: { email: 'author@my-domain.com' },
           added: ['a'],
@@ -317,7 +317,7 @@ describe('github > review hooks', () => {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: '<https://github.com/commit/newsha|fix: typo>',
+                text: '<https://github.com/commit/newsha|fix: &lt;!channel&gt; typo>',
               },
             },
             expect.objectContaining({ type: 'context' }),

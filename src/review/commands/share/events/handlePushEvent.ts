@@ -2,6 +2,7 @@ import type { KnownBlock } from '@slack/types';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import {
+  escapeText,
   fetchSlackUserFromEmails,
   slackBotWebClient,
 } from '@/core/services/slack';
@@ -114,7 +115,9 @@ async function buildCommitBlocks(commit: PushedCommit): Promise<KnownBlock[]> {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<${commit.url}|${commit.title}>`,
+        // Titles are user input: escaping keeps them from forging mentions or
+        // links.
+        text: `<${commit.url}|${escapeText(commit.title)}>`,
       },
     },
     {
