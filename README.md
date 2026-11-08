@@ -7,6 +7,8 @@
 Homer is a **Slack** bot intended to help you to easily **share and follow
 Gitlab merge requests**.
 
+GitHub support is in progress, see the [GitHub support matrix](docs/github-support.md).
+
 ## Why Homer?
 
 At ManoMano, we were a bit tired of reading Gitlab emails to try keeping up to
