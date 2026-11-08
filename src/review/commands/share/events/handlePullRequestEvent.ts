@@ -75,15 +75,13 @@ export async function handlePullRequestEvent(
     return;
   }
 
+  // Events of bots and unmapped users still refresh and clean up the review,
+  // but only a known Slack user gets a thread message: naming nobody beats
+  // naming the wrong person.
   const user = await getProvider(provider).findSlackUser(actor);
-  if (!user) {
-    acknowledge(false);
-    return;
-  }
+  const threadMessage = user && getThreadMessage(action, user.real_name);
 
   acknowledge(true);
-
-  const threadMessage = getThreadMessage(action, user.real_name);
 
   await Promise.all(
     reviews.map(async ({ channelId, ts }) => {

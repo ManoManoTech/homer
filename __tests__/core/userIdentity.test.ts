@@ -59,9 +59,10 @@ function expectApprovalThreadMessageFrom(realName: string) {
   });
 }
 
-// When the approver isn't found on Slack, Homer answers 204 and posts nothing.
+// When the approver isn't found on Slack, Homer refreshes the review message
+// but posts nothing in its thread.
 function expectNoApprovalNotification(response: request.Response) {
-  expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  expect(response.status).toEqual(HTTP_STATUS_OK);
   expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
 }
 

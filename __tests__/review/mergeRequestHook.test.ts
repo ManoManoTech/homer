@@ -244,7 +244,7 @@ describe('review > mergeRequestHook', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
   });
 
-  it('should answer no content status whether Slack user not found', async () => {
+  it('should only refresh the review message whether Slack user not found', async () => {
     // Given
     const { object_attributes, project } = mergeRequestHookFixture;
 
@@ -257,6 +257,7 @@ describe('review > mergeRequestHook', () => {
     (slackBotWebClient.users.lookupByEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
+    mockBuildReviewMessageCalls();
 
     // When
     const response = await request(app)
@@ -271,7 +272,9 @@ describe('review > mergeRequestHook', () => {
       });
 
     // Then
-    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    expect(slackBotWebClient.chat.update).toHaveBeenCalled();
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
   it('should create review message when merge request contains homer-review label', async () => {

@@ -176,6 +176,49 @@ describe('github > review hooks', () => {
     ).toEqual(false);
   });
 
+  it('should stop tracking reviews merged by unmapped users', async () => {
+    // Given
+    const bot = {
+      id: 99,
+      login: 'merge-queue[bot]',
+      html_url: 'https://github.com/apps/merge-queue',
+    };
+    await addReview();
+    mockGithubReviewMessageCalls({
+      ...githubPullRequestFixture,
+      state: 'closed',
+      merged: true,
+    });
+    (slackBotWebClient.users.lookupByEmail as jest.Mock).mockRejectedValue(
+      new Error('users_not_found'),
+    );
+
+    // When
+    const response = await sendHook('pull_request', {
+      action: 'closed',
+      pull_request: { ...githubPullRequestFixture, merged: true },
+      sender: bot,
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    await waitFor(async () => {
+      expect(slackBotWebClient.chat.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('(merged)'),
+        }),
+      );
+      expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+      expect(
+        await hasModelEntry('Review', {
+          mergeRequestIid: iid,
+          provider: 'github',
+        }),
+      ).toEqual(false);
+    });
+  });
+
   it('should post approvals and review comments in thread', async () => {
     // Given
     await addReview();
