@@ -4,6 +4,7 @@ export interface GithubUser {
   id: number;
   login: string;
   html_url: string;
+  type?: 'Bot' | 'Organization' | 'User';
   /** Only returned by the users endpoints. */
   name?: string | null;
   /** Public email, only returned by the users endpoints. */

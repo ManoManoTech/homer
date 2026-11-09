@@ -224,7 +224,7 @@ async function handlePullRequestReviewHook(
     ignore,
   );
 
-  if (review.body) {
+  if (review.body && !isBot(review.user)) {
     await handleNoteEvent(
       {
         provider: 'github',
@@ -247,6 +247,11 @@ async function handleCommentHook(
   iid: number,
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
+  if (isBot(comment.user)) {
+    acknowledge(false);
+    return;
+  }
+
   await handleNoteEvent(
     {
       provider: 'github',
@@ -354,6 +359,11 @@ async function handleDeploymentStatusHook(
 /** Deployment URLs are free text: keep https URLs that cannot break mrkdwn. */
 function toSafeUrl(url: string | null | undefined): string | undefined {
   return url && /^https:\/\/[^\s<>|]+$/.test(url) ? url : undefined;
+}
+
+/** Bot comments (Copilot reviews, coverage reports) drown the human ones. */
+function isBot(user: GithubUser | null): boolean {
+  return user?.type === 'Bot';
 }
 
 function getGithubProvider(): GitHubProvider {

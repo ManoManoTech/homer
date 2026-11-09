@@ -299,6 +299,66 @@ describe('github > review hooks', () => {
     });
   });
 
+  it('should not post bot comments in thread', async () => {
+    // Given
+    const bot = {
+      id: 98,
+      login: 'codecov[bot]',
+      html_url: 'https://github.com/apps/codecov',
+      type: 'Bot' as const,
+    };
+    await addReview();
+
+    // When
+    const response = await sendHook('issue_comment', {
+      action: 'created',
+      issue: { number: iid, pull_request: {} },
+      comment: {
+        body: 'Coverage report',
+        html_url: `${githubPullRequestFixture.html_url}#issuecomment-2`,
+        user: bot,
+      },
+      sender: bot,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('should update the review message but not post bot review bodies', async () => {
+    // Given
+    const bot = {
+      id: 97,
+      login: 'copilot-pull-request-reviewer[bot]',
+      html_url: 'https://github.com/apps/copilot-pull-request-reviewer',
+      type: 'Bot' as const,
+    };
+    await addReview();
+    mockGithubReviewMessageCalls();
+
+    // When
+    const response = await sendHook('pull_request_review', {
+      action: 'submitted',
+      pull_request: githubPullRequestFixture,
+      review: {
+        id: 4,
+        user: bot,
+        state: 'commented',
+        body: 'Copilot reviewed 3 files',
+        html_url: `${githubPullRequestFixture.html_url}#review-4`,
+      },
+      sender: bot,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    await waitFor(() =>
+      expect(slackBotWebClient.chat.update).toHaveBeenCalled(),
+    );
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
   it('should ignore pull request comment events without a comment', async () => {
     // When
     const response = await sendHook('issue_comment', {
