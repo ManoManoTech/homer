@@ -6,8 +6,8 @@ import {
   removeReviewsByMergeRequestIid,
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
-import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
+import { findSlackUser } from '@/core/services/slackUsers';
 import type { ProviderType } from '@/core/typings/Provider';
 import type { UnifiedUser } from '@/core/typings/UnifiedModels';
 import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
@@ -80,7 +80,7 @@ export async function handlePullRequestEvent(
   // Events of bots and unmapped users still refresh and clean up the review,
   // but only a known Slack user gets a thread message: naming nobody beats
   // naming the wrong person.
-  const user = await getProvider(provider).findSlackUser(actor);
+  const user = await findSlackUser(provider, actor);
   const threadMessage = user && getThreadMessage(action, user.real_name);
 
   acknowledge(true);

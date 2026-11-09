@@ -11,7 +11,8 @@ import {
   MERGE_REQUEST_OPEN_STATES,
 } from '@/constants';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { escapeText, fetchSlackUsers } from '@/core/services/slack';
+import { escapeText } from '@/core/services/slack';
+import { fetchSlackUsers, findSlackUser } from '@/core/services/slackUsers';
 import type { ProviderType } from '@/core/typings/Provider';
 import { type SlackUser } from '@/core/typings/SlackUser';
 import type {
@@ -55,18 +56,18 @@ export async function buildReviewMessage(
     slackReviewers,
     project,
   ] = await Promise.all([
-    fetchSlackUsers(provider, mergeRequest.assignees),
+    fetchSlackUsers(providerType, mergeRequest.assignees),
     provider
       .fetchApprovalInfo(projectId, mergeRequestIid)
       .then(async (info) => ({
-        approvers: await fetchSlackUsers(provider, info.approvers),
+        approvers: await fetchSlackUsers(providerType, info.approvers),
         approvals_required: info.approvalsRequired,
         approvals_left: info.approvalsLeft,
       })),
-    provider.findSlackUser(mergeRequest.author),
+    findSlackUser(providerType, mergeRequest.author),
     provider
       .fetchReviewers(projectId, mergeRequestIid)
-      .then((reviewers) => fetchSlackUsers(provider, reviewers)),
+      .then((reviewers) => fetchSlackUsers(providerType, reviewers)),
     provider.fetchProject(projectId),
   ]);
 

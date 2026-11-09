@@ -1,6 +1,5 @@
 import type { GitlabCommit } from './GitlabCommit';
 import type { ProviderType } from './Provider';
-import type { SlackUser } from './SlackUser';
 import type {
   UnifiedApprovalInfo,
   UnifiedPipeline,
@@ -55,10 +54,6 @@ export interface RepositoryProvider {
   ): Promise<void>;
   /** Brings the source branch up to date with the target branch. */
   rebasePullRequest(projectId: number, iid: number): Promise<void>;
-
-  findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined>;
-  /** Reverse of `findSlackUser`, used to personalize the review list. */
-  findGitUsername(slackUserId: string): Promise<string | undefined>;
 
   /** Newest first. */
   fetchTags(projectId: number): Promise<UnifiedTag[]>;

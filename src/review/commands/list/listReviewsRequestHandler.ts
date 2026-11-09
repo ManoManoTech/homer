@@ -10,7 +10,7 @@ import { buildReviewListEphemeral } from './buildReviewListEphemeral';
 
 export async function listReviewsRequestHandler(
   req: SlackExpressRequest,
-  res: Response
+  res: Response,
 ) {
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
 
@@ -22,6 +22,6 @@ export async function listReviewsRequestHandler(
       channelId: channel_id,
       reviews,
       userId: user_id,
-    })
+    }),
   );
 }

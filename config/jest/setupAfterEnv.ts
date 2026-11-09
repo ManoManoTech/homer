@@ -81,4 +81,6 @@ beforeEach(async () => {
   if (provider instanceof GitHubProvider) {
     provider.clearCaches();
   }
+  const { githubUserDirectory } = await import('@/core/services/githubUsers');
+  githubUserDirectory.clearCaches();
 });

@@ -21,7 +21,6 @@ import {
   fetchRequiredApprovals,
   fetchTags,
   fetchUserById,
-  fetchUserByLogin,
   fetchWorkflowRuns,
   GithubApiError,
   rerunWorkflowRun,
@@ -29,11 +28,6 @@ import {
   searchRepositories,
   updatePullRequestBranch,
 } from '@/core/services/github';
-import {
-  fetchSlackUserFromEmails,
-  fetchSlackUserFromGitUser,
-  fetchSlackUserFromId,
-} from '@/core/services/slack';
 import type {
   GithubCheckRun,
   GithubCombinedStatus,
@@ -46,7 +40,6 @@ import type {
 } from '@/core/typings/GithubModels';
 import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
-import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
   UnifiedApprovalInfo,
   UnifiedPipeline,
@@ -63,27 +56,13 @@ const PULL_REQUEST_NUMBER_REGEX = /^[#!]?\d+$/;
 // Webhooks clear the entry, so a short TTL only absorbs these duplicates.
 const PULL_REQUEST_CACHE_TTL_MS = 2000;
 
-/** GitHub login to email, used when logins do not match emails. */
-export type GithubUsersMapping = Record<string, string>;
-
 export class GitHubProvider implements RepositoryProvider {
   readonly type = 'github' as const;
 
-  private readonly usersMapping: Map<string, string>;
-  private readonly publicEmails = new Map<string, string | null>();
   private readonly pullRequests = new Map<
     string,
     { expiresAt: number; promise: Promise<GithubPullRequest> }
   >();
-
-  constructor(usersMapping: GithubUsersMapping = {}) {
-    this.usersMapping = new Map(
-      Object.entries(usersMapping).map(([login, email]) => [
-        login.toLowerCase(),
-        email,
-      ]),
-    );
-  }
 
   async fetchProject(projectId: number): Promise<UnifiedProject> {
     return toUnifiedProject(await fetchRepositoryById(projectId));
@@ -318,48 +297,6 @@ export class GitHubProvider implements RepositoryProvider {
     await updatePullRequestBranch(projectId, iid);
   }
 
-  /**
-   * Tries, in order: `config/homer/githubUsers.json`, the user identity
-   * resolvers (`USER_IDENTITY_RESOLVERS`), then the public email of the GitHub
-   * profile, which GitHub verifies.
-   */
-  async findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined> {
-    const login = user.username;
-    const mappedEmail = this.usersMapping.get(login.toLowerCase());
-
-    if (mappedEmail !== undefined) {
-      return fetchSlackUserFromEmails([mappedEmail]);
-    }
-
-    const slackUser = await fetchSlackUserFromGitUser({
-      provider: 'github',
-      username: login,
-    });
-    if (slackUser !== undefined) {
-      return slackUser;
-    }
-
-    const publicEmail = user.email ?? (await this.fetchPublicEmail(login));
-    return publicEmail ? fetchSlackUserFromEmails([publicEmail]) : undefined;
-  }
-
-  /** Only `githubUsers.json` knows GitHub logins from Slack users. */
-  async findGitUsername(slackUserId: string): Promise<string | undefined> {
-    let email: string | undefined;
-
-    try {
-      email = (await fetchSlackUserFromId(slackUserId))?.profile?.email;
-    } catch {
-      return undefined;
-    }
-    if (email === undefined) {
-      return undefined;
-    }
-    return [...this.usersMapping].find(
-      ([, mappedEmail]) => mappedEmail.toLowerCase() === email.toLowerCase(),
-    )?.[0];
-  }
-
   /** Called when GitHub notifies a change, so the next read is fresh. */
   forgetPullRequest(projectId: number, iid: number): void {
     this.pullRequests.delete(`${projectId}#${iid}`);
@@ -368,7 +305,6 @@ export class GitHubProvider implements RepositoryProvider {
   /** Empties every cache, for tests that mock GitHub differently. */
   clearCaches(): void {
     this.pullRequests.clear();
-    this.publicEmails.clear();
     clearRepositoryNames();
   }
 
@@ -480,20 +416,6 @@ export class GitHubProvider implements RepositoryProvider {
     });
     promise.catch(() => this.pullRequests.delete(key));
     return promise;
-  }
-
-  private async fetchPublicEmail(login: string): Promise<string | undefined> {
-    if (!this.publicEmails.has(login)) {
-      try {
-        this.publicEmails.set(
-          login,
-          (await fetchUserByLogin(login)).email ?? null,
-        );
-      } catch {
-        this.publicEmails.set(login, null);
-      }
-    }
-    return this.publicEmails.get(login) ?? undefined;
   }
 }
 

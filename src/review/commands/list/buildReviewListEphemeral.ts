@@ -4,6 +4,7 @@ import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { escapeText, getPermalink } from '@/core/services/slack';
+import { findGitUsername } from '@/core/services/slackUsers';
 import type { DataReview } from '@/core/typings/Data';
 import type { ProviderType } from '@/core/typings/Provider';
 import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
@@ -123,12 +124,12 @@ async function findGitUsernames(
 
   await Promise.all(
     [...providers].map(async (provider) => {
-      const username = await getProvider(provider)
-        .findGitUsername(slackUserId)
-        .catch((error: unknown) => {
+      const username = await findGitUsername(provider, slackUserId).catch(
+        (error: unknown) => {
           logger.warn({ error, provider }, 'Could not find the git username');
           return undefined;
-        });
+        },
+      );
       if (username !== undefined) {
         usernames.set(provider, username);
       }

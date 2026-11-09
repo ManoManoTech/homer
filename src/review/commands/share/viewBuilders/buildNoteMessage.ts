@@ -1,6 +1,7 @@
 import type { ChatPostMessageArguments, KnownBlock } from '@slack/web-api';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { escapeText } from '@/core/services/slack';
+import { findSlackUser } from '@/core/services/slackUsers';
 import type { ProviderType } from '@/core/typings/Provider';
 import { SLACK_CHARACTER_LIMIT, slackifyText } from '@/core/utils/slackifyText';
 
@@ -19,7 +20,7 @@ export async function buildNoteMessage(
   const provider = getProvider(providerType);
   const author = await provider
     .fetchUser(noteAttributes[0].author_id)
-    .then((user) => (user ? provider.findSlackUser(user) : undefined));
+    .then((user) => (user ? findSlackUser(providerType, user) : undefined));
   return {
     blocks: [
       ...noteAttributes.map(({ note, url }) => ({

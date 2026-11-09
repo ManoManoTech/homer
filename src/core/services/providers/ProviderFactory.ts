@@ -1,7 +1,6 @@
 import { type ProviderType, toProviderType } from '@/core/typings/Provider';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
-import githubUsers from '@root/config/homer/githubUsers.json';
-import { GitHubProvider, type GithubUsersMapping } from './GitHubProvider';
+import { GitHubProvider } from './GitHubProvider';
 import { GitLabProvider } from './GitLabProvider';
 
 const providers: Partial<Record<ProviderType, RepositoryProvider>> = {};
@@ -17,7 +16,7 @@ export function getProvider(providerType: ProviderType): RepositoryProvider {
         provider = new GitLabProvider();
         break;
       case 'github':
-        provider = new GitHubProvider(githubUsers as GithubUsersMapping);
+        provider = new GitHubProvider();
         break;
     }
     providers[type] = provider;

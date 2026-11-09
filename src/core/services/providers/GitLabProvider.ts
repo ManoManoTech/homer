@@ -23,10 +23,6 @@ import {
   searchMergeRequests,
   searchProjects,
 } from '@/core/services/gitlab';
-import {
-  fetchGitlabUsernameFromSlackUserId,
-  fetchSlackUserFromGitlabUsername,
-} from '@/core/services/slack';
 import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
 import type { GitlabCommit } from '@/core/typings/GitlabCommit';
 import type {
@@ -39,7 +35,6 @@ import type { GitlabProject } from '@/core/typings/GitlabProject';
 import type { GitlabRelease } from '@/core/typings/GitlabRelease';
 import type { GitlabUser, GitlabUserDetails } from '@/core/typings/GitlabUser';
 import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
-import type { SlackUser } from '@/core/typings/SlackUser';
 import type {
   UnifiedApprovalInfo,
   UnifiedPipeline,
@@ -143,13 +138,6 @@ export class GitLabProvider implements RepositoryProvider {
     await rebaseMergeRequest(projectId, iid);
   }
 
-  async findSlackUser(user: UnifiedUser): Promise<SlackUser | undefined> {
-    return fetchSlackUserFromGitlabUsername(user.username);
-  }
-
-  async findGitUsername(slackUserId: string): Promise<string | undefined> {
-    return fetchGitlabUsernameFromSlackUserId(slackUserId);
-  }
   async fetchTags(projectId: number): Promise<UnifiedTag[]> {
     return (await fetchProjectTags(projectId)).map(({ commit, name }) => ({
       name,
