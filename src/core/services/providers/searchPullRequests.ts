@@ -1,4 +1,5 @@
 import { CONFIG } from '@/config';
+import { logger } from '@/core/services/logger';
 import type { DataProject } from '@/core/typings/Data';
 import type { ProviderType } from '@/core/typings/Provider';
 import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
@@ -32,10 +33,31 @@ export async function searchPullRequests(
     }
   }
 
-  const results = await Promise.all(
-    [...projectIdsByProvider].map(([provider, projectIds]) =>
+  const providers = [...projectIdsByProvider];
+  const results = await Promise.allSettled(
+    providers.map(([provider, projectIds]) =>
       getProvider(provider).searchPullRequests(query, projectIds),
     ),
   );
-  return results.flat();
+
+  // One provider failing must not hide the results of the others.
+  const pullRequests: UnifiedPullRequest[] = [];
+  const errors: unknown[] = [];
+
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      pullRequests.push(...result.value);
+    } else {
+      errors.push(result.reason);
+      logger.warn(
+        { error: result.reason, provider: providers[index][0] },
+        'Could not search pull requests',
+      );
+    }
+  });
+
+  if (errors.length > 0 && errors.length === results.length) {
+    throw errors[0];
+  }
+  return pullRequests;
 }

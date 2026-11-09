@@ -244,6 +244,29 @@ describe('github > review', () => {
     );
   });
 
+  it('should still list reviews when GitHub fails', async () => {
+    // Given
+    await addReviewToChannel({
+      channelId,
+      mergeRequestIid: iid,
+      projectId,
+      provider: 'github',
+      ts: 'ts',
+    });
+    mockGithubCall(`/repositories/${projectId}`, githubRepositoryFixture);
+    mockGithubCall(`/repos/${full_name}/pulls/${iid}`, {}, 502);
+
+    // When
+    await sendCommand('review list');
+
+    // Then
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'There is no ongoing review shared in this channel.',
+      }),
+    );
+  });
+
   it('should list GitHub reviews', async () => {
     // Given
     await addReviewToChannel({

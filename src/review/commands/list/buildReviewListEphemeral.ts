@@ -1,6 +1,7 @@
 import type { SectionBlock } from '@slack/types';
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
+import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { escapeText, getPermalink } from '@/core/services/slack';
 import type { DataReview } from '@/core/typings/Data';
@@ -84,10 +85,20 @@ async function fetchOpenedReviewItems(
 ): Promise<ReviewListItem[]> {
   const items = await Promise.all(
     reviews.map(async ({ projectId, provider, mergeRequestIid, ts }) => {
-      const mergeRequest = await getProvider(provider).fetchPullRequest(
-        projectId,
-        mergeRequestIid,
-      );
+      // One provider failing must not hide the reviews of the others.
+      const mergeRequest = await getProvider(provider)
+        .fetchPullRequest(projectId, mergeRequestIid)
+        .catch((error: unknown) => {
+          logger.warn(
+            { error, projectId, provider, mergeRequestIid },
+            'Could not fetch a reviewed pull request',
+          );
+          return undefined;
+        });
+
+      if (mergeRequest === undefined) {
+        return undefined;
+      }
 
       if (!MERGE_REQUEST_OPEN_STATES.includes(mergeRequest.state)) {
         return undefined;
@@ -112,7 +123,12 @@ async function findGitUsernames(
 
   await Promise.all(
     [...providers].map(async (provider) => {
-      const username = await getProvider(provider).findGitUsername(slackUserId);
+      const username = await getProvider(provider)
+        .findGitUsername(slackUserId)
+        .catch((error: unknown) => {
+          logger.warn({ error, provider }, 'Could not find the git username');
+          return undefined;
+        });
       if (username !== undefined) {
         usernames.set(provider, username);
       }
