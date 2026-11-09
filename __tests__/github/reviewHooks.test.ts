@@ -532,6 +532,62 @@ describe('github > review hooks', () => {
     expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
+  it('should store the repository slug from webhooks', async () => {
+    // Given
+    const renamed = { ...githubRepositoryFixture, full_name: 'homer-org/new' };
+    await addProjectToChannel({ channelId, projectId, provider: 'github' });
+    await addReview();
+
+    // When
+    await sendHook('ping', {
+      repository: renamed,
+      sender: githubAuthorFixture,
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    await waitFor(async () => {
+      expect(
+        await hasModelEntry('Project', {
+          projectId,
+          repoSlug: renamed.full_name,
+        }),
+      ).toEqual(true);
+      expect(
+        await hasModelEntry('Review', {
+          projectId,
+          repoSlug: renamed.full_name,
+        }),
+      ).toEqual(true);
+    });
+  });
+
+  it('should store the repository slug of auto-shared reviews', async () => {
+    // Given
+    await addProjectToChannel({ channelId, projectId, provider: 'github' });
+    mockGithubReviewMessageCalls();
+
+    // When
+    await sendHook('pull_request', {
+      action: 'labeled',
+      pull_request: {
+        ...githubPullRequestFixture,
+        labels: [{ name: 'homer-review' }],
+      },
+      sender: githubAuthorFixture,
+    });
+
+    // Then
+    const { hasModelEntry } = (await import('sequelize')) as any;
+    expect(
+      await hasModelEntry('Review', {
+        mergeRequestIid: iid,
+        provider: 'github',
+        repoSlug: full_name,
+      }),
+    ).toEqual(true);
+  });
+
   it('should ignore push events', async () => {
     // Given
     await addReview();

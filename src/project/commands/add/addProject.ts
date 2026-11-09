@@ -15,7 +15,12 @@ export async function addProject(
 ): Promise<void> {
   const { id: projectId, path: projectPath, provider } = project;
 
-  await addProjectToChannel({ projectId, channelId, provider });
+  await addProjectToChannel({
+    projectId,
+    channelId,
+    provider,
+    repoSlug: provider === 'github' ? projectPath : undefined,
+  });
   const numberOfChannelsLinkedToProject = await countChannelsByProjectId(
     projectId,
     provider,

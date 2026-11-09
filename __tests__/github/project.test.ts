@@ -37,6 +37,7 @@ describe('github > project', () => {
         channelId,
         projectId: id,
         provider: 'github',
+        repoSlug: full_name,
       }),
     ).toEqual(true);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {

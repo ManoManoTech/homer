@@ -7,6 +7,8 @@ export interface DataProject {
   channelId: string;
   projectId: number;
   provider: ProviderType;
+  /** `owner/name` of a GitHub repository, refreshed from webhooks. */
+  repoSlug?: string | null;
 }
 
 export interface DataRelease {
@@ -42,6 +44,8 @@ export interface DataReview {
   mergeRequestIid: number;
   projectId: number;
   provider: ProviderType;
+  /** `owner/name` of a GitHub repository, refreshed from webhooks. */
+  repoSlug?: string | null;
   ts: string;
 }
 

@@ -1,8 +1,10 @@
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
+import { refreshRepoSlug } from '@/core/services/data';
 import {
   fetchComparedCommits,
   fetchPullRequestCommits,
+  rememberRepositoryName,
 } from '@/core/services/github';
 import { logger } from '@/core/services/logger';
 import {
@@ -79,6 +81,9 @@ export async function githubHookHandler(
   const iid = body.pull_request?.number ?? body.issue?.number;
   if (iid !== undefined) {
     getGithubProvider().forgetPullRequest(body.repository.id, iid);
+  }
+  if (body.repository?.full_name) {
+    refreshRepository(body.repository);
   }
 
   switch (event) {
@@ -177,6 +182,7 @@ async function handlePullRequestHook(
     {
       provider: 'github',
       projectId: repository.id,
+      repoSlug: repository.full_name,
       iid: pull_request.number,
       action: pullRequestAction,
       labels: pull_request.labels.map(({ name }) => name),
@@ -384,6 +390,20 @@ async function handleDeploymentStatusHook(
 /** Deployment URLs are free text: keep https URLs that cannot break mrkdwn. */
 function toSafeUrl(url: string | null | undefined): string | undefined {
   return url && /^https:\/\/[^\s<>|]+$/.test(url) ? url : undefined;
+}
+
+/**
+ * Renamed or transferred repositories keep their id: store the name the
+ * webhook carries. Must not delay or fail the webhook.
+ */
+function refreshRepository({ full_name, id }: GithubRepository): void {
+  rememberRepositoryName(id, full_name);
+  refreshRepoSlug(id, 'github', full_name).catch((error: unknown) => {
+    logger.warn(
+      { error, projectId: id },
+      'Could not refresh a GitHub repository slug',
+    );
+  });
 }
 
 /** Bot comments (Copilot reviews, coverage reports) drown the human ones. */

@@ -69,14 +69,28 @@ class ModelMock {
     );
   }
 
-  async findOrCreate({ where }: Options): Promise<[EntryMock, boolean]> {
+  async findOrCreate({
+    defaults,
+    where,
+  }: Options & { defaults?: EntryValues }): Promise<[EntryMock, boolean]> {
     let entry = await this.findOne({ where });
 
     if (entry === null) {
-      entry = new EntryMock(where);
+      entry = new EntryMock({ ...where, ...defaults });
       this.entries.push(entry);
     }
     return [entry, false];
+  }
+
+  /** Symbol keys such as `Op.or` are not matched. */
+  async update(values: EntryValues, { where }: Options): Promise<[number]> {
+    const entries = this.entries.filter((entry) =>
+      Object.entries(where).every(
+        ([key, value]) => entry.values[key] === value,
+      ),
+    );
+    entries.forEach((entry) => Object.assign(entry.values, values));
+    return [entries.length];
   }
 
   async sync() {}

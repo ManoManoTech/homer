@@ -40,6 +40,8 @@ export interface PullRequestEvent {
   isMergeable: boolean | (() => Promise<boolean>);
   /** User who triggered the event. */
   actor: UnifiedUser;
+  /** `owner/name` of a GitHub repository, stored with new reviews. */
+  repoSlug?: string;
 }
 
 interface ThreadMessage {
@@ -67,7 +69,7 @@ export async function handlePullRequestEvent(
         : event.isMergeable);
 
     if (hasReviewLabel || isMergeable) {
-      await handleNewReview(provider, projectId, iid);
+      await handleNewReview(provider, projectId, iid, event.repoSlug);
       acknowledge(true);
       return;
     }
@@ -120,6 +122,7 @@ async function handleNewReview(
   provider: ProviderType,
   projectId: number,
   iid: number,
+  repoSlug: string | undefined,
 ): Promise<void> {
   const configuredChannels = await getChannelsByProjectId(projectId, provider);
 
@@ -143,6 +146,7 @@ async function handleNewReview(
           mergeRequestIid: iid,
           projectId,
           provider,
+          repoSlug,
           ts: ts as string,
         });
       } catch (err) {

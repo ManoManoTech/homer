@@ -52,6 +52,11 @@ export async function fetchRepositoryByName(
   return repository;
 }
 
+/** Webhooks carry the current name: it saves a request per repository. */
+export function rememberRepositoryName(id: number, fullName: string): void {
+  repositoryNames.set(id, fullName);
+}
+
 async function getRepositoryName(id: number): Promise<string> {
   return repositoryNames.get(id) ?? (await fetchRepositoryById(id)).full_name;
 }

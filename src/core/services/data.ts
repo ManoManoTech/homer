@@ -50,25 +50,32 @@ const PROJECT_ID_ATTRIBUTE = {
   },
 };
 
+/**
+ * Stored as `repoProvider`, nullable with a default so that rows written before
+ * GitHub support read back as GitLab (docs/adr/0003). Every insert sets it.
+ */
+const PROVIDER_ATTRIBUTE = {
+  type: DataTypes.STRING,
+  allowNull: true,
+  defaultValue: DEFAULT_PROVIDER,
+  field: 'repoProvider',
+};
+
+/** `owner/name` of a GitHub repository: refreshed from webhooks, not a key. */
+const REPO_SLUG_ATTRIBUTE = { type: DataTypes.STRING, allowNull: true };
+
 const Project = sequelize.define<Model<DataProject>>('Project', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   projectId: PROJECT_ID_ATTRIBUTE,
-  provider: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: DEFAULT_PROVIDER,
-  },
+  provider: PROVIDER_ATTRIBUTE,
+  repoSlug: REPO_SLUG_ATTRIBUTE,
 });
 
 const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
   description: { type: DataTypes.TEXT, allowNull: true }, // TODO change this when possible
   failedDeployments: { type: DataTypes.TEXT, allowNull: false },
   projectId: PROJECT_ID_ATTRIBUTE,
-  provider: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: DEFAULT_PROVIDER,
-  },
+  provider: PROVIDER_ATTRIBUTE,
   slackAuthor: { type: DataTypes.TEXT, allowNull: false },
   startedDeployments: { type: DataTypes.TEXT, allowNull: false },
   state: { type: DataTypes.STRING, allowNull: false },
@@ -81,11 +88,8 @@ const Review = sequelize.define<Model<DataReview>>('Review', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   mergeRequestIid: { type: DataTypes.INTEGER, allowNull: false },
   projectId: PROJECT_ID_ATTRIBUTE,
-  provider: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: DEFAULT_PROVIDER,
-  },
+  provider: PROVIDER_ATTRIBUTE,
+  repoSlug: REPO_SLUG_ATTRIBUTE,
   ts: { type: DataTypes.STRING, allowNull: false },
 });
 
@@ -145,9 +149,11 @@ export async function addProjectToChannel({
   channelId,
   projectId,
   provider = DEFAULT_PROVIDER,
+  repoSlug,
 }: WithOptionalProvider<DataProject>): Promise<void> {
   await Project.findOrCreate({
     where: { channelId, projectId, provider },
+    defaults: { channelId, projectId, provider, repoSlug },
   });
 }
 
@@ -156,6 +162,7 @@ export async function addReviewToChannel({
   mergeRequestIid,
   projectId,
   provider = DEFAULT_PROVIDER,
+  repoSlug,
   ts,
 }: WithOptionalProvider<DataReview>): Promise<void> {
   const review = await Review.findOne({
@@ -170,9 +177,30 @@ export async function addReviewToChannel({
       mergeRequestIid,
       projectId,
       provider,
+      repoSlug,
       ts,
     });
   }
+}
+
+/**
+ * Renamed or transferred repositories keep their id, so their rows keep
+ * matching: the next webhook stores the new slug.
+ */
+export async function refreshRepoSlug(
+  projectId: number,
+  provider: ProviderType,
+  repoSlug: string,
+): Promise<void> {
+  const where = {
+    projectId,
+    provider,
+    [Op.or]: [{ repoSlug: null }, { repoSlug: { [Op.ne]: repoSlug } }],
+  };
+  await Promise.all([
+    Project.update({ repoSlug }, { where }),
+    Review.update({ repoSlug }, { where }),
+  ]);
 }
 
 export async function createRelease(

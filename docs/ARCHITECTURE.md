@@ -351,22 +351,27 @@ erDiagram
     PROJECTS {
         int id PK
         string channelId
-        bigint projectId
+        bigint projectId "GitLab project or GitHub repository id"
+        string repoProvider "gitlab (default) or github"
+        string repoSlug "GitHub owner/name, not a key"
         timestamptz createdAt
         timestamptz updatedAt
     }
     REVIEWS {
         int id PK
         string channelId
-        bigint projectId
-        int mergeRequestIid
+        bigint projectId "GitLab project or GitHub repository id"
+        string repoProvider "gitlab (default) or github"
+        string repoSlug "GitHub owner/name, not a key"
+        int mergeRequestIid "MR iid or PR number"
         string ts
         timestamptz createdAt
         timestamptz updatedAt
     }
     RELEASES {
         int id PK
-        bigint projectId
+        bigint projectId "GitLab project or GitHub repository id"
+        string repoProvider "gitlab (default) or github"
         string tagName
         string state
         text description
@@ -381,8 +386,9 @@ erDiagram
 ```
 
 - **PostgreSQL via Sequelize**, connection pool tunable via `POSTGRES_POOL_*`.
+- **Provider columns** follow ADR 0003 (`docs/adr/`, proposed in #212): rows are keyed by `(repoProvider, projectId)`, so `projectId` holds a GitHub repository id and `mergeRequestIid` a pull request number on GitHub rows. The models expose `repoProvider` as `provider`. `projectId` is a `BIGINT`, which the driver returns as a string: the models read it back as a number.
 - Three models defined inline in `data.ts:34-56`.
-- **Migrations**: `NODE_ENV=production` runs `umzug` against `src/core/migrations/*.js` (`migrator.ts`). Non-prod uses `sequelize.sync({ alter: true })` for convenience. The single existing migration (`2026.04.02T00.00.00.initial-schema.ts`) is intentionally idempotent (`CREATE TABLE IF NOT EXISTS`) so DBs that were previously sync-managed don't break. CLI: `pnpm migrate{,:down,:status}` via `src/migrate.ts`.
+- **Migrations**: `NODE_ENV=production` runs `umzug` against `src/core/migrations/*.js` (`migrator.ts`). Non-prod uses `sequelize.sync({ alter: true })` for convenience. The initial migration (`2026.04.02T00.00.00.initial-schema.ts`) is intentionally idempotent (`CREATE TABLE IF NOT EXISTS`) so DBs that were previously sync-managed don't break. CLI: `pnpm migrate{,:down,:status}` via `src/migrate.ts`.
 - **Cleanup**: on startup and every 24 h, rows whose `updatedAt` is older than 15 days are deleted (`cleanOldEntries`).
 - **Concurrency**: `updateRelease` wraps the read-modify-write in a transaction with `LOCK.UPDATE` to avoid races between concurrent deployment hooks (`data.ts:276`).
 - **Quirk**: deployment lists are stored as **stringified JSON in TEXT columns**. `getReleaseDeployments` (`data.ts:336`) transparently migrates the legacy `["staging","production"]` shape to `[{environment, date}]` on read.
