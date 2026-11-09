@@ -39,13 +39,15 @@ export interface UnifiedPullRequest {
   changesCount: string;
   /** GitLab pipeline status vocabulary (success, failed, running...). */
   pipelineStatus?: string;
-  mergeable: boolean;
+  /** Unknown while the provider is still computing it. */
+  mergeable?: boolean;
 }
 
 export interface UnifiedApprovalInfo {
   approvers: UnifiedUser[];
-  approvalsRequired: number;
-  approvalsLeft: number;
+  /** Unknown when the provider does not let Homer read it. */
+  approvalsRequired?: number;
+  approvalsLeft?: number;
 }
 
 export interface UnifiedTag {

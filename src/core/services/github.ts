@@ -145,12 +145,13 @@ export async function fetchPullRequestReviews(
 
 /**
  * Reads the required approvals from rulesets, then from classic branch
- * protection. Both need read access, so 0 is returned when nothing is found.
+ * protection. Classic protection needs the Administration permission, so the
+ * count is `undefined` when it cannot be read, rather than a wrong 0.
  */
 export async function fetchRequiredApprovals(
   repositoryId: number,
   branchName: string,
-): Promise<number> {
+): Promise<number | undefined> {
   const path = await repoPath(repositoryId);
   const branch = encodeURIComponent(branchName);
 
@@ -180,7 +181,8 @@ export async function fetchRequiredApprovals(
     }>(`${path}/branches/${branch}/protection/required_pull_request_reviews`);
     return protection.required_approving_review_count ?? 0;
   } catch {
-    return 0;
+    // Also reached for unprotected branches: GitHub answers 404 for both.
+    return undefined;
   }
 }
 

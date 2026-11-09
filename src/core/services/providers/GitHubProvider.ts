@@ -230,7 +230,10 @@ export class GitHubProvider implements RepositoryProvider {
     return {
       approvers,
       approvalsRequired,
-      approvalsLeft: Math.max(0, approvalsRequired - approvers.length),
+      approvalsLeft:
+        approvalsRequired === undefined
+          ? undefined
+          : Math.max(0, approvalsRequired - approvers.length),
     };
   }
 
@@ -601,7 +604,7 @@ function toUnifiedPullRequest(
     discussionsCount:
       (pullRequest.comments ?? 0) + (pullRequest.review_comments ?? 0),
     changesCount: `${pullRequest.changed_files ?? ''}`,
-    mergeable: pullRequest.mergeable === true,
+    mergeable: pullRequest.mergeable ?? undefined,
   };
 }
 

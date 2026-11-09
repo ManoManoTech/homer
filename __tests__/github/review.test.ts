@@ -139,6 +139,36 @@ describe('github > review', () => {
     ).toEqual(true);
   });
 
+  it('should show unknown approvals and mergeability as unknown', async () => {
+    // Given
+    await addProjectToChannel({ channelId, projectId, provider: 'github' });
+    mockGithubReviewMessageCalls({
+      ...githubPullRequestFixture,
+      mergeable: null,
+    });
+    mockGithubCall(`/repos/${full_name}/rules/branches/main`, []);
+    mockGithubCall(
+      `/repos/${full_name}/branches/main/protection/required_pull_request_reviews`,
+      { message: 'Resource not accessible by personal access token' },
+      403,
+    );
+
+    // When
+    await sendCommand(`review #${iid}`);
+
+    // Then
+    const { blocks } = (slackBotWebClient.chat.postMessage as jest.Mock).mock
+      .calls[0][0];
+    expect(blocks[1].elements).toContainEqual({
+      type: 'mrkdwn',
+      text: 'Mergeable: ⏳ Checking',
+    });
+    expect(blocks[2].fields).toEqual([
+      { type: 'mrkdwn', text: '*Participants*\n @assignee @reviewer' },
+      { type: 'mrkdwn', text: '*Approved by*\n @approver' },
+    ]);
+  });
+
   it('should share a pull request found by number', async () => {
     // Given
     await addProjectToChannel({ channelId, projectId, provider: 'github' });

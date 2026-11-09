@@ -180,8 +180,12 @@ function buildContextBlock(
     return status ? `${emojiMap[status] || ''} ${status}` : 'None';
   };
 
-  const getMergeableStatus = (mergeable: boolean) =>
-    mergeable ? '✅ Yes' : '⚠️ No';
+  const getMergeableStatus = (mergeable: boolean | undefined) => {
+    if (mergeable === undefined) {
+      return '⏳ Checking';
+    }
+    return mergeable ? '✅ Yes' : '⚠️ No';
+  };
 
   return {
     type: 'context',
@@ -238,17 +242,22 @@ function buildPeopleSection(
     });
   }
 
+  const { approvals_left: approvalsLeft, approvals_required: required } =
+    approvalInfo;
+
+  // Hidden when unknown: a guessed count would be a wrong number.
   if (
-    Number.isFinite(approvalInfo.approvals_required) &&
-    Number.isFinite(approvalInfo.approvals_left)
+    required !== undefined &&
+    approvalsLeft !== undefined &&
+    Number.isFinite(required) &&
+    Number.isFinite(approvalsLeft)
   ) {
-    const approvedCount =
-      approvalInfo.approvals_required - approvalInfo.approvals_left;
-    const emojiIndicators = approvalInfo.approvals_left == 0 ? '✅' : '⏳';
+    const approvedCount = required - approvalsLeft;
+    const emojiIndicators = approvalsLeft == 0 ? '✅' : '⏳';
 
     fields.push({
       type: 'mrkdwn',
-      text: `*Approvals*\n ${approvedCount}/${approvalInfo.approvals_required} required ${emojiIndicators}`,
+      text: `*Approvals*\n ${approvedCount}/${required} required ${emojiIndicators}`,
     });
   }
 
@@ -266,6 +275,6 @@ function buildPeopleSection(
 
 interface ApprovalInfo {
   approvers: SlackUser[];
-  approvals_required: number;
-  approvals_left: number;
+  approvals_required?: number;
+  approvals_left?: number;
 }
