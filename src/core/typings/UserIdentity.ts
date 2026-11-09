@@ -1,10 +1,14 @@
 /**
  * A user of the git provider, as Homer knows them from a webhook or an API
- * response. GitLab is the only provider today; the field is there so that
- * resolvers can tell providers apart once others are supported.
+ * response. GitLab is the only provider Homer talks to today, but the type
+ * already names the others so that the provider-neutral domain built on it can
+ * describe them, and so that a resolver can tell providers apart.
+ *
+ * A resolver that only knows one provider should answer `undefined` for the
+ * rest rather than assume, so that the next resolver gets its turn.
  */
 export interface GitUser {
-  provider: 'gitlab';
+  provider: 'gitlab' | 'github';
   username: string;
 }
 
