@@ -410,6 +410,44 @@ export async function fetchBranchCommits(
   );
 }
 
+/**
+ * What a pull request still needs, as GitHub computes it: `reviewDecision`
+ * applies CODEOWNERS and branch rules, and the rollup combines every check run
+ * and commit status of the head commit.
+ */
+export async function fetchPullRequestMergeRequirements(
+  repositoryId: number,
+  number: number,
+): Promise<{ reviewDecision: string | null; checksState: string | null }> {
+  const [owner, name] = (await getRepositoryName(repositoryId)).split('/');
+  const data = await callGraphQL<{
+    repository: {
+      pullRequest: {
+        reviewDecision: string | null;
+        commits: {
+          nodes: { commit: { statusCheckRollup: { state: string } | null } }[];
+        };
+      };
+    };
+  }>(
+    `query($owner: String!, $name: String!, $number: Int!) {
+      repository(owner: $owner, name: $name) {
+        pullRequest(number: $number) {
+          reviewDecision
+          commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+        }
+      }
+    }`,
+    { owner, name, number },
+  );
+  const { commits, reviewDecision } = data.repository.pullRequest;
+
+  return {
+    reviewDecision,
+    checksState: commits.nodes[0]?.commit.statusCheckRollup?.state ?? null,
+  };
+}
+
 async function callGraphQL<T>(
   query: string,
   variables: Record<string, unknown>,

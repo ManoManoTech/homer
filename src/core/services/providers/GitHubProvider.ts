@@ -13,6 +13,7 @@ import {
   fetchOpenPullRequestsByBranch,
   fetchPullRequest,
   fetchPullRequestCommits,
+  fetchPullRequestMergeRequirements,
   fetchPullRequestByName,
   fetchPullRequestReviews,
   fetchRepositoryById,
@@ -197,6 +198,8 @@ export class GitHubProvider implements RepositoryProvider {
   /**
    * GitLab's "mergeable" label means "only approvals are missing". GitHub
    * computes `mergeable_state` asynchronously, so it is read from the API.
+   * `blocked` also covers failing required checks and other rules, so a
+   * blocked pull request must lack approvals and have passing checks.
    */
   async isWaitingForApprovals(
     projectId: number,
@@ -206,11 +209,19 @@ export class GitHubProvider implements RepositoryProvider {
       projectId,
       iid,
     );
+
+    if (mergeable === false) {
+      return false;
+    }
+    if (mergeable_state !== 'blocked') {
+      return ['clean', 'has_hooks', 'unstable'].includes(mergeable_state ?? '');
+    }
+
+    const { checksState, reviewDecision } =
+      await fetchPullRequestMergeRequirements(projectId, iid);
     return (
-      mergeable !== false &&
-      ['blocked', 'clean', 'has_hooks', 'unstable'].includes(
-        mergeable_state ?? '',
-      )
+      reviewDecision === 'REVIEW_REQUIRED' &&
+      (checksState === null || checksState === 'SUCCESS')
     );
   }
 

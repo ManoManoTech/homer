@@ -1,8 +1,10 @@
 import request from 'supertest';
 import { app } from '@/app';
+import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mockUrl } from '@root/__mocks__/fetch-mock';
 import {
   githubApproverFixture,
   githubAuthorFixture,
@@ -24,6 +26,21 @@ async function sendHook(event: string, body: Record<string, unknown>) {
     .post('/api/v1/homer/github')
     .set(getGithubHeaders(event, payload))
     .send(payload);
+}
+
+function mockMergeRequirements(reviewDecision: string, checksState: string) {
+  mockUrl(`${CONFIG.github.apiUrl.replace(/\/v3\/?$/, '')}/graphql`, {
+    data: {
+      repository: {
+        pullRequest: {
+          reviewDecision,
+          commits: {
+            nodes: [{ commit: { statusCheckRollup: { state: checksState } } }],
+          },
+        },
+      },
+    },
+  });
 }
 
 async function addReview() {
@@ -96,6 +113,7 @@ describe('github > review hooks', () => {
       ...githubPullRequestFixture,
       mergeable_state: 'blocked',
     });
+    mockMergeRequirements('REVIEW_REQUIRED', 'SUCCESS');
 
     // When
     const response = await sendHook('pull_request', {
@@ -111,6 +129,30 @@ describe('github > review hooks', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not share a pull request labeled homer-mergeable blocked by failing checks', async () => {
+    // Given
+    await addProjectToChannel({ channelId, projectId, provider: 'github' });
+    mockGithubReviewMessageCalls({
+      ...githubPullRequestFixture,
+      mergeable_state: 'blocked',
+    });
+    mockMergeRequirements('REVIEW_REQUIRED', 'FAILURE');
+
+    // When
+    const response = await sendHook('pull_request', {
+      action: 'labeled',
+      pull_request: {
+        ...githubPullRequestFixture,
+        labels: [{ name: 'homer-mergeable' }],
+      },
+      sender: githubAuthorFixture,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
   it('should not share a pull request labeled homer-mergeable with conflicts', async () => {
