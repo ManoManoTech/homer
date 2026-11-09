@@ -61,10 +61,10 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 | Thread message: closed                               | MR/PR event               | [x]    | [x]    |                                                                                    |
 | Thread message: merged                               | MR/PR event               | [x]    | [x]    | `closed` with `merged: true`.                                                      |
 | Stop tracking closed/merged reviews                  | MR/PR event               | [x]    | [x]    | Also fixes deletion scope: today reviews are deleted by iid only, across projects. |
-| Comments posted in thread                            | note / PR comment         | [x]    | [x]    | `issue_comment`, `pull_request_review_comment`, `pull_request_review` body.        |
+| Comments posted in thread                            | note / PR comment         | [x]    | [x]    | `issue_comment`, `pull_request_review_comment`, review body. Bots are left out.    |
 | Comment debounce (3 s) per author                    | note / PR comment         | [x]    | [x]    |                                                                                    |
-| New commits posted in thread                         | push / PR synchronize     | [x]    | [x]    | `push` event, matched against PR commits.                                          |
-| Commit author resolved from commit email             | push                      | [x]    | [x]    |                                                                                    |
+| New commits posted in thread                         | push / PR synchronize     | [x]    | [x]    | `pull_request` `synchronize`, kept to PR commits. Works for PRs from forks.        |
+| Commit author resolved from commit email             | push / PR synchronize     | [x]    | [x]    | No change count on GitHub.                                                         |
 
 ## Slack user mapping
 

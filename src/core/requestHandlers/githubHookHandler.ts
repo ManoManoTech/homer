@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import {
+  fetchComparedCommits,
+  fetchPullRequestCommits,
+} from '@/core/services/github';
+import { logger } from '@/core/services/logger';
+import {
   type GitHubProvider,
   toUnifiedUser,
 } from '@/core/services/providers/GitHubProvider';
@@ -19,22 +24,15 @@ import {
   handlePullRequestEvent,
   type PullRequestAction,
 } from '@/review/commands/share/events/handlePullRequestEvent';
-import { handlePushEvent } from '@/review/commands/share/events/handlePushEvent';
+import {
+  postNewCommitsInThreads,
+  type PushedCommit,
+} from '@/review/commands/share/events/handlePushEvent';
 
 interface GithubComment {
   body: string;
   html_url: string;
   user: GithubUser;
-}
-
-interface GithubPushedCommit {
-  id: string;
-  message: string;
-  url: string;
-  author: { email: string };
-  added?: string[];
-  modified?: string[];
-  removed?: string[];
 }
 
 interface GithubDeploymentStatus {
@@ -47,8 +45,10 @@ interface GithubDeploymentStatus {
 
 interface GithubHookBody {
   action?: string;
+  /** Head before and after a `synchronize`. */
+  after?: string;
+  before?: string;
   comment?: GithubComment;
-  commits?: GithubPushedCommit[];
   deployment?: { ref: string; environment: string };
   deployment_status?: GithubDeploymentStatus;
   workflow_run?: {
@@ -57,7 +57,6 @@ interface GithubHookBody {
   } | null;
   issue?: { number: number; pull_request?: unknown };
   pull_request?: GithubPullRequest;
-  ref?: string;
   repository: GithubRepository;
   review?: GithubReview;
   sender: GithubUser;
@@ -121,9 +120,6 @@ export async function githubHookHandler(
         acknowledge,
       );
 
-    case 'push':
-      return handlePushHook(body, acknowledge);
-
     case 'deployment_status':
       return handleDeploymentStatusHook(body, acknowledge);
 
@@ -149,7 +145,7 @@ const PULL_REQUEST_ACTIONS: Record<string, PullRequestAction> = {
 };
 
 async function handlePullRequestHook(
-  { action, pull_request, repository, sender }: GithubHookBody,
+  { action, after, before, pull_request, repository, sender }: GithubHookBody,
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
   if (!pull_request || !action) {
@@ -169,6 +165,14 @@ async function handlePullRequestHook(
     return;
   }
 
+  const synchronized =
+    action === 'synchronize' && before && after ? { before, after } : undefined;
+
+  // Two events are derived from a synchronize: answer GitHub right away.
+  if (synchronized) {
+    acknowledge(true);
+  }
+
   await handlePullRequestEvent(
     {
       provider: 'github',
@@ -183,8 +187,58 @@ async function handlePullRequestHook(
         ),
       actor: toUnifiedUser(sender),
     },
-    acknowledge,
+    synchronized ? () => undefined : acknowledge,
   );
+
+  if (synchronized) {
+    await postNewCommitsInThreads({
+      provider: 'github',
+      projectId: repository.id,
+      iid: pull_request.number,
+      commits: await fetchSynchronizedCommits(
+        repository.id,
+        pull_request.number,
+        synchronized.before,
+        synchronized.after,
+      ),
+    });
+  }
+}
+
+/**
+ * Commits added by a `synchronize`. Unlike `push` events, it is also sent for
+ * pull requests from forks. Commits brought by a rebase or a merge of the base
+ * branch are not part of the pull request and are left out.
+ */
+async function fetchSynchronizedCommits(
+  projectId: number,
+  iid: number,
+  before: string,
+  after: string,
+): Promise<PushedCommit[]> {
+  try {
+    const [comparedCommits, pullRequestCommits] = await Promise.all([
+      fetchComparedCommits(projectId, before, after),
+      fetchPullRequestCommits(projectId, iid),
+    ]);
+    const pullRequestShas = new Set(pullRequestCommits.map(({ sha }) => sha));
+
+    return comparedCommits
+      .filter(({ sha }) => pullRequestShas.has(sha))
+      .map(({ commit, html_url, sha }) => ({
+        id: sha,
+        title: commit.message.split('\n')[0],
+        url: html_url,
+        authorEmail: commit.author?.email ?? '',
+      }));
+  } catch (error) {
+    // A force push can make `before` unreachable.
+    logger.warn(
+      { error, projectId, iid },
+      'Could not fetch the commits of a GitHub pull request synchronize',
+    );
+    return [];
+  }
 }
 
 const REVIEW_ACTIONS: Partial<
@@ -262,35 +316,6 @@ async function handleCommentHook(
         note: comment.body,
         url: comment.html_url,
       },
-    },
-    acknowledge,
-  );
-}
-
-async function handlePushHook(
-  { commits, ref, repository }: GithubHookBody,
-  acknowledge: (handled: boolean) => void,
-): Promise<void> {
-  if (!ref?.startsWith('refs/heads/')) {
-    acknowledge(false);
-    return;
-  }
-
-  await handlePushEvent(
-    {
-      provider: 'github',
-      projectId: repository.id,
-      branchName: ref.replace('refs/heads/', ''),
-      commits: (commits ?? []).map((commit) => ({
-        id: commit.id,
-        title: commit.message.split('\n')[0],
-        url: commit.url,
-        authorEmail: commit.author.email,
-        changesCount:
-          (commit.added ?? []).length +
-          (commit.modified ?? []).length +
-          (commit.removed ?? []).length,
-      })),
     },
     acknowledge,
   );

@@ -31,7 +31,7 @@ In the repository (or organization) settings, add a webhook:
 - Content type: `application/json`
 - Secret: the value of `GITHUB_SECRET`
 - Events: pull requests, pull request reviews, pull request review comments,
-  issue comments, pushes and deployment statuses.
+  issue comments and deployment statuses.
 
 ## Slack users
 

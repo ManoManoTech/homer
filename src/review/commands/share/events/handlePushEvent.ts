@@ -1,4 +1,4 @@
-import type { KnownBlock } from '@slack/types';
+import type { ContextBlock, KnownBlock } from '@slack/types';
 import { getReviewsByMergeRequestIid } from '@/core/services/data';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import {
@@ -16,7 +16,8 @@ export interface PushedCommit {
   title: string;
   url: string;
   authorEmail: string;
-  changesCount: number;
+  /** GitHub does not give it without one more call per commit. */
+  changesCount?: number;
 }
 
 export interface PushEvent {
@@ -81,34 +82,82 @@ export async function handlePushEvent(
   acknowledge(true);
 
   await Promise.all(
-    reviews.map(
-      async ({ channelId, mergeRequestIid, newMergeRequestCommits, ts }) => {
-        try {
-          await slackBotWebClient.chat.postMessage({
-            text: ':git-commit: New commit(s)',
-            icon_emoji: ':git-commit:',
-            channel: channelId,
-            thread_ts: ts,
-            blocks: (
-              await Promise.all(newMergeRequestCommits.map(buildCommitBlocks))
-            ).flat(),
-          });
-        } catch (err) {
-          await handleReviewWebhookError(err, {
-            hook: 'push',
-            mrIid: mergeRequestIid,
-            projectId,
-            channelId,
-            reviewTs: ts,
-          });
-        }
-      },
+    reviews.map(({ newMergeRequestCommits, ...review }) =>
+      postCommitsInThread(review, newMergeRequestCommits),
     ),
   );
 }
 
+/** Posts the new commits of a pull request in the thread of its reviews. */
+export async function postNewCommitsInThreads({
+  commits,
+  iid,
+  projectId,
+  provider,
+}: {
+  commits: PushedCommit[];
+  iid: number;
+  projectId: number;
+  provider: ProviderType;
+}): Promise<void> {
+  if (commits.length === 0) {
+    return;
+  }
+  const reviews = await getReviewsByMergeRequestIid(projectId, iid, provider);
+
+  await Promise.all(
+    reviews.map((review) => postCommitsInThread(review, commits)),
+  );
+}
+
+async function postCommitsInThread(
+  { channelId, mergeRequestIid, projectId, ts }: DataReview,
+  commits: PushedCommit[],
+): Promise<void> {
+  try {
+    await slackBotWebClient.chat.postMessage({
+      text: ':git-commit: New commit(s)',
+      icon_emoji: ':git-commit:',
+      channel: channelId,
+      thread_ts: ts,
+      blocks: (await Promise.all(commits.map(buildCommitBlocks))).flat(),
+    });
+  } catch (err) {
+    await handleReviewWebhookError(err, {
+      hook: 'push',
+      mrIid: mergeRequestIid,
+      projectId,
+      channelId,
+      reviewTs: ts,
+    });
+  }
+}
+
 async function buildCommitBlocks(commit: PushedCommit): Promise<KnownBlock[]> {
   const author = await fetchSlackUserFromEmails([commit.authorEmail]);
+  const contextElements: ContextBlock['elements'] = [
+    ...(author !== undefined
+      ? [
+          {
+            type: 'image' as const,
+            image_url: author.profile.image_24,
+            alt_text: author.real_name,
+          },
+          {
+            type: 'mrkdwn' as const,
+            text: `*${author.real_name}*`,
+          },
+        ]
+      : []),
+    ...(commit.changesCount !== undefined
+      ? [
+          {
+            type: 'plain_text' as const,
+            text: `${commit.changesCount} changes`,
+          },
+        ]
+      : []),
+  ];
 
   return [
     {
@@ -120,27 +169,9 @@ async function buildCommitBlocks(commit: PushedCommit): Promise<KnownBlock[]> {
         text: `<${commit.url}|${escapeText(commit.title)}>`,
       },
     },
-    {
-      type: 'context',
-      elements: [
-        ...(author !== undefined
-          ? [
-              {
-                type: 'image' as const,
-                image_url: author.profile.image_24,
-                alt_text: author.real_name,
-              },
-              {
-                type: 'mrkdwn' as const,
-                text: `*${author.real_name}*`,
-              },
-            ]
-          : []),
-        {
-          type: 'plain_text' as const,
-          text: `${commit.changesCount} changes`,
-        },
-      ],
-    },
+    // Slack rejects empty context blocks.
+    ...(contextElements.length > 0
+      ? [{ type: 'context' as const, elements: contextElements }]
+      : []),
   ];
 }

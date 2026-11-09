@@ -384,63 +384,119 @@ describe('github > review hooks', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
   });
 
-  it('should post pushed commits in thread', async () => {
+  it('should post commits added by a synchronize in thread', async () => {
     // Given
     await addReview();
-    mockGithubCall(`/repositories/${projectId}`, githubRepositoryFixture);
+    mockGithubReviewMessageCalls();
     mockGithubCall(
-      `/repos/${full_name}/pulls?state=open&head=${encodeURIComponent(
-        `homer-org:${githubPullRequestFixture.head.ref}`,
-      )}`,
-      [githubPullRequestFixture],
+      `/repos/${full_name}/compare/beforesha...aftersha?per_page=100&page=1`,
+      {
+        commits: [
+          {
+            sha: 'rebasedsha',
+            html_url: 'https://github.com/commit/rebasedsha',
+            commit: {
+              message: 'chore: from main',
+              author: { email: 'other@my-domain.com' },
+            },
+          },
+          {
+            sha: 'aftersha',
+            html_url: 'https://github.com/commit/aftersha',
+            commit: {
+              message: 'fix: <!channel> typo\n\nDetails',
+              author: { email: 'author@my-domain.com' },
+            },
+          },
+        ],
+      },
     );
     mockGithubCall(`/repos/${full_name}/pulls/${iid}/commits?per_page=100`, [
-      { sha: 'newsha' },
+      { sha: 'aftersha' },
     ]);
 
     // When
-    const response = await sendHook('push', {
-      ref: `refs/heads/${githubPullRequestFixture.head.ref}`,
-      commits: [
-        {
-          id: 'newsha',
-          message: 'fix: <!channel> typo\n\nDetails',
-          url: 'https://github.com/commit/newsha',
-          author: { email: 'author@my-domain.com' },
-          added: ['a'],
-          modified: ['b', 'c'],
-          removed: [],
-        },
-        {
-          id: 'rebasedsha',
-          message: 'chore: from main',
-          url: 'https://github.com/commit/rebasedsha',
-          author: { email: 'other@my-domain.com' },
-        },
-      ],
+    const response = await sendHook('pull_request', {
+      action: 'synchronize',
+      before: 'beforesha',
+      after: 'aftersha',
+      pull_request: githubPullRequestFixture,
       sender: githubAuthorFixture,
     });
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
     await waitFor(() => {
-      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          channel: channelId,
-          thread_ts: 'ts',
-          text: ':git-commit: New commit(s)',
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: '<https://github.com/commit/newsha|fix: &lt;!channel&gt; typo>',
-              },
+      expect(slackBotWebClient.chat.update).toHaveBeenCalled();
+      expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledWith({
+        channel: channelId,
+        thread_ts: 'ts',
+        icon_emoji: ':git-commit:',
+        text: ':git-commit: New commit(s)',
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: '<https://github.com/commit/aftersha|fix: &lt;!channel&gt; typo>',
             },
-            expect.objectContaining({ type: 'context' }),
-          ],
-        }),
-      );
+          },
+          {
+            type: 'context',
+            elements: [
+              expect.objectContaining({ type: 'image' }),
+              { type: 'mrkdwn', text: '*author.real*' },
+            ],
+          },
+        ],
+      });
     });
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('should still update the review message when synchronize commits cannot be fetched', async () => {
+    // Given
+    await addReview();
+    mockGithubReviewMessageCalls();
+    mockGithubCall(
+      `/repos/${full_name}/compare/beforesha...aftersha?per_page=100&page=1`,
+      { message: 'Not Found' },
+      404,
+    );
+    mockGithubCall(`/repos/${full_name}/pulls/${iid}/commits?per_page=100`, [
+      { sha: 'aftersha' },
+    ]);
+
+    // When
+    const response = await sendHook('pull_request', {
+      action: 'synchronize',
+      before: 'beforesha',
+      after: 'aftersha',
+      pull_request: githubPullRequestFixture,
+      sender: githubAuthorFixture,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_OK);
+    await waitFor(() =>
+      expect(slackBotWebClient.chat.update).toHaveBeenCalled(),
+    );
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('should ignore push events', async () => {
+    // Given
+    await addReview();
+
+    // When
+    const response = await sendHook('push', {
+      ref: `refs/heads/${githubPullRequestFixture.head.ref}`,
+      commits: [{ id: 'newsha', message: 'fix', url: '', author: {} }],
+      sender: githubAuthorFixture,
+    });
+
+    // Then
+    expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+    expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 });
