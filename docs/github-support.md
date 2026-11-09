@@ -30,30 +30,30 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 
 ## Reviews (`/homer review ...`)
 
-| Feature                                   | Trigger                | GitLab | GitHub | GitHub notes                                                                                          |
-| ----------------------------------------- | ---------------------- | ------ | ------ | ----------------------------------------------------------------------------------------------------- |
-| Share a review by search                  | `/homer review <text>` | [x]    | [x]    | Searches open PRs of the channel repositories.                                                        |
-| Pick among several matches                | select menu            | [x]    | [x]    |                                                                                                       |
-| List channel reviews                      | `/homer review list`   | [x]    | [x]    |                                                                                                       |
-| Review message: title, link, state        | review message         | [x]    | [x]    | `merged` / `closed` states struck through.                                                            |
-| Review message: project and target branch | review message         | [x]    | [x]    |                                                                                                       |
-| Review message: open discussions count    | review message         | [x]    | [x]    | Sum of PR comments and review comments.                                                               |
-| Review message: changes count             | review message         | [x]    | [x]    | Changed files count.                                                                                  |
-| Review message: pipeline status           | review message         | [x]    | [x]    | Combined check runs status of the head commit.                                                        |
-| Review message: mergeable                 | review message         | [x]    | [x]    | `mergeable_state`.                                                                                    |
-| Review message: assignees and reviewers   | review message         | [x]    | [x]    | Requested reviewers plus users who reviewed.                                                          |
-| Review message: approvals x/y             | review message         | [x]    | [x]    | Required count read from rulesets, then classic branch protection; 0 when the token cannot read them. |
-| Review message: author as sender          | review message         | [x]    | [x]    | Needs Slack user mapping.                                                                             |
-| Action: create a pipeline                 | overflow menu          | [x]    | [x]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent.          |
-| Action: rebase source branch              | overflow menu          | [x]    | [x]    | Uses "update branch", which merges the base branch instead of rebasing.                               |
-| Action: delete message                    | overflow menu          | [x]    | [x]    | Provider independent.                                                                                 |
+| Feature                                   | Trigger                | GitLab | GitHub | GitHub notes                                                                                 |
+| ----------------------------------------- | ---------------------- | ------ | ------ | -------------------------------------------------------------------------------------------- |
+| Share a review by search                  | `/homer review <text>` | [x]    | [x]    | Searches open PRs of the channel repositories.                                               |
+| Pick among several matches                | select menu            | [x]    | [x]    |                                                                                              |
+| List channel reviews                      | `/homer review list`   | [x]    | [x]    |                                                                                              |
+| Review message: title, link, state        | review message         | [x]    | [x]    | `merged` / `closed` states struck through.                                                   |
+| Review message: project and target branch | review message         | [x]    | [x]    |                                                                                              |
+| Review message: open discussions count    | review message         | [x]    | [x]    | Sum of PR comments and review comments.                                                      |
+| Review message: changes count             | review message         | [x]    | [x]    | Changed files count.                                                                         |
+| Review message: pipeline status           | review message         | [x]    | [x]    | Combined check runs status of the head commit.                                               |
+| Review message: mergeable                 | review message         | [x]    | [x]    | `mergeable`; "Checking" while GitHub computes it.                                            |
+| Review message: assignees and reviewers   | review message         | [x]    | [x]    | Requested reviewers plus users who reviewed.                                                 |
+| Review message: approvals x/y             | review message         | [x]    | [x]    | Required count from rulesets, then classic protection; hidden when unreadable.               |
+| Review message: author as sender          | review message         | [x]    | [x]    | Needs Slack user mapping.                                                                    |
+| Action: create a pipeline                 | overflow menu          | [x]    | [x]    | Re-runs the latest workflow runs of the head commit. `AUTO_DEPLOY` has no direct equivalent. |
+| Action: rebase source branch              | overflow menu          | [x]    | [x]    | Uses "update branch", which merges the base branch instead of rebasing.                      |
+| Action: delete message                    | overflow menu          | [x]    | [x]    | Provider independent.                                                                        |
 
 ## Review automation (webhooks)
 
 | Feature                                              | Trigger                   | GitLab | GitHub | GitHub notes                                                                       |
 | ---------------------------------------------------- | ------------------------- | ------ | ------ | ---------------------------------------------------------------------------------- |
 | Auto-share on `homer-review` label                   | MR/PR event               | [x]    | [x]    | `pull_request` `labeled`/`opened`.                                                 |
-| Auto-share on `homer-mergeable` label when mergeable | MR/PR event               | [x]    | [x]    |                                                                                    |
+| Auto-share on `homer-mergeable` label when mergeable | MR/PR event               | [x]    | [x]    | `blocked` only with `reviewDecision` REVIEW_REQUIRED and green checks.             |
 | Respect channel threshold on auto-share              | MR/PR event               | [x]    | [x]    |                                                                                    |
 | Refresh review message on MR/PR update               | MR/PR event               | [x]    | [x]    | `pull_request` `edited`, `synchronize`, `review_requested`, etc.                   |
 | Thread message: approved                             | MR approval / PR review   | [x]    | [x]    | `pull_request_review` `submitted` with state `approved`.                           |
@@ -104,7 +104,12 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
 - "Create a pipeline" re-runs the latest workflow runs of the branch head and
   cannot pass `AUTO_DEPLOY`.
 - Required approvals come from rulesets, then classic branch protection (which
-  needs the Administration read permission); 0 when neither is readable.
+  needs the Administration read permission). The count is hidden when neither
+  is readable, including on unprotected branches.
+- `homer-mergeable` is evaluated on pull request events only: like GitLab, a
+  pull request whose checks are still running is not shared when they finish.
+- New commits are matched against the first 250 commits of a pull request,
+  GitHub's limit.
 - GitHub has no "unapprove" event: "changes requested" reviews are posted
   instead.
 - Logins are matched with `EMAIL_DOMAINS` only when
