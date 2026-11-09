@@ -38,9 +38,21 @@ export const sequelize = new Sequelize({
   username: CONFIG.postgres.username,
 });
 
+/**
+ * GitHub repository ids need a BIGINT, which the driver returns as a string.
+ * They stay far below Number.MAX_SAFE_INTEGER, so they are read as numbers.
+ */
+const PROJECT_ID_ATTRIBUTE = {
+  type: DataTypes.BIGINT,
+  allowNull: false,
+  get(this: Model): number {
+    return Number(this.getDataValue('projectId'));
+  },
+};
+
 const Project = sequelize.define<Model<DataProject>>('Project', {
   channelId: { type: DataTypes.STRING, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
   provider: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -51,7 +63,7 @@ const Project = sequelize.define<Model<DataProject>>('Project', {
 const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
   description: { type: DataTypes.TEXT, allowNull: true }, // TODO change this when possible
   failedDeployments: { type: DataTypes.TEXT, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
   provider: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -68,7 +80,7 @@ const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
 const Review = sequelize.define<Model<DataReview>>('Review', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   mergeRequestIid: { type: DataTypes.INTEGER, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
   provider: {
     type: DataTypes.STRING,
     allowNull: false,

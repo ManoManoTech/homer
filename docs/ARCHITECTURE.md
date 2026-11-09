@@ -351,14 +351,14 @@ erDiagram
     PROJECTS {
         int id PK
         string channelId
-        int projectId
+        bigint projectId
         timestamptz createdAt
         timestamptz updatedAt
     }
     REVIEWS {
         int id PK
         string channelId
-        int projectId
+        bigint projectId
         int mergeRequestIid
         string ts
         timestamptz createdAt
@@ -366,7 +366,7 @@ erDiagram
     }
     RELEASES {
         int id PK
-        int projectId
+        bigint projectId
         string tagName
         string state
         text description
