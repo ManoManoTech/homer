@@ -453,9 +453,15 @@ describe('github > review hooks', () => {
         ],
       },
     );
-    mockGithubCall(`/repos/${full_name}/pulls/${iid}/commits?per_page=100`, [
-      { sha: 'aftersha' },
-    ]);
+    // A long pull request: the new commit is on the second page.
+    mockGithubCall(
+      `/repos/${full_name}/pulls/${iid}/commits?per_page=100`,
+      Array.from({ length: 100 }, (_, index) => ({ sha: `oldsha${index}` })),
+    );
+    mockGithubCall(
+      `/repos/${full_name}/pulls/${iid}/commits?per_page=100&page=2`,
+      [{ sha: 'aftersha' }],
+    );
 
     // When
     const response = await sendHook('pull_request', {

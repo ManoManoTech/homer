@@ -125,13 +125,27 @@ export async function searchOpenPullRequests(
   }));
 }
 
+/** GitHub lists at most 250 commits of a pull request. */
+const MAX_PULL_REQUEST_COMMIT_PAGES = 3;
+
 export async function fetchPullRequestCommits(
   repositoryId: number,
   number: number,
 ): Promise<GithubCommit[]> {
-  return callAPI(
-    `${await repoPath(repositoryId)}/pulls/${number}/commits?per_page=${PER_PAGE}`,
-  );
+  const path = `${await repoPath(repositoryId)}/pulls/${number}/commits?per_page=${PER_PAGE}`;
+  const commits: GithubCommit[] = [];
+
+  for (let page = 1; page <= MAX_PULL_REQUEST_COMMIT_PAGES; page += 1) {
+    const pageCommits = await callAPI<GithubCommit[]>(
+      page === 1 ? path : `${path}&page=${page}`,
+    );
+    commits.push(...pageCommits);
+
+    if (pageCommits.length < PER_PAGE) {
+      break;
+    }
+  }
+  return commits;
 }
 
 export async function fetchPullRequestReviews(
