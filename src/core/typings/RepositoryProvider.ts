@@ -61,6 +61,10 @@ export interface RepositoryProvider {
   /**
    * Markdown list of the changes since `previousReleaseTagName`. The filter
    * receives GitLab shaped commits because release plugins expect them.
+   *
+   * TODO: known debt, the GitHub provider builds GitLab commits for this.
+   * Replace with a provider-neutral commit with the next change to the release
+   * plugin contract.
    */
   generateChangelog(
     projectId: number,

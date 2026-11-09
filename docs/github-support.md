@@ -110,6 +110,9 @@ Legend: `[x]` supported, `[ ]` not yet, `[-]` not applicable on this provider.
   pull request whose checks are still running is not shared when they finish.
 - New commits are matched against the first 250 commits of a pull request,
   GitHub's limit.
+- Release plugin changelog filters receive GitLab-shaped commits: GitHub
+  commits are converted until the plugin contract gets a provider-neutral
+  commit.
 - GitHub has no "unapprove" event: "changes requested" reviews are posted
   instead.
 - Logins are matched with `EMAIL_DOMAINS` only when
