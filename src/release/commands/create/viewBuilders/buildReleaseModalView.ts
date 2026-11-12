@@ -6,6 +6,7 @@ import type {
   View,
 } from '@slack/web-api';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
+import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
 import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
@@ -16,13 +17,26 @@ import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
 import { buildPreviousReleaseTagOptionGroups } from '../utils/previousReleaseTagOptions';
+import { buildReleaseModalErrorView } from './buildReleaseModalErrorView';
 
 interface ReleaseModalData {
   channelId?: string;
   view?: BlockActionView;
 }
 
-export async function buildReleaseModalView({
+/** Never throws: a failure is shown in the modal instead of a stuck loader. */
+export async function buildReleaseModalView(
+  data: ReleaseModalData,
+): Promise<View> {
+  try {
+    return await buildReleaseModalViewOrThrow(data);
+  } catch (error) {
+    logger.error(error, 'Could not build the release modal');
+    return buildReleaseModalErrorView(error, data.view);
+  }
+}
+
+async function buildReleaseModalViewOrThrow({
   channelId,
   view,
 }: ReleaseModalData): Promise<View> {
