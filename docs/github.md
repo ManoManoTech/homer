@@ -76,6 +76,23 @@ Homer creates the tag through a GitHub release on the default branch head.
 Canceling a release renames it `[NOT DEPLOYED] <name>` and cancels the
 workflow runs of the tag.
 
+Homer moves a release forward only on `deployment_status` events, so the
+workflow that deploys the tag has to create GitHub deployments. A workflow
+that only builds an image leaves the release in progress, and
+`/homer release end` applies only once a `production*` deployment has
+succeeded. Setting `environment` on the deploying job is enough:
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: ./deploy.sh
+```
+
+The webhook must send _Deployment statuses_ events (see above).
+
 ## Add a repository to a channel
 
 ```
