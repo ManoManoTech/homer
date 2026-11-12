@@ -1,16 +1,20 @@
+import type { SectionBlock } from '@slack/types';
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
-import slackifyMarkdown from 'slackify-markdown';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import {
   fetchMergeRequestByIid,
   fetchMergeRequestReviewers,
 } from '@/core/services/gitlab';
 import {
+  escapeText,
   fetchGitlabUsernameFromSlackUserId,
   getPermalink,
 } from '@/core/services/slack';
 import type { DataReview } from '@/core/typings/Data';
 import type { GitlabMergeRequestDetails } from '@/core/typings/GitlabMergeRequest';
+
+// Slack refuses a longer section text with invalid_blocks.
+const SECTION_TEXT_MAX_LENGTH = 3000;
 
 interface BuildReviewListEphemeralData {
   channelId: string;
@@ -49,16 +53,9 @@ export async function buildReviewListEphemeral({
     .map((section) => ({
       ...section,
       items: [...section.items].sort((a, b) =>
-        formatItem(a).localeCompare(formatItem(b)),
+        a.mergeRequest.title.localeCompare(b.mergeRequest.title),
       ),
     }));
-
-  const formattedReviews = nonEmptySections
-    .map(
-      ({ title, items: sectionItems }) =>
-        `**${title}:**\n${sectionItems.map(formatItem).join('\n')}`,
-    )
-    .join('\n\n');
 
   const formattedReviewsFallback = nonEmptySections
     .flatMap((section) => section.items)
@@ -72,18 +69,17 @@ export async function buildReviewListEphemeral({
       items.length > 0
         ? `Ongoing reviews: ${formattedReviewsFallback}.`
         : 'There is no ongoing review shared in this channel.',
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text:
-            items.length > 0
-              ? slackifyMarkdown(formattedReviews)
-              : 'There is no ongoing review shared in this channel :homer-metal:',
-        },
-      },
-    ],
+    blocks:
+      items.length > 0
+        ? nonEmptySections.flatMap(({ title, items: sectionItems }) =>
+            buildSectionBlocks([
+              `*${title}:*`,
+              ...sectionItems.map(formatItem),
+            ]),
+          )
+        : buildSectionBlocks([
+            'There is no ongoing review shared in this channel :homer-metal:',
+          ]),
   };
 }
 
@@ -153,5 +149,27 @@ async function buildPersonalizedSections(
 }
 
 function formatItem({ link, mergeRequest }: ReviewListItem): string {
-  return `- [${mergeRequest.title}](${link})`;
+  return `• <${link}|${escapeText(mergeRequest.title)}>`;
+}
+
+/** Spreads the lines over as few sections as Slack accepts. */
+function buildSectionBlocks(lines: string[]): SectionBlock[] {
+  const texts: string[] = [];
+
+  for (const line of lines) {
+    const last = texts.length - 1;
+
+    if (
+      last >= 0 &&
+      texts[last].length + 1 + line.length <= SECTION_TEXT_MAX_LENGTH
+    ) {
+      texts[last] += `\n${line}`;
+    } else {
+      texts.push(line);
+    }
+  }
+  return texts.map((text) => ({
+    type: 'section',
+    text: { type: 'mrkdwn', text },
+  }));
 }
