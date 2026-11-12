@@ -52,6 +52,36 @@ describe('github > changelog', () => {
     ]);
   });
 
+  it('should list a merge commit whose pull request is not in the repository', async () => {
+    // Given: a fork inherits its upstream merge commits
+    mockGithubCall(`${repo}/compare/v1.0.0...main?per_page=100&page=1`, {
+      commits: [
+        commit(
+          'm1',
+          'Merge pull request #205 from upstream/feat\n\nfeat: upstream',
+        ),
+        commit('s1', 'feat: squashed (#4)'),
+      ],
+    });
+    mockGithubCall(`${repo}/pulls/205/commits?per_page=100`, {}, 404);
+
+    // When
+    const changelog = await generateChangelog(
+      projectId,
+      'v1.0.0',
+      () => true,
+      'github',
+    );
+
+    // Then
+    expect(changelog).toEqual(
+      [
+        '- Merge pull request #205 from upstream/feat',
+        `- [feat: squashed](${html_url}/pull/4)`,
+      ].join('\n'),
+    );
+  });
+
   it('should group commits by pull request since the previous tag', async () => {
     // Given
     mockGithubCall(`${repo}/compare/v1.0.0...main?per_page=100&page=1`, {
