@@ -6,6 +6,7 @@ import { addReviewToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { loadUserIdentityResolvers } from '@/core/services/userIdentity';
+import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import {
@@ -40,7 +41,7 @@ async function approveMergeRequestAs(username: string) {
   });
   mockBuildReviewMessageCalls();
 
-  return request(app)
+  const response = await request(app)
     .post('/api/v1/homer/gitlab')
     .set(getGitlabHeaders())
     .send({
@@ -48,6 +49,9 @@ async function approveMergeRequestAs(username: string) {
       object_attributes: { ...object_attributes, action: 'approved' },
       user: { ...user, username },
     });
+  // Homer answers GitLab before looking the approver up on Slack.
+  await settleExclusiveTasks();
+  return response;
 }
 
 function expectApprovalThreadMessageFrom(realName: string) {

@@ -10,6 +10,7 @@ import { slackBotWebClient } from '@/core/services/slack';
 import { findSlackUser } from '@/core/services/slackUsers';
 import type { ProviderType } from '@/core/typings/Provider';
 import type { UnifiedUser } from '@/core/typings/UnifiedModels';
+import { runExclusive } from '@/core/utils/runExclusive';
 import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
 import { buildReviewMessage } from '../viewBuilders/buildReviewMessage';
 
@@ -57,23 +58,41 @@ export async function handlePullRequestEvent(
   event: PullRequestEvent,
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
-  const { action, actor, iid, labels, projectId, provider } = event;
+  const { iid, labels, projectId, provider } = event;
+  const hasReviews =
+    (await getReviewsByMergeRequestIid(projectId, iid, provider)).length > 0;
+  const canCreateReview =
+    !hasReviews &&
+    (labels.includes(REVIEW_LABELS.REVIEW) ||
+      (labels.includes(REVIEW_LABELS.MERGEABLE) &&
+        (typeof event.isMergeable === 'function'
+          ? await event.isMergeable()
+          : event.isMergeable)));
+
+  if (!hasReviews && !canCreateReview) {
+    acknowledge(false);
+    return;
+  }
+  acknowledge(true);
+
+  // GitHub sends opened, assigned and labeled within milliseconds: without
+  // the lock, each of them would find no review and post its own message.
+  await runExclusive(`${provider}:${projectId}:${iid}`, () =>
+    handleRelevantEvent(event, canCreateReview),
+  );
+}
+
+async function handleRelevantEvent(
+  event: PullRequestEvent,
+  canCreateReview: boolean,
+): Promise<void> {
+  const { action, actor, iid, projectId, provider } = event;
   const reviews = await getReviewsByMergeRequestIid(projectId, iid, provider);
 
   if (reviews.length === 0) {
-    const hasReviewLabel = labels.includes(REVIEW_LABELS.REVIEW);
-    const isMergeable =
-      labels.includes(REVIEW_LABELS.MERGEABLE) &&
-      (typeof event.isMergeable === 'function'
-        ? await event.isMergeable()
-        : event.isMergeable);
-
-    if (hasReviewLabel || isMergeable) {
+    if (canCreateReview) {
       await handleNewReview(provider, projectId, iid, event.repoSlug);
-      acknowledge(true);
-      return;
     }
-    acknowledge(false);
     return;
   }
 
@@ -82,8 +101,6 @@ export async function handlePullRequestEvent(
   // naming the wrong person.
   const user = await findSlackUser(provider, actor);
   const threadMessage = user && getThreadMessage(action, user.real_name);
-
-  acknowledge(true);
 
   await Promise.all(
     reviews.map(async ({ channelId, ts }) => {

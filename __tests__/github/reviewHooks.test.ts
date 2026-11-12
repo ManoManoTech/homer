@@ -4,6 +4,7 @@ import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
 import {
   githubApproverFixture,
@@ -104,6 +105,48 @@ describe('github > review hooks', () => {
         provider: 'github',
       }),
     ).toEqual(true);
+  });
+
+  it('should share a pull request once when its events arrive together', async () => {
+    // Given
+    await addProjectToChannel({ channelId, projectId, provider: 'github' });
+    mockGithubReviewMessageCalls();
+    // A slow Slack leaves time for the other events to look for the review.
+    (slackBotWebClient.chat.postMessage as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => resolve({ ts: 'ts' }), 50);
+        }),
+    );
+    const pullRequest = {
+      ...githubPullRequestFixture,
+      labels: [{ name: 'homer-review' }],
+    };
+
+    // When: GitHub sends these within milliseconds of each other
+    await Promise.all(
+      ['opened', 'assigned', 'labeled'].map((action) =>
+        sendHook('pull_request', {
+          action,
+          pull_request: pullRequest,
+          sender: githubAuthorFixture,
+        }),
+      ),
+    );
+    await settleExclusiveTasks();
+
+    // Then
+    const { Sequelize } = (await import('sequelize')) as any;
+    expect(
+      (slackBotWebClient.chat.postMessage as jest.Mock).mock.calls.filter(
+        ([message]) => message.thread_ts === undefined,
+      ),
+    ).toHaveLength(1);
+    expect(
+      await Sequelize.models.Review.count({
+        where: { mergeRequestIid: iid, projectId, provider: 'github' },
+      }),
+    ).toEqual(1);
   });
 
   it('should share a pull request labeled homer-mergeable once only approvals are missing', async () => {
