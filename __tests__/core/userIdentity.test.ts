@@ -1,4 +1,3 @@
-import slackifyMarkdown from 'slackify-markdown';
 import request from 'supertest';
 import { app } from '@/app';
 import { CONFIG } from '@/config';
@@ -116,9 +115,7 @@ async function expectReviewListHeading(heading: string) {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: slackifyMarkdown(
-                `**${heading}:**\n- [work of jdoe](https://slack/ts)`,
-              ),
+              text: `*${heading}:*\n• <https://slack/ts|work of jdoe>`,
             },
           },
         ],
