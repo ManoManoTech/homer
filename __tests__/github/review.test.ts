@@ -28,6 +28,8 @@ export const githubReviewMessageFixture = {
   channel: channelId,
   link_names: true,
   text: `${githubPullRequestFixture.title} ${githubPullRequestFixture.html_url}`,
+  unfurl_links: false,
+  unfurl_media: false,
   username: 'author.real',
   icon_url: 'image_72',
   blocks: [

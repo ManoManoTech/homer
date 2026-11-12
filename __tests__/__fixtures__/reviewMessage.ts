@@ -91,6 +91,8 @@ export const reviewMessagePostFixture = {
   icon_url: 'image_72',
   link_names: true,
   text: `${mergeRequestDetailsFixture.title} ${mergeRequestDetailsFixture.web_url}`,
+  unfurl_links: false,
+  unfurl_media: false,
   username: `${mergeRequestFixture.author.username}.real`,
 };
 

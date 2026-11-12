@@ -91,6 +91,8 @@ exports[`buildReviewMessage renders the closed merge request payload 1`] = `
   "icon_url": "image_72",
   "link_names": true,
   "text": "~merge request title~ http://gitlab.example.com/my-group/my-project/-/merge_requests/1 (closed)",
+  "unfurl_links": false,
+  "unfurl_media": false,
   "username": "admin.real",
 }
 `;
@@ -186,6 +188,8 @@ exports[`buildReviewMessage renders the fully-approved payload (no approvals lef
   "icon_url": "image_72",
   "link_names": true,
   "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
+  "unfurl_links": false,
+  "unfurl_media": false,
   "username": "admin.real",
 }
 `;
@@ -281,6 +285,8 @@ exports[`buildReviewMessage renders the merged merge request payload 1`] = `
   "icon_url": "image_72",
   "link_names": true,
   "text": "~merge request title~ http://gitlab.example.com/my-group/my-project/-/merge_requests/1 (merged)",
+  "unfurl_links": false,
+  "unfurl_media": false,
   "username": "admin.real",
 }
 `;
@@ -376,6 +382,8 @@ exports[`buildReviewMessage renders the post payload for an open merge request 1
   "icon_url": "image_72",
   "link_names": true,
   "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
+  "unfurl_links": false,
+  "unfurl_media": false,
   "username": "admin.real",
 }
 `;
@@ -472,6 +480,8 @@ exports[`buildReviewMessage renders the update payload (with ts) for an open mer
   "link_names": true,
   "text": "merge request title http://gitlab.example.com/my-group/my-project/-/merge_requests/1",
   "ts": "ts",
+  "unfurl_links": false,
+  "unfurl_media": false,
   "username": "admin.real",
 }
 `;

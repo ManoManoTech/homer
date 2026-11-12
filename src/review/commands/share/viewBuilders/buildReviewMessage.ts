@@ -102,6 +102,10 @@ export async function buildReviewMessage(
     link_names: true,
     text: `${mergeRequestTitle} ${mergeRequest.webUrl}${mergeRequestStatus}`,
     blocks,
+    // The title already links to the merge request; previews of it and of
+    // the repository are noise.
+    unfurl_links: false,
+    unfurl_media: false,
   };
 
   if (mergeRequestAuthor !== undefined) {
