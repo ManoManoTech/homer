@@ -19,7 +19,7 @@ export async function shareReviewRequestHandler(
   res: Response,
 ) {
   const { text, channel_id, user_id } = req.body as SlackSlashCommandResponse;
-  const query = text.split(' ').slice(1).join(' ');
+  const query = parseQuery(text.split(' ').slice(1).join(' '));
 
   if (query.length === 0) {
     res.send(buildHelpMessage(channel_id));
@@ -60,4 +60,15 @@ export async function shareReviewRequestHandler(
       }),
     );
   }
+}
+
+// Slack wraps links as `<url>` or `<url|label>` and escapes `&` as `&amp;` when
+// the slash command escapes its text.
+const SLACK_LINK_REGEX = /^<(https?:\/\/[^|>]+)(?:\|[^>]*)?>$/;
+
+function parseQuery(rawQuery: string): string {
+  const query = rawQuery.trim();
+  const url = query.match(SLACK_LINK_REGEX)?.[1];
+
+  return url === undefined ? query : url.replace(/&amp;/g, '&');
 }

@@ -198,6 +198,27 @@ describe('github > review', () => {
     );
   });
 
+  it.each([
+    ['wrapped by Slack', `<${githubPullRequestFixture.html_url}>`],
+    [
+      'wrapped by Slack with a label',
+      `<${githubPullRequestFixture.html_url}|#${iid}>`,
+    ],
+    ['after a double space', ` ${githubPullRequestFixture.html_url}`],
+  ])('should share a pull request found by URL %s', async (_, url) => {
+    // Given
+    mockGithubReviewMessageCalls();
+
+    // When
+    await sendCommand(`review ${url}`);
+
+    // Then
+    expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(
+      1,
+      githubReviewMessageFixture,
+    );
+  });
+
   it('should ignore closed pull requests', async () => {
     // Given
     await addProjectToChannel({ channelId, projectId, provider: 'github' });
