@@ -1,3 +1,4 @@
+import type { Transaction } from 'sequelize';
 import { IS_ARCHIVED_SLACK_ERROR } from '@/constants';
 import { removeReview } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
@@ -25,13 +26,14 @@ interface ReviewWebhookErrorContext {
 export async function handleReviewWebhookError(
   err: unknown,
   ctx: ReviewWebhookErrorContext,
+  transaction?: Transaction,
 ): Promise<void> {
   if (isSlackErrorCode(err, IS_ARCHIVED_SLACK_ERROR) && ctx.reviewTs) {
     logger.info(
       { ...ctx, slackError: IS_ARCHIVED_SLACK_ERROR },
       'slack channel archived; removing orphan review',
     );
-    await removeReview(ctx.reviewTs);
+    await removeReview(ctx.reviewTs, transaction);
     return;
   }
 

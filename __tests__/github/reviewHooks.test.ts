@@ -2,7 +2,11 @@ import request from 'supertest';
 import { app } from '@/app';
 import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
+import {
+  addProjectToChannel,
+  addReviewToChannel,
+  sequelize,
+} from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
@@ -147,6 +151,13 @@ describe('github > review hooks', () => {
         where: { mergeRequestIid: iid, projectId, provider: 'github' },
       }),
     ).toEqual(1);
+    // Other Homer instances are kept out by a Postgres advisory lock.
+    expect(sequelize.query).toHaveBeenCalledWith(
+      'SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))',
+      expect.objectContaining({
+        replacements: { key: `review:github:${projectId}:${iid}` },
+      }),
+    );
   });
 
   it('should share a pull request labeled homer-mergeable once only approvals are missing', async () => {

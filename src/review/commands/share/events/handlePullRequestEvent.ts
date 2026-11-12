@@ -1,9 +1,11 @@
+import type { Transaction } from 'sequelize';
 import { CONFIG } from '@/config';
 import {
   addReviewToChannel,
   getChannelsByProjectId,
   getReviewsByMergeRequestIid,
   removeReviewsByMergeRequestIid,
+  withAdvisoryLock,
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
@@ -76,22 +78,40 @@ export async function handlePullRequestEvent(
   acknowledge(true);
 
   // GitHub sends opened, assigned and labeled within milliseconds: without
-  // the lock, each of them would find no review and post its own message.
-  await runExclusive(`${provider}:${projectId}:${iid}`, () =>
-    handleRelevantEvent(event, canCreateReview),
+  // a lock, each of them would find no review and post its own message.
+  // The advisory lock covers Homer instances sharing the database. The
+  // in-process lock in front of it keeps a single connection per pull request
+  // in this instance, instead of one per waiting event.
+  const lockKey = `review:${provider}:${projectId}:${iid}`;
+  await runExclusive(lockKey, () =>
+    withAdvisoryLock(lockKey, (transaction) =>
+      handleRelevantEvent(event, canCreateReview, transaction),
+    ),
   );
 }
 
 async function handleRelevantEvent(
   event: PullRequestEvent,
   canCreateReview: boolean,
+  transaction: Transaction,
 ): Promise<void> {
   const { action, actor, iid, projectId, provider } = event;
-  const reviews = await getReviewsByMergeRequestIid(projectId, iid, provider);
+  const reviews = await getReviewsByMergeRequestIid(
+    projectId,
+    iid,
+    provider,
+    transaction,
+  );
 
   if (reviews.length === 0) {
     if (canCreateReview) {
-      await handleNewReview(provider, projectId, iid, event.repoSlug);
+      await handleNewReview(
+        provider,
+        projectId,
+        iid,
+        event.repoSlug,
+        transaction,
+      );
     }
     return;
   }
@@ -119,19 +139,23 @@ async function handleRelevantEvent(
           ].filter(Boolean),
         );
       } catch (err) {
-        await handleReviewWebhookError(err, {
-          hook: 'merge_request',
-          mrIid: iid,
-          projectId,
-          channelId,
-          reviewTs: ts,
-        });
+        await handleReviewWebhookError(
+          err,
+          {
+            hook: 'merge_request',
+            mrIid: iid,
+            projectId,
+            channelId,
+            reviewTs: ts,
+          },
+          transaction,
+        );
       }
     }),
   );
 
   if (['close', 'merge'].includes(action)) {
-    await removeReviewsByMergeRequestIid(projectId, iid, provider);
+    await removeReviewsByMergeRequestIid(projectId, iid, provider, transaction);
   }
 }
 
@@ -140,8 +164,13 @@ async function handleNewReview(
   projectId: number,
   iid: number,
   repoSlug: string | undefined,
+  transaction: Transaction,
 ): Promise<void> {
-  const configuredChannels = await getChannelsByProjectId(projectId, provider);
+  const configuredChannels = await getChannelsByProjectId(
+    projectId,
+    provider,
+    transaction,
+  );
 
   if (configuredChannels.length === 0) {
     return;
@@ -158,21 +187,28 @@ async function handleNewReview(
         const { ts } = await slackBotWebClient.chat.postMessage(
           await buildReviewMessage(channelId, provider, projectId, iid),
         );
-        await addReviewToChannel({
-          channelId,
-          mergeRequestIid: iid,
-          projectId,
-          provider,
-          repoSlug,
-          ts: ts as string,
-        });
+        await addReviewToChannel(
+          {
+            channelId,
+            mergeRequestIid: iid,
+            projectId,
+            provider,
+            repoSlug,
+            ts: ts as string,
+          },
+          transaction,
+        );
       } catch (err) {
-        await handleReviewWebhookError(err, {
-          hook: 'merge_request',
-          mrIid: iid,
-          projectId,
-          channelId,
-        });
+        await handleReviewWebhookError(
+          err,
+          {
+            hook: 'merge_request',
+            mrIid: iid,
+            projectId,
+            channelId,
+          },
+          transaction,
+        );
       }
     }),
   );

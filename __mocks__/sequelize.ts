@@ -115,6 +115,8 @@ class SequelizeMock {
 
   sync() {}
 
+  query = jest.fn(async () => []);
+
   async transaction(callback: (transaction: any) => Promise<any>) {
     return callback({
       LOCK: { UPDATE: 'UPDATE' },

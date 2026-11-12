@@ -3,6 +3,7 @@ import {
   type Model,
   Op,
   Sequelize,
+  type Transaction,
   type WhereOptions,
 } from 'sequelize';
 import { CONFIG } from '@/config';
@@ -157,29 +158,36 @@ export async function addProjectToChannel({
   });
 }
 
-export async function addReviewToChannel({
-  channelId,
-  mergeRequestIid,
-  projectId,
-  provider = DEFAULT_PROVIDER,
-  repoSlug,
-  ts,
-}: WithOptionalProvider<DataReview>): Promise<void> {
+export async function addReviewToChannel(
+  {
+    channelId,
+    mergeRequestIid,
+    projectId,
+    provider = DEFAULT_PROVIDER,
+    repoSlug,
+    ts,
+  }: WithOptionalProvider<DataReview>,
+  transaction?: Transaction,
+): Promise<void> {
   const review = await Review.findOne({
     where: { channelId, mergeRequestIid, projectId, provider },
+    transaction,
   });
 
   if (review !== null) {
-    await review.update({ ts });
+    await review.update({ ts }, { transaction });
   } else {
-    await Review.create({
-      channelId,
-      mergeRequestIid,
-      projectId,
-      provider,
-      repoSlug,
-      ts,
-    });
+    await Review.create(
+      {
+        channelId,
+        mergeRequestIid,
+        projectId,
+        provider,
+        repoSlug,
+        ts,
+      },
+      { transaction },
+    );
   }
 }
 
@@ -277,9 +285,11 @@ export async function getReviewsByMergeRequestIid(
   projectId: number,
   mergeRequestIid: number,
   provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<DataReview[]> {
   const reviews = await Review.findAll({
     where: { mergeRequestIid, projectId, provider },
+    transaction,
   });
   return reviews.map(toJSON);
 }
@@ -287,9 +297,11 @@ export async function getReviewsByMergeRequestIid(
 export async function getChannelsByProjectId(
   projectId: number,
   provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<DataProject[]> {
   const projects = await Project.findAll({
     where: { projectId, provider },
+    transaction,
   });
   return projects.map(toJSON);
 }
@@ -331,9 +343,13 @@ export async function removeRelease(
   });
 }
 
-export async function removeReview(ts: string): Promise<void> {
+export async function removeReview(
+  ts: string,
+  transaction?: Transaction,
+): Promise<void> {
   await Review.destroy({
     where: { ts },
+    transaction,
   });
 }
 
@@ -341,9 +357,30 @@ export async function removeReviewsByMergeRequestIid(
   projectId: number,
   mergeRequestIid: number,
   provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<void> {
   await Review.destroy({
     where: { mergeRequestIid, projectId, provider },
+    transaction,
+  });
+}
+
+/**
+ * Runs `task` in a transaction holding a Postgres advisory lock on `key`, so
+ * Homer instances sharing the database run tasks of the same key one after
+ * another. Queries of the task must use the transaction: on another
+ * connection, they could wait for rows the transaction holds.
+ */
+export async function withAdvisoryLock<T>(
+  key: string,
+  task: (transaction: Transaction) => Promise<T>,
+): Promise<T> {
+  return sequelize.transaction(async (transaction) => {
+    await sequelize.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))',
+      { replacements: { key }, transaction },
+    );
+    return task(transaction);
   });
 }
 
