@@ -30,6 +30,7 @@ jest.mock('@/core/services/gitlab', () => ({
 jest.mock('@/release/utils/ConfigHelper', () => ({
   __esModule: true,
   default: {
+    init: jest.fn(),
     hasProjectReleaseConfig: jest.fn(),
     getProjectReleaseConfig: jest.fn(),
   },

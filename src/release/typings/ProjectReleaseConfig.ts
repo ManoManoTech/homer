@@ -8,15 +8,17 @@ export interface ProjectReleaseConfig {
   releaseManager: ReleaseManager;
   releaseTagManager?: ReleaseTagManager;
   hasReleasePipeline?: boolean;
+  ignoredNoteAuthorRegex?: RegExp;
 }
 
 export type ProjectConfigJSON = Omit<
   ProjectReleaseConfig,
-  'releaseManager' | 'releaseTagManager'
+  'releaseManager' | 'releaseTagManager' | 'ignoredNoteAuthorRegex'
 > & {
   releaseManager: string;
   releaseTagManager?: string;
   description?: string;
+  ignoredNoteAuthorPattern?: string;
 };
 
 export type ProjectConfigurationsJSON = {

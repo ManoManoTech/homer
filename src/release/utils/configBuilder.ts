@@ -23,6 +23,7 @@ const projectSchema: JSONSchemaType<ProjectConfigJSON> = {
     releaseTagManager: { type: 'string', nullable: true },
     description: { type: 'string', nullable: true },
     hasReleasePipeline: { type: 'boolean', nullable: true },
+    ignoredNoteAuthorPattern: { type: 'string', nullable: true },
   },
   required: [
     'notificationChannelIds',
@@ -47,22 +48,48 @@ const configsSchema: JSONSchemaType<ProjectConfigurationsJSON> = {
 
 const validateProjectReleaseConfig = ajv.compile(configsSchema);
 
+function compileIgnoredNoteAuthorPattern(
+  projectId: number,
+  pattern: string | undefined,
+): RegExp | undefined {
+  if (!pattern) {
+    return undefined;
+  }
+  try {
+    return new RegExp(pattern);
+  } catch (error) {
+    throw new Error(
+      `Invalid ignoredNoteAuthorPattern for project ${projectId}: ${
+        (error as Error).message
+      }`,
+    );
+  }
+}
+
 export async function buildProjectReleaseConfigs(
   configs: ProjectConfigurationsJSON,
-  releaseTagManagers: Record<string, ReleaseTagManager>
+  releaseTagManagers: Record<string, ReleaseTagManager>,
 ) {
   if (!validateProjectReleaseConfig(configs)) {
-    logger.error({errors : validateProjectReleaseConfig.errors}, 'The config file validation failed');
+    logger.error(
+      { errors: validateProjectReleaseConfig.errors },
+      'The config file validation failed',
+    );
     throw new Error(
-      'The config file should contain an array of valid project configurations'
+      'The config file should contain an array of valid project configurations',
     );
   }
   const projects: ProjectReleaseConfig[] = [];
   for (const project of configs.projects) {
-    const { releaseManager, releaseTagManager, ...ids } = project;
+    const {
+      releaseManager,
+      releaseTagManager,
+      ignoredNoteAuthorPattern,
+      ...ids
+    } = project;
     if (ReleasePluginManager.getReleaseManager(releaseManager) === undefined) {
       await ReleasePluginManager.loadReleaseManagerPlugin(
-        `@root/plugins/release/${releaseManager}`
+        `@root/plugins/release/${releaseManager}`,
       );
     }
     projects.push({
@@ -71,6 +98,10 @@ export async function buildProjectReleaseConfigs(
       releaseTagManager: releaseTagManager
         ? releaseTagManagers[releaseTagManager]
         : undefined,
+      ignoredNoteAuthorRegex: compileIgnoredNoteAuthorPattern(
+        ids.projectId,
+        ignoredNoteAuthorPattern,
+      ),
     });
   }
   return projects;
