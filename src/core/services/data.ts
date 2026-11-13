@@ -3,6 +3,7 @@ import {
   type Model,
   Op,
   Sequelize,
+  type Transaction,
   type WhereOptions,
 } from 'sequelize';
 import { CONFIG } from '@/config';
@@ -14,7 +15,14 @@ import type {
   DataReleaseInternal,
   DataReview,
 } from '@/core/typings/Data';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import type { ReleaseDeploymentInfo } from '@/release/typings/ReleaseDeploymentInfo';
+
+/** Data created before GitHub support has no provider: it is GitLab. */
+type WithOptionalProvider<T extends { provider: ProviderType }> = Omit<
+  T,
+  'provider'
+> & { provider?: ProviderType };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEAN_INTERVAL_MS = DAY_IN_MS;
@@ -31,15 +39,44 @@ export const sequelize = new Sequelize({
   username: CONFIG.postgres.username,
 });
 
+/**
+ * GitHub repository ids need a BIGINT, which the driver returns as a string.
+ * They stay far below Number.MAX_SAFE_INTEGER, so they are read as numbers.
+ */
+const PROJECT_ID_ATTRIBUTE = {
+  type: DataTypes.BIGINT,
+  allowNull: false,
+  get(this: Model): number {
+    return Number(this.getDataValue('projectId'));
+  },
+};
+
+/**
+ * Stored as `repoProvider`, nullable with a default so that rows written before
+ * GitHub support read back as GitLab (docs/adr/0003). Every insert sets it.
+ */
+const PROVIDER_ATTRIBUTE = {
+  type: DataTypes.STRING,
+  allowNull: true,
+  defaultValue: DEFAULT_PROVIDER,
+  field: 'repoProvider',
+};
+
+/** `owner/name` of a GitHub repository: refreshed from webhooks, not a key. */
+const REPO_SLUG_ATTRIBUTE = { type: DataTypes.STRING, allowNull: true };
+
 const Project = sequelize.define<Model<DataProject>>('Project', {
   channelId: { type: DataTypes.STRING, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
+  provider: PROVIDER_ATTRIBUTE,
+  repoSlug: REPO_SLUG_ATTRIBUTE,
 });
 
 const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
   description: { type: DataTypes.TEXT, allowNull: true }, // TODO change this when possible
   failedDeployments: { type: DataTypes.TEXT, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
+  provider: PROVIDER_ATTRIBUTE,
   slackAuthor: { type: DataTypes.TEXT, allowNull: false },
   startedDeployments: { type: DataTypes.TEXT, allowNull: false },
   state: { type: DataTypes.STRING, allowNull: false },
@@ -51,7 +88,9 @@ const Release = sequelize.define<Model<DataReleaseInternal>>('Release', {
 const Review = sequelize.define<Model<DataReview>>('Review', {
   channelId: { type: DataTypes.STRING, allowNull: false },
   mergeRequestIid: { type: DataTypes.INTEGER, allowNull: false },
-  projectId: { type: DataTypes.INTEGER, allowNull: false },
+  projectId: PROJECT_ID_ATTRIBUTE,
+  provider: PROVIDER_ATTRIBUTE,
+  repoSlug: REPO_SLUG_ATTRIBUTE,
   ts: { type: DataTypes.STRING, allowNull: false },
 });
 
@@ -110,27 +149,66 @@ export async function checkDatabaseConnection(): Promise<void> {
 export async function addProjectToChannel({
   channelId,
   projectId,
-}: DataProject): Promise<void> {
+  provider = DEFAULT_PROVIDER,
+  repoSlug,
+}: WithOptionalProvider<DataProject>): Promise<void> {
   await Project.findOrCreate({
-    where: { channelId, projectId },
+    where: { channelId, projectId, provider },
+    defaults: { channelId, projectId, provider, repoSlug },
   });
 }
 
-export async function addReviewToChannel({
-  channelId,
-  mergeRequestIid,
-  projectId,
-  ts,
-}: DataReview): Promise<void> {
+export async function addReviewToChannel(
+  {
+    channelId,
+    mergeRequestIid,
+    projectId,
+    provider = DEFAULT_PROVIDER,
+    repoSlug,
+    ts,
+  }: WithOptionalProvider<DataReview>,
+  transaction?: Transaction,
+): Promise<void> {
   const review = await Review.findOne({
-    where: { channelId, mergeRequestIid, projectId },
+    where: { channelId, mergeRequestIid, projectId, provider },
+    transaction,
   });
 
   if (review !== null) {
-    await review.update({ ts });
+    await review.update({ ts }, { transaction });
   } else {
-    await Review.create({ channelId, mergeRequestIid, projectId, ts });
+    await Review.create(
+      {
+        channelId,
+        mergeRequestIid,
+        projectId,
+        provider,
+        repoSlug,
+        ts,
+      },
+      { transaction },
+    );
   }
+}
+
+/**
+ * Renamed or transferred repositories keep their id, so their rows keep
+ * matching: the next webhook stores the new slug.
+ */
+export async function refreshRepoSlug(
+  projectId: number,
+  provider: ProviderType,
+  repoSlug: string,
+): Promise<void> {
+  const where = {
+    projectId,
+    provider,
+    [Op.or]: [{ repoSlug: null }, { repoSlug: { [Op.ne]: repoSlug } }],
+  };
+  await Promise.all([
+    Project.update({ repoSlug }, { where }),
+    Review.update({ repoSlug }, { where }),
+  ]);
 }
 
 export async function createRelease(
@@ -139,6 +217,7 @@ export async function createRelease(
   const [releaseModel] = await Release.findOrCreate({
     where: {
       projectId: release.projectId,
+      provider: release.provider ?? DEFAULT_PROVIDER,
       tagName: release.tagName,
       description: release.description,
       state: release.state,
@@ -154,9 +233,10 @@ export async function createRelease(
 export async function getProjectRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease | undefined> {
   const releaseModel = await Release.findOne({
-    where: { projectId, tagName },
+    where: { projectId, provider, tagName },
   });
   if (!releaseModel) {
     return undefined;
@@ -166,10 +246,11 @@ export async function getProjectRelease(
 
 export async function getProjectReleases(
   projectId: number,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease[]> {
   return (
     await Release.findAll({
-      where: { projectId },
+      where: { projectId, provider },
     })
   ).map(formatRelease);
 }
@@ -203,67 +284,103 @@ export async function getReviewsByChannelId(
 export async function getReviewsByMergeRequestIid(
   projectId: number,
   mergeRequestIid: number,
+  provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<DataReview[]> {
   const reviews = await Review.findAll({
-    where: { mergeRequestIid, projectId },
+    where: { mergeRequestIid, projectId, provider },
+    transaction,
   });
   return reviews.map(toJSON);
 }
 
 export async function getChannelsByProjectId(
   projectId: number,
+  provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<DataProject[]> {
   const projects = await Project.findAll({
-    where: { projectId },
+    where: { projectId, provider },
+    transaction,
   });
   return projects.map(toJSON);
 }
 
 export async function countChannelsByProjectId(
   projectId: number,
+  provider: ProviderType,
 ): Promise<number> {
   return Project.count({
-    where: { projectId },
+    where: { projectId, provider },
   });
 }
 
 export async function hasRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<boolean> {
-  return (await getProjectRelease(projectId, tagName)) !== undefined;
+  return (await getProjectRelease(projectId, tagName, provider)) !== undefined;
 }
 
 export async function removeProjectFromChannel(
   projectId: number,
   channelId: string,
+  provider: ProviderType,
 ) {
   await Project.destroy({
-    where: { channelId, projectId },
+    where: { channelId, projectId, provider },
   });
 }
 
 export async function removeRelease(
   projectId: number,
   tagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<void> {
   await Release.destroy({
-    where: { projectId, tagName },
+    where: { projectId, provider, tagName },
   });
 }
 
-export async function removeReview(ts: string): Promise<void> {
+export async function removeReview(
+  ts: string,
+  transaction?: Transaction,
+): Promise<void> {
   await Review.destroy({
     where: { ts },
+    transaction,
   });
 }
 
 export async function removeReviewsByMergeRequestIid(
-  mergeRequestIid: number,
   projectId: number,
+  mergeRequestIid: number,
+  provider: ProviderType,
+  transaction?: Transaction,
 ): Promise<void> {
   await Review.destroy({
-    where: { mergeRequestIid, projectId },
+    where: { mergeRequestIid, projectId, provider },
+    transaction,
+  });
+}
+
+/**
+ * Runs `task` in a transaction holding a Postgres advisory lock on `key`, so
+ * Homer instances sharing the database run tasks of the same key one after
+ * another. Queries of the task must use the transaction: on another
+ * connection, they could wait for rows the transaction holds.
+ */
+export async function withAdvisoryLock<T>(
+  key: string,
+  task: (transaction: Transaction) => Promise<T>,
+): Promise<T> {
+  return sequelize.transaction(async (transaction) => {
+    await sequelize.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))',
+      { replacements: { key }, transaction },
+    );
+    return task(transaction);
   });
 }
 
@@ -271,12 +388,13 @@ export async function updateRelease(
   projectId: number,
   tagName: string,
   updatedReleaseDataGetter: (release: DataRelease) => Partial<DataRelease>,
+  provider: ProviderType = DEFAULT_PROVIDER,
 ): Promise<DataRelease> {
   // The transaction prevents race conditions when multiple calls to updateRelease are made at the
   // same time.
   return sequelize.transaction(async (transaction) => {
     const releaseModel = await Release.findOne({
-      where: { projectId, tagName },
+      where: { projectId, provider, tagName },
       lock: transaction.LOCK.UPDATE,
       transaction,
     });

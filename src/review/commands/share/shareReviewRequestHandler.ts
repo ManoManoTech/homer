@@ -4,7 +4,7 @@ import {
   addReviewToChannel,
   getProjectsByChannelId,
 } from '@/core/services/data';
-import { searchMergeRequests } from '@/core/services/gitlab';
+import { searchPullRequests } from '@/core/services/providers/searchPullRequests';
 import { slackBotWebClient } from '@/core/services/slack';
 import type {
   SlackExpressRequest,
@@ -16,10 +16,10 @@ import { buildReviewMessage } from './viewBuilders/buildReviewMessage';
 
 export async function shareReviewRequestHandler(
   req: SlackExpressRequest,
-  res: Response
+  res: Response,
 ) {
   const { text, channel_id, user_id } = req.body as SlackSlashCommandResponse;
-  const query = text.split(' ').slice(1).join(' ');
+  const query = parseQuery(text.split(' ').slice(1).join(' '));
 
   if (query.length === 0) {
     res.send(buildHelpMessage(channel_id));
@@ -29,18 +29,19 @@ export async function shareReviewRequestHandler(
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
 
   const projects = await getProjectsByChannelId(channel_id);
-  const mergeRequests = await searchMergeRequests(query, projects);
+  const mergeRequests = await searchPullRequests(query, projects);
 
   if (mergeRequests.length === 1) {
-    const { iid, project_id } = mergeRequests[0];
+    const { iid, projectId, provider } = mergeRequests[0];
     const { ts } = await slackBotWebClient.chat.postMessage(
-      await buildReviewMessage(channel_id, project_id, iid)
+      await buildReviewMessage(channel_id, provider, projectId, iid),
     );
 
     await addReviewToChannel({
       channelId: channel_id,
       mergeRequestIid: iid,
-      projectId: project_id,
+      projectId,
+      provider,
       ts: ts as string,
     });
   } else if (mergeRequests.length === 0) {
@@ -56,7 +57,18 @@ export async function shareReviewRequestHandler(
         mergeRequests,
         query,
         userId: user_id,
-      })
+      }),
     );
   }
+}
+
+// Slack wraps links as `<url>` or `<url|label>` and escapes `&` as `&amp;` when
+// the slash command escapes its text.
+const SLACK_LINK_REGEX = /^<(https?:\/\/[^|>]+)(?:\|[^>]*)?>$/;
+
+function parseQuery(rawQuery: string): string {
+  const query = rawQuery.trim();
+  const url = query.match(SLACK_LINK_REGEX)?.[1];
+
+  return url === undefined ? query : url.replace(/&amp;/g, '&');
 }

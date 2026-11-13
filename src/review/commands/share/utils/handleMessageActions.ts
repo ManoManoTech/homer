@@ -8,7 +8,7 @@ import { rebaseSourceBranch } from './rebaseSourceBranch';
 
 export async function handleMessageAction(
   payload: BlockActionsPayloadWithChannel,
-  action: StaticSelectAction
+  action: StaticSelectAction,
 ) {
   const mergeRequestAction = action.selected_option.value;
 
@@ -24,7 +24,7 @@ export async function handleMessageAction(
     await rebaseSourceBranch(payload, action);
   } else {
     logger.error(
-      new Error(`Unknown review message action: ${mergeRequestAction}.`)
+      new Error(`Unknown review message action: ${mergeRequestAction}.`),
     );
   }
 }

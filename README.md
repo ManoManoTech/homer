@@ -7,6 +7,9 @@
 Homer is a **Slack** bot intended to help you to easily **share and follow
 Gitlab merge requests**.
 
+GitHub pull requests and releases are supported too: see the
+[GitHub setup](docs/github.md) and the [support matrix](docs/github-support.md).
+
 ## Why Homer?
 
 At ManoMano, we were a bit tired of reading Gitlab emails to try keeping up to
@@ -161,6 +164,10 @@ Homer uses custom emojis when posting messages. To have them properly
 displayed, you will need to add all the emojis under [emojis](./emojis) to your
 Slack organisation.
 
+Review messages also show the `:gitlab:` or `:github:` emoji next to the
+project name. Add them with the logo of each provider if your workspace does not
+have them yet.
+
 ![Customize menu](docs/assets/slack/customize-menu.png)
 
 ### 3. Prerequisites
@@ -265,6 +272,9 @@ Create a `.env` file containing the following variables:
   `request body exceeded size limit` error is logged with the
   request's `Content-Length` for observability.
 
+To use Homer with **GitHub** repositories, see the
+[GitHub setup](docs/github.md) and set the `GITHUB_*` variables it lists.
+
 If you want Homer to connect to an **external PostgreSQL database**, you can set
 the following variables:
 
@@ -368,6 +378,9 @@ Here is a sample configuration with one project:
   ]
 }
 ```
+
+`provider` (`gitlab` or `github`, default `gitlab`) tells Homer where
+`projectId` lives. For GitHub, `projectId` is the numeric repository id.
 
 ### 8. Add your own release manager
 

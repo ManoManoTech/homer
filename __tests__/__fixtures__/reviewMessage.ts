@@ -43,7 +43,7 @@ export const reviewMessagePostFixture = {
     {
       elements: [
         {
-          text: `Project: _<${projectFixture.web_url}|${projectFixture.path_with_namespace}>_`,
+          text: `Project: :gitlab: _<${projectFixture.web_url}|${projectFixture.path_with_namespace}>_`,
           type: 'mrkdwn',
         },
         {
@@ -91,6 +91,8 @@ export const reviewMessagePostFixture = {
   icon_url: 'image_72',
   link_names: true,
   text: `${mergeRequestDetailsFixture.title} ${mergeRequestDetailsFixture.web_url}`,
+  unfurl_links: false,
+  unfurl_media: false,
   username: `${mergeRequestFixture.author.username}.real`,
 };
 

@@ -6,30 +6,43 @@ import type {
   View,
 } from '@slack/web-api';
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
-import {
-  fetchProjectById,
-  fetchProjectReleases,
-  fetchProjectTags,
-} from '@/core/services/gitlab';
+import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import type { BlockActionView } from '@/core/typings/BlockActionPayload';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import type { SlackOption } from '@/core/typings/SlackOption';
+import { formatProjectRef, parseProjectRef } from '@/core/utils/projectRef';
 import { slackifyText } from '@/core/utils/slackifyText';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 import getReleaseOptions from '@/release/releaseOptions';
 import ConfigHelper from '../../../utils/ConfigHelper';
 import { buildPreviousReleaseTagOptionGroups } from '../utils/previousReleaseTagOptions';
+import { buildReleaseModalErrorView } from './buildReleaseModalErrorView';
 
 interface ReleaseModalData {
   channelId?: string;
   view?: BlockActionView;
 }
 
-export async function buildReleaseModalView({
+/** Never throws: a failure is shown in the modal instead of a stuck loader. */
+export async function buildReleaseModalView(
+  data: ReleaseModalData,
+): Promise<View> {
+  try {
+    return await buildReleaseModalViewOrThrow(data);
+  } catch (error) {
+    logger.error(error, 'Could not build the release modal');
+    return buildReleaseModalErrorView(error, data.view);
+  }
+}
+
+async function buildReleaseModalViewOrThrow({
   channelId,
   view,
 }: ReleaseModalData): Promise<View> {
   let previousReleaseTagName: string | undefined;
   let projectId: number | undefined;
+  let provider: ProviderType = DEFAULT_PROVIDER;
   let projectOptions: SlackOption[] | undefined;
 
   if (view !== undefined) {
@@ -40,11 +53,13 @@ export async function buildReleaseModalView({
         'release-select-previous-tag-action'
       ]?.selected_option?.value;
 
-    projectId = parseInt(
+    const selectedProject =
       state.values['release-project-block']?.['release-select-project-action']
-        ?.selected_option?.value,
-      10,
-    );
+        ?.selected_option?.value;
+
+    if (selectedProject !== undefined) {
+      ({ projectId, provider } = parseProjectRef(selectedProject));
+    }
 
     projectOptions = ((blocks[0] as InputBlock).element as StaticSelect)
       .options as SlackOption[];
@@ -55,20 +70,23 @@ export async function buildReleaseModalView({
       await ConfigHelper.getChannelProjectReleaseConfigs(channelId);
     const projects = await Promise.all(
       projectReleaseConfigs.map(async (config) =>
-        fetchProjectById(config.projectId),
+        getProvider(config.provider ?? DEFAULT_PROVIDER).fetchProject(
+          config.projectId,
+        ),
       ),
     );
 
     projectOptions = projects
-      .sort((a, b) =>
-        a.path_with_namespace.localeCompare(b.path_with_namespace),
-      )
+      .sort((a, b) => a.path.localeCompare(b.path))
       .map((project) => ({
         text: {
           type: 'plain_text',
-          text: truncateProjectPath(project.path_with_namespace),
+          text: truncateProjectPath(project.path),
         },
-        value: project.id.toString(),
+        value: formatProjectRef({
+          provider: project.provider,
+          projectId: project.id,
+        }),
       })) as SlackOption[];
   }
 
@@ -79,11 +97,11 @@ export async function buildReleaseModalView({
   }
 
   if (projectId === undefined) {
-    projectId = parseInt(projectOptions[0].value, 10);
+    ({ projectId, provider } = parseProjectRef(projectOptions[0].value));
   }
 
   const { releaseTagManager, releaseManager } =
-    await ConfigHelper.getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId, provider);
 
   if (releaseManager.buildReleaseModalView) {
     return releaseManager.buildReleaseModalView(
@@ -103,8 +121,8 @@ export async function buildReleaseModalView({
   }
 
   const [tags, releases] = await Promise.all([
-    fetchProjectTags(projectId),
-    fetchProjectReleases(projectId),
+    getProvider(provider).fetchTags(projectId),
+    getProvider(provider).fetchReleases(projectId),
   ]);
 
   const { optionGroups: previousReleaseOptionGroups, defaultOption } =
@@ -134,7 +152,12 @@ export async function buildReleaseModalView({
   }
 
   const changelog = previousReleaseTagName
-    ? await generateChangelog(projectId, previousReleaseTagName)
+    ? await generateChangelog(
+        projectId,
+        previousReleaseTagName,
+        undefined,
+        provider,
+      )
     : '';
 
   return {

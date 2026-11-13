@@ -1,14 +1,22 @@
 import type { SectionBlock, StaticSelect } from '@slack/web-api';
-import type { GitlabProject } from '@/core/typings/GitlabProject';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 import { SLACK_OPTION_TEXT_MAX_LENGTH } from '@/core/utils/truncateProjectPath';
 import { buildAddProjectSelectionEphemeral } from '@/project/commands/add/buildAddProjectSelectionEphemeral';
 import { projectFixture } from '../__fixtures__/projectFixture';
+
+const project: UnifiedProject = {
+  provider: 'gitlab',
+  id: projectFixture.id,
+  path: projectFixture.path_with_namespace,
+  webUrl: projectFixture.web_url,
+  defaultBranch: projectFixture.default_branch,
+};
 
 describe('buildAddProjectSelectionEphemeral', () => {
   it('keeps short project paths unchanged in the option text', () => {
     const result = buildAddProjectSelectionEphemeral({
       channelId: 'channelId',
-      projects: [projectFixture as GitlabProject],
+      projects: [project],
       query: 'search',
       userId: 'userId',
     });
@@ -24,10 +32,7 @@ describe('buildAddProjectSelectionEphemeral', () => {
     const longPath = `${'group/'.repeat(15)}very-long-project-name`;
     expect(longPath.length).toBeGreaterThan(SLACK_OPTION_TEXT_MAX_LENGTH);
 
-    const longProject: GitlabProject = {
-      ...(projectFixture as GitlabProject),
-      path_with_namespace: longPath,
-    };
+    const longProject: UnifiedProject = { ...project, path: longPath };
 
     const result = buildAddProjectSelectionEphemeral({
       channelId: 'channelId',

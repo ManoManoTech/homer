@@ -7,26 +7,27 @@ import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
-import ConfigHelper from '../../utils/ConfigHelper';
+import ConfigHelper, { isChannelRelease } from '../../utils/ConfigHelper';
 import { buildReleaseSelectionEphemeral } from '../../viewBuilders/buildReleaseSelectionEphemeral';
 
 export async function endReleaseRequestHandler(
   req: SlackExpressRequest,
-  res: Response
+  res: Response,
 ) {
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
 
   const { channel_id: channelId, user_id: userId } =
     req.body as SlackSlashCommandResponse;
 
-  const projectIds = (
-    await ConfigHelper.getChannelProjectReleaseConfigs(channelId)
-  ).map(({ projectId }) => projectId);
+  const configs = await ConfigHelper.getChannelProjectReleaseConfigs(channelId);
+  const projectIds = configs.map(({ projectId }) => projectId);
 
-  const releases = await getReleases({
-    projectId: { [Op.or]: projectIds },
-    state: 'monitoring',
-  });
+  const releases = (
+    await getReleases({
+      projectId: { [Op.or]: projectIds },
+      state: 'monitoring',
+    })
+  ).filter((release) => isChannelRelease(release, configs));
 
   if (releases.length === 0) {
     await slackBotWebClient.chat.postEphemeral({
@@ -41,7 +42,7 @@ export async function endReleaseRequestHandler(
         channelId,
         releases,
         userId,
-      })
+      }),
     );
   }
 }

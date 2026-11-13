@@ -1,0 +1,133 @@
+import request from 'supertest';
+import { app } from '@/app';
+import { getGithubHeaders } from '../utils/getGithubHeaders';
+import { getGitlabHeaders } from '../utils/getGitlabHeaders';
+
+describe('core > security > GitHub', () => {
+  it('should allow signed GitHub requests', async () => {
+    // Given
+    const body = { zen: 'Keep it logically awesome.' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(getGithubHeaders('ping', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(200);
+  });
+
+  it('should not allow GitHub requests with a wrong signature', async () => {
+    // Given
+    const body = { zen: 'Keep it logically awesome.' };
+    const headers = getGithubHeaders('ping', { other: 'body' });
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(headers)
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow unsigned GitHub requests', async () => {
+    // Given
+    const body = { zen: 'Keep it logically awesome.' };
+    const headers = getGithubHeaders('ping', body);
+    delete headers['X-Hub-Signature-256'];
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(headers)
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should log GitHub requests without raw body', async () => {
+    // Given
+    const { logger } = await import('@/core/services/logger');
+    const headers = getGithubHeaders('ping', {});
+    delete headers['Content-Type'];
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(headers);
+
+    // Then
+    expect(response.status).toEqual(401);
+    expect(logger.error).toHaveBeenCalledWith(
+      'GitHub request received without raw body, check the body parser setup',
+    );
+  });
+
+  it('should not allow GitHub requests on other routes', async () => {
+    // Given
+    const body = { object_kind: 'push' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGithubHeaders('push', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow Gitlab requests on the GitHub route', async () => {
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(getGitlabHeaders())
+      .send({});
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow GitHub requests on case variants of other routes', async () => {
+    // Given
+    const body = { object_kind: 'push' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/GITLAB/')
+      .set(getGithubHeaders('push', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should not allow Gitlab requests on case variants of the GitHub route', async () => {
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/GitHub/')
+      .set(getGitlabHeaders())
+      .send({});
+
+    // Then
+    expect(response.status).toEqual(401);
+  });
+
+  it('should ignore unhandled GitHub events', async () => {
+    // Given
+    const body = { action: 'created' };
+
+    // When
+    const response = await request(app)
+      .post('/api/v1/homer/github')
+      .set(getGithubHeaders('star', body))
+      .send(body);
+
+    // Then
+    expect(response.status).toEqual(204);
+  });
+});

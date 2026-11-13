@@ -1,5 +1,4 @@
-import type { GitlabRelease } from '@/core/typings/GitlabRelease';
-import type { GitlabTag } from '@/core/typings/GitlabTag';
+import type { UnifiedRelease, UnifiedTag } from '@/core/typings/UnifiedModels';
 import {
   buildPreviousReleaseTagOptionGroups,
   MANUAL_TAGS_GROUP_LABEL,
@@ -8,25 +7,23 @@ import {
   RELEASES_GROUP_LABEL,
 } from '../previousReleaseTagOptions';
 
-function tag(name: string, commitDate: string): GitlabTag {
-  return {
-    name,
-    commit: { created_at: commitDate },
-  } as unknown as GitlabTag;
+function tag(name: string, commitDate: string): UnifiedTag {
+  return { name, commitDate };
 }
 
 function release(
   tagName: string,
   releasedAt: string,
   { notDeployed = false } = {},
-): GitlabRelease {
+): UnifiedRelease {
   return {
-    tag_name: tagName,
+    tagName,
     name: notDeployed
       ? `${NOT_DEPLOYED_RELEASE_NAME_PREFIX}${tagName}`
       : tagName,
-    released_at: releasedAt,
-  } as unknown as GitlabRelease;
+    description: '',
+    releasedAt,
+  };
 }
 
 function groupNamed(

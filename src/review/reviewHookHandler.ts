@@ -6,7 +6,7 @@ import { pushHookHandler } from './commands/share/hookHandlers/pushHookHandler';
 
 export async function reviewHookHandler(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   const { object_kind } = req.body;
   switch (object_kind) {

@@ -13,9 +13,16 @@ const PLUGIN_DIRECTORY = '@root/plugins/identity';
 // the GitLab API calls made for the same event need the rest of that budget.
 const RESOLVER_TIMEOUT_MS = 2000;
 
-/** Assumes git usernames match the local part of the company email. */
+/**
+ * Assumes git usernames match the local part of the company email. Anyone can
+ * pick any login on github.com, so GitHub logins only match when
+ * `GITHUB_LOGIN_MATCHES_EMAIL` says the organization controls them.
+ */
 const emailDomainConvention: UserIdentityResolver = {
-  async resolve({ username }) {
+  async resolve({ provider, username }) {
+    if (provider === 'github' && !CONFIG.github.loginMatchesEmail) {
+      return undefined;
+    }
     return {
       emails: CONFIG.slack.emailDomains
         .split(',')

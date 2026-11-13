@@ -1,16 +1,7 @@
-import type { KnownBlock } from '@slack/types';
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { getReviewsByMergeRequestIid } from '@/core/services/data';
-import { fetchMergeRequestsByBranchName } from '@/core/services/gitlab';
-import {
-  fetchSlackUserFromEmails,
-  slackBotWebClient,
-} from '@/core/services/slack';
-import type { DataReview } from '@/core/typings/Data';
 import type { GitlabPushedCommit } from '@/core/typings/GitlabPushedCommit';
-import { handleReviewWebhookError } from '../utils/handleReviewWebhookError';
-import { waitForMergeRequestCommits } from '../utils/waitForMergeRequestCommits';
+import { handlePushEvent } from '../events/handlePushEvent';
 
 export async function pushHookHandler(
   req: Request,
@@ -22,121 +13,23 @@ export async function pushHookHandler(
     ref: string;
   };
 
-  // Happens when a merge request is merged 🧐
-  if (commits.length === 0) {
-    res.sendStatus(HTTP_STATUS_NO_CONTENT);
-    return;
-  }
-
-  const branchName = ref.split('/').slice(2).join('/') as string;
-
-  const mergeRequests =
-    (await fetchMergeRequestsByBranchName(project_id, branchName)).filter(
-      ({ merge_status }) => merge_status !== 'merged',
-    ) || [];
-
-  const pushedCommitIds = new Set(commits.map(({ id }) => id));
-
-  const mergeRequestsReviews = await Promise.all(
-    mergeRequests.map(async (mergeRequest) => {
-      const mergeRequestCommits = await waitForMergeRequestCommits(
-        project_id,
-        mergeRequest.iid,
-        pushedCommitIds,
-      );
-
-      // Removes the rebase commits
-      const newMergeRequestCommits = commits.filter((commit) =>
-        mergeRequestCommits.some(
-          (mergeRequestCommit) => mergeRequestCommit.id === commit.id,
-        ),
-      );
-
-      if (newMergeRequestCommits.length === 0) {
-        return;
-      }
-
-      return (
-        await getReviewsByMergeRequestIid(project_id, mergeRequest.iid)
-      ).map((review) => ({
-        ...review,
-        newMergeRequestCommits,
-      }));
-    }),
-  );
-  const reviews = mergeRequestsReviews.flat().filter(Boolean) as (DataReview & {
-    newMergeRequestCommits: GitlabPushedCommit[];
-  })[];
-
-  if (reviews.length === 0) {
-    res.sendStatus(HTTP_STATUS_NO_CONTENT);
-    return;
-  }
-  res.sendStatus(HTTP_STATUS_OK);
-
-  await Promise.all(
-    reviews.map(({ channelId, mergeRequestIid, newMergeRequestCommits, ts }) =>
-      (async () =>
-        slackBotWebClient.chat.postMessage({
-          text: ':git-commit: New commit(s)',
-          icon_emoji: ':git-commit:',
-          channel: channelId,
-          thread_ts: ts,
-          blocks: (
-            await Promise.all<KnownBlock[]>(
-              newMergeRequestCommits.map(
-                async (commit: GitlabPushedCommit): Promise<KnownBlock[]> => {
-                  const author = await fetchSlackUserFromEmails([
-                    commit.author.email,
-                  ]);
-                  return [
-                    {
-                      type: 'section',
-                      text: {
-                        type: 'mrkdwn',
-                        text: `<${commit.url}|${commit.title}>`,
-                      },
-                    },
-                    {
-                      type: 'context',
-                      elements: [
-                        ...(author !== undefined
-                          ? [
-                              {
-                                type: 'image' as const,
-                                image_url: author.profile.image_24,
-                                alt_text: author.real_name,
-                              },
-                              {
-                                type: 'mrkdwn' as const,
-                                text: `*${author.real_name}*`,
-                              },
-                            ]
-                          : []),
-                        {
-                          type: 'plain_text' as const,
-                          text: `${
-                            (commit.added || []).length +
-                            (commit.modified || []).length +
-                            (commit.removed || []).length
-                          } changes`,
-                        },
-                      ],
-                    },
-                  ];
-                },
-              ),
-            )
-          ).flat(),
-        }))().catch((err) =>
-        handleReviewWebhookError(err, {
-          hook: 'push',
-          mrIid: mergeRequestIid,
-          projectId: project_id,
-          channelId,
-          reviewTs: ts,
-        }),
-      ),
-    ),
+  await handlePushEvent(
+    {
+      provider: 'gitlab',
+      projectId: project_id,
+      branchName: ref.split('/').slice(2).join('/'),
+      commits: commits.map((commit) => ({
+        id: commit.id,
+        title: commit.title,
+        url: commit.url,
+        authorEmail: commit.author.email,
+        changesCount:
+          (commit.added || []).length +
+          (commit.modified || []).length +
+          (commit.removed || []).length,
+      })),
+    },
+    (handled) =>
+      res.sendStatus(handled ? HTTP_STATUS_OK : HTTP_STATUS_NO_CONTENT),
   );
 }

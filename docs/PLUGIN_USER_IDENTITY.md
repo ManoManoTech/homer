@@ -28,7 +28,7 @@ const emailsByGitlabUsername = {
 
 module.exports = {
   async resolve({ provider, username }) {
-    // `provider` is always 'gitlab' for now.
+    // `provider` is 'gitlab' or 'github': return undefined for users you don't know.
     const email = emailsByGitlabUsername[username];
     return email === undefined ? undefined : { emails: [email] };
   },

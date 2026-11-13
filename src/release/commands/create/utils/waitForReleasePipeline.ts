@@ -1,26 +1,31 @@
-import { fetchPipelinesByRef } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
-import type { GitlabPipeline } from '@/core/typings/GitlabPipeline';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
+import type { UnifiedPipeline } from '@/core/typings/UnifiedModels';
 
 const PIPELINE_RETRIEVE_TIMEOUT = 30000;
 const DELAY_BETWEEN_PIPELINE_RETRIEVES = 2000;
 
 export async function waitForReleasePipeline(
   projectId: number,
-  releaseTagName: string
-): Promise<GitlabPipeline | undefined> {
-  let pipeline: GitlabPipeline | undefined;
+  releaseTagName: string,
+  provider: ProviderType = DEFAULT_PROVIDER,
+): Promise<UnifiedPipeline | undefined> {
+  let pipeline: UnifiedPipeline | undefined;
   let timeoutReached = false;
 
   const timeout = setTimeout(() => {
     logger.error(
-      `Unable to retrieve pipeline for release ${releaseTagName} of project ${projectId}`
+      `Unable to retrieve pipeline for release ${releaseTagName} of project ${projectId}`,
     );
     timeoutReached = true;
   }, PIPELINE_RETRIEVE_TIMEOUT);
 
   while (!timeoutReached) {
-    const pipelines = await fetchPipelinesByRef(projectId, releaseTagName);
+    const pipelines = await getProvider(provider).fetchPipelinesByRef(
+      projectId,
+      releaseTagName,
+    );
 
     if (pipelines.length > 0) {
       clearTimeout(timeout);

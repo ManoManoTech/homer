@@ -1,6 +1,7 @@
 import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { getProjectsByChannelId } from '@/core/services/data';
-import { fetchProjectById } from '@/core/services/gitlab';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { formatProjectRef } from '@/core/utils/projectRef';
 import { injectActionsParameters } from '@/core/utils/slackActions';
 import { truncateProjectPath } from '@/core/utils/truncateProjectPath';
 
@@ -14,8 +15,8 @@ export async function buildRemoveProjectSelectionEphemeral({
   userId,
 }: RemoveProjectSelectionEphemeralData): Promise<ChatPostEphemeralArguments> {
   const projects = await Promise.all(
-    (await getProjectsByChannelId(channelId)).map(({ projectId }) =>
-      fetchProjectById(projectId),
+    (await getProjectsByChannelId(channelId)).map(({ projectId, provider }) =>
+      getProvider(provider).fetchProject(projectId),
     ),
   );
 
@@ -47,18 +48,19 @@ export async function buildRemoveProjectSelectionEphemeral({
             text: 'Choose a project',
           },
           options: projects
-            .sort((a, b) =>
-              a.path_with_namespace.localeCompare(b.path_with_namespace),
-            )
+            .sort((a, b) => a.path.localeCompare(b.path))
             .map((project) => ({
               text: {
                 type: 'plain_text',
-                text: truncateProjectPath(project.path_with_namespace),
+                text: truncateProjectPath(project.path),
               },
               value: injectActionsParameters(
                 'project',
-                project.id,
-                project.path_with_namespace,
+                formatProjectRef({
+                  provider: project.provider,
+                  projectId: project.id,
+                }),
+                project.path,
               ),
             })),
         },

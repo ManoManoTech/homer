@@ -1,17 +1,23 @@
-import { fetchMergeRequestCommits } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
-import type { GitlabCommit } from '@/core/typings/GitlabCommit';
+import type { RepositoryProvider } from '@/core/typings/RepositoryProvider';
 
 const TIMEOUT_MS = 5000;
 const RETRY_DELAY_MS = 1000;
 
+/**
+ * Providers update merge request commits asynchronously after a push, so the
+ * pushed commits may not be listed yet.
+ *
+ * @returns the commit ids of the merge request.
+ */
 export async function waitForMergeRequestCommits(
+  provider: Pick<RepositoryProvider, 'fetchPullRequestCommitIds'>,
   projectId: number,
   mergeRequestIid: number,
   pushedCommitIds: Set<string>,
-): Promise<GitlabCommit[]> {
+): Promise<string[]> {
   let timeoutReached = false;
-  let lastCommits: GitlabCommit[] = [];
+  let lastCommitIds: string[] = [];
 
   const timeout = setTimeout(() => {
     logger.warn(
@@ -22,15 +28,15 @@ export async function waitForMergeRequestCommits(
 
   while (!timeoutReached) {
     try {
-      const commits = await fetchMergeRequestCommits(
+      const commitIds = await provider.fetchPullRequestCommitIds(
         projectId,
         mergeRequestIid,
       );
-      if (Array.isArray(commits)) {
-        lastCommits = commits;
-        if (lastCommits.some(({ id }) => pushedCommitIds.has(id))) {
+      if (Array.isArray(commitIds)) {
+        lastCommitIds = commitIds;
+        if (lastCommitIds.some((id) => pushedCommitIds.has(id))) {
           clearTimeout(timeout);
-          return lastCommits;
+          return lastCommitIds;
         }
       }
     } catch (error) {
@@ -43,5 +49,5 @@ export async function waitForMergeRequestCommits(
     });
   }
 
-  return lastCommits;
+  return lastCommitIds;
 }

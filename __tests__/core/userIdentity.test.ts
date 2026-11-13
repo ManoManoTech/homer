@@ -6,6 +6,7 @@ import { addReviewToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { slackBotWebClient } from '@/core/services/slack';
 import { loadUserIdentityResolvers } from '@/core/services/userIdentity';
+import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import {
@@ -40,7 +41,7 @@ async function approveMergeRequestAs(username: string) {
   });
   mockBuildReviewMessageCalls();
 
-  return request(app)
+  const response = await request(app)
     .post('/api/v1/homer/gitlab')
     .set(getGitlabHeaders())
     .send({
@@ -48,6 +49,9 @@ async function approveMergeRequestAs(username: string) {
       object_attributes: { ...object_attributes, action: 'approved' },
       user: { ...user, username },
     });
+  // Homer answers GitLab before looking the approver up on Slack.
+  await settleExclusiveTasks();
+  return response;
 }
 
 function expectApprovalThreadMessageFrom(realName: string) {
@@ -59,9 +63,10 @@ function expectApprovalThreadMessageFrom(realName: string) {
   });
 }
 
-// When the approver isn't found on Slack, Homer answers 204 and posts nothing.
+// When the approver isn't found on Slack, Homer refreshes the review message
+// but posts nothing in its thread.
 function expectNoApprovalNotification(response: request.Response) {
-  expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
+  expect(response.status).toEqual(HTTP_STATUS_OK);
   expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
 }
 

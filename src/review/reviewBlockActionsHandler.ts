@@ -5,7 +5,7 @@ import { handleMessageAction } from './commands/share/utils/handleMessageActions
 import { selectMergeRequest } from './commands/share/utils/selectMergeRequest';
 
 export async function reviewBlockActionsHandler(
-  payload: BlockActionsPayloadWithChannel
+  payload: BlockActionsPayloadWithChannel,
 ): Promise<void> {
   await Promise.all(
     payload.actions.map(async (action) => {
@@ -21,6 +21,6 @@ export async function reviewBlockActionsHandler(
         default:
           logger.error(new Error(`Unknown review block action: ${action_id}`));
       }
-    })
+    }),
   );
 }

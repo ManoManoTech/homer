@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { CONFIG } from '@/config';
 import { logger } from '@/core/services/logger';
 
+const GITHUB_SECRET = CONFIG.github.secret;
 const GITLAB_SECRET = CONFIG.gitlab.secret;
 const SLACK_SIGNING_SECRET = CONFIG.slack.signingSecret;
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
@@ -25,6 +26,57 @@ function isValidGitlabRequest(req: Request): boolean {
     if (projectPath) {
       logger.error(
         `Gitlab request received with wrong secret from '${projectPath}'`,
+      );
+    }
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Validates requests from GitHub.
+ *
+ * @see https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+ */
+function isValidGithubRequest(req: Request): boolean {
+  const isGithubRequest = req.header('X-GitHub-Event') !== undefined;
+
+  if (!isGithubRequest) {
+    return false;
+  }
+
+  if (GITHUB_SECRET === '') {
+    logger.error('GitHub request received but GITHUB_SECRET is not set');
+    return false;
+  }
+
+  const rawBody: Buffer | undefined = (req as any).rawBody;
+
+  // The body parsers capture it; without it every signature looks wrong.
+  if (rawBody === undefined) {
+    logger.error(
+      'GitHub request received without raw body, check the body parser setup',
+    );
+    return false;
+  }
+
+  const signature = Buffer.from(req.header('X-Hub-Signature-256') ?? '');
+  const expectedSignature = Buffer.from(
+    `sha256=${crypto
+      .createHmac('sha256', GITHUB_SECRET)
+      .update(rawBody)
+      .digest('hex')}`,
+  );
+
+  if (
+    signature.length !== expectedSignature.length ||
+    !crypto.timingSafeEqual(signature, expectedSignature)
+  ) {
+    const repositoryName = req.body?.repository?.full_name;
+
+    if (repositoryName) {
+      logger.error(
+        `GitHub request received with wrong signature from '${repositoryName}'`,
       );
     }
     return false;
@@ -69,18 +121,46 @@ function isValidSlackRequest(req: Request): boolean {
   return true;
 }
 
+export type RequestSource = 'github' | 'gitlab' | 'slack';
+
+function getRequestSource(req: Request): RequestSource | undefined {
+  if (isValidGithubRequest(req)) return 'github';
+  if (isValidGitlabRequest(req)) return 'gitlab';
+  if (isValidSlackRequest(req)) return 'slack';
+  return undefined;
+}
+
 /**
- * Allows only secure requests from Gitlab or Slack.
+ * Allows only secure requests from GitHub, Gitlab or Slack, and stores the
+ * verified source for `requireRequestSource`.
  */
 export function securityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  if (!isValidGitlabRequest(req) && !isValidSlackRequest(req)) {
+  const source = getRequestSource(req);
+
+  if (source === undefined) {
     logger.debug('Unauthorized request received');
     res.status(401).send('Unauthorized');
   } else {
+    res.locals.requestSource = source;
     next();
   }
+}
+
+/**
+ * Restricts a route to requests verified for the given source, so a payload
+ * signed for one provider is never handled as another one.
+ */
+export function requireRequestSource(source: RequestSource) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (res.locals.requestSource !== source) {
+      logger.debug(`Request not verified as coming from ${source}`);
+      res.status(401).send('Unauthorized');
+    } else {
+      next();
+    }
+  };
 }

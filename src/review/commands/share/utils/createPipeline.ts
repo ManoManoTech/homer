@@ -1,38 +1,36 @@
-import { runPipeline } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
-import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { extractActionParameters } from '@/core/utils/slackActions';
 
 export async function createPipeline(
   payload: BlockActionsPayloadWithChannel,
-  action: StaticSelectAction
+  action: StaticSelectAction,
 ) {
   const mergeRequestAction = action.selected_option.value;
   const { channel, user } = payload;
-  const [projectId, branchName, platformToDeploy] =
+  const [projectRef, branchName, platformToDeploy] =
     extractActionParameters(mergeRequestAction);
 
-  if (!projectId || !branchName) {
+  if (!projectRef || !branchName) {
     logger.error(
       new Error(
-        `Unable to get projectId and branchName for action ${mergeRequestAction}.`
-      )
+        `Unable to get projectId and branchName for action ${mergeRequestAction}.`,
+      ),
     );
     return;
   }
 
-  let variables: GitlabCiVariable[] | undefined;
+  const { projectId, provider } = parseProjectRef(projectRef);
 
-  if (platformToDeploy) {
-    variables = [
-      { key: 'AUTO_DEPLOY', value: platformToDeploy, variable_type: 'env_var' },
-    ];
-  }
-
-  await runPipeline(parseInt(projectId, 10), branchName, variables);
+  await getProvider(provider).runPipeline(
+    projectId,
+    branchName,
+    platformToDeploy || undefined,
+  );
 
   await slackBotWebClient.chat.postEphemeral({
     channel: channel.id,

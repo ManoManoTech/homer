@@ -3,17 +3,15 @@ import type {
   ChatUpdateArguments,
 } from '@slack/web-api';
 import { getProjectRelease, removeRelease } from '@/core/services/data';
-import {
-  cancelPipeline,
-  fetchPipelinesByRef,
-  fetchProjectById,
-  fetchReleaseByTagName,
-  updateReleaseName,
-} from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { fetchSlackUserFromId, slackBotWebClient } from '@/core/services/slack';
+import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import { NOT_DEPLOYED_RELEASE_NAME_PREFIX } from '@/release/commands/create/utils/previousReleaseTagOptions';
-import { buildReleaseCanceledMessage } from '@/release/commands/create/viewBuilders/buildReleaseMessage';
+import {
+  buildReleaseCanceledMessage,
+  toReleaseMessageProject,
+} from '@/release/commands/create/viewBuilders/buildReleaseMessage';
 import ConfigHelper from '@/release/utils/ConfigHelper';
 
 export async function cancelRelease(
@@ -21,39 +19,44 @@ export async function cancelRelease(
   tagName: string,
   channelId: string,
   userId: string,
+  providerType: ProviderType = DEFAULT_PROVIDER,
 ) {
-  const release = await getProjectRelease(projectId, tagName);
+  const provider = getProvider(providerType);
+  const release = await getProjectRelease(projectId, tagName, providerType);
 
   if (release === undefined) {
     throw new Error('Release to cancel not found');
   }
 
   const { notificationChannelIds, releaseChannelId } =
-    await ConfigHelper.getProjectReleaseConfig(projectId);
+    await ConfigHelper.getProjectReleaseConfig(projectId, providerType);
 
   let canceledBy = await fetchSlackUserFromId(userId);
   canceledBy = canceledBy ? canceledBy : release.slackAuthor;
-  const project = await fetchProjectById(projectId);
+  const project = await provider.fetchProject(projectId);
 
   switch (release.state) {
     case 'notYetReady':
-      await removeRelease(projectId, tagName);
+      await removeRelease(projectId, tagName, providerType);
       break;
 
     case 'created': {
-      const { name } = await fetchReleaseByTagName(projectId, tagName);
-      const [pipeline] = await fetchPipelinesByRef(projectId, release.tagName);
+      const { name } = await provider.fetchRelease(projectId, tagName);
+      const [pipeline] = await provider.fetchPipelinesByRef(
+        projectId,
+        release.tagName,
+      );
       await Promise.all([
-        updateReleaseName(
+        provider.updateReleaseName(
           projectId,
           tagName,
           `${NOT_DEPLOYED_RELEASE_NAME_PREFIX}${name}`,
         ),
-        removeRelease(projectId, tagName),
-        cancelPipeline(projectId, pipeline.id),
+        removeRelease(projectId, tagName, providerType),
+        pipeline && provider.cancelPipeline(projectId, pipeline.id),
       ]);
 
-      const releaseNotesUrl = `${project.web_url}/-/releases/${tagName}`;
+      const releaseNotesUrl = provider.getReleaseUrl(project, tagName);
 
       await Promise.all(
         notificationChannelIds.map(async (notificationChannelId) =>
@@ -94,7 +97,7 @@ export async function cancelRelease(
   const releaseCanceledMessage = buildReleaseCanceledMessage({
     releaseChannelId,
     release,
-    project,
+    project: toReleaseMessageProject(project),
     canceledBy,
     releaseStateUpdates: [],
   });

@@ -7,7 +7,7 @@ export class StateUpdateDebouncer<State> extends Deferred<unknown> {
   constructor(
     initialState: State,
     callback: (state: State) => unknown,
-    private delay = 3000
+    private delay = 3000,
   ) {
     super();
     this.promise = this.promise.then(() => callback(this.stateData));

@@ -2,6 +2,7 @@ import { logger } from '@/core/services/logger';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { cancelReleaseButtonHandler } from '@/release/commands/cancel/cancelReleaseButtonHandler';
 import { displayReleaseChangelog } from '@/release/commands/changelog/displayReleaseChangelog';
 import { endReleaseButtonHandler } from '@/release/commands/end/endReleaseButtonHandler';
@@ -43,14 +44,15 @@ export async function releaseBlockActionsHandler(
 
         default: {
           const { state } = payload.view;
-          const projectId = parseInt(
+          const { projectId, provider } = parseProjectRef(
             state.values['release-project-block']?.[
               'release-select-project-action'
             ]?.selected_option?.value,
-            10,
           );
-          const { releaseManager } =
-            await ConfigHelper.getProjectReleaseConfig(projectId);
+          const { releaseManager } = await ConfigHelper.getProjectReleaseConfig(
+            projectId,
+            provider,
+          );
 
           if (releaseManager.blockActionsHandler !== undefined) {
             return releaseManager.blockActionsHandler(

@@ -1,8 +1,10 @@
 import type { Request, Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
-import { hasProjectTag } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
+import { slackBotWebClient } from '@/core/services/slack';
 import type { ModalViewSubmissionPayload } from '@/core/typings/ModalViewSubmissionPayload';
+import { parseProjectRef } from '@/core/utils/projectRef';
 import { createRelease } from './commands/create/utils/createRelease';
 import { buildReleaseModalView } from './commands/create/viewBuilders/buildReleaseModalView';
 
@@ -36,7 +38,14 @@ export async function releaseViewSubmissionHandler(
         return;
       }
       res.sendStatus(HTTP_STATUS_NO_CONTENT);
-      await createRelease(payload);
+      try {
+        await createRelease(payload);
+      } catch (error) {
+        // The modal is closed already: without this, the release just never
+        // shows up.
+        await notifyReleaseFailure(payload, error);
+        throw error;
+      }
       break;
     }
 
@@ -50,6 +59,27 @@ export async function releaseViewSubmissionHandler(
       logger.error(
         new Error(`Unknown release view callback id: ${callback_id}`),
       );
+  }
+}
+
+// Error messages can carry whole API responses.
+const MAX_ERROR_LENGTH = 500;
+
+async function notifyReleaseFailure(
+  { user, view }: ModalViewSubmissionPayload,
+  error: unknown,
+): Promise<void> {
+  const tagName: string =
+    view.state.values['release-tag-block']['release-tag-action'].value;
+  const message = error instanceof Error ? error.message : String(error);
+
+  try {
+    await slackBotWebClient.chat.postMessage({
+      channel: user.id,
+      text: `Homer could not start the release \`${tagName}\` :homer-stressed: ${message.slice(0, MAX_ERROR_LENGTH)}`,
+    });
+  } catch (notificationError) {
+    logger.error(notificationError, 'Could not notify the release failure');
   }
 }
 
@@ -71,17 +101,17 @@ async function getPreviousReleaseTagError(state: {
     return undefined;
   }
 
-  const projectId = parseInt(
+  const selectedProject: string | undefined =
     state.values['release-project-block']?.['release-select-project-action']
-      ?.selected_option?.value,
-    10,
-  );
+      ?.selected_option?.value;
 
-  if (Number.isNaN(projectId)) {
+  if (selectedProject === undefined) {
     return undefined;
   }
 
-  return (await hasProjectTag(projectId, previousReleaseTagName))
+  const { projectId, provider } = parseProjectRef(selectedProject);
+
+  return (await getProvider(provider).hasTag(projectId, previousReleaseTagName))
     ? undefined
     : `Tag ${previousReleaseTagName} does not belong to this project. Please select another previous release tag.`;
 }

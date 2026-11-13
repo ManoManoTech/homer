@@ -1,6 +1,5 @@
 import { CONFIG } from '@/config';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
-import type { DataProject } from '@/core/typings/Data';
 import type { GitlabApprovalsResponse } from '@/core/typings/GitlabApprovalsResponse';
 import type { GitlabBridge } from '@/core/typings/GitlabBridge';
 import type { GitlabCiVariable } from '@/core/typings/GitlabCiVariable';
@@ -358,9 +357,9 @@ export async function runPipeline(
 
 export async function searchMergeRequests(
   search: string,
-  projects: DataProject[],
+  projectIds: number[],
 ): Promise<GitlabMergeRequest[]> {
-  const mergeRequests = await fetchMergeRequests(search, projects);
+  const mergeRequests = await fetchMergeRequests(search, projectIds);
 
   return mergeRequests
     .flat()
@@ -371,27 +370,27 @@ export async function searchMergeRequests(
 
 async function fetchMergeRequests(
   search: string,
-  projects: DataProject[],
+  projectIds: number[],
 ): Promise<GitlabMergeRequest[]> {
   if (MERGE_REQUEST_ID_REGEX.test(search)) {
-    return searchMergeRequestsById(search, projects);
+    return searchMergeRequestsById(search, projectIds);
   }
 
   if (MERGE_REQUEST_URL_REGEX.test(search)) {
     return searchMergeRequestsByUrl(search);
   }
 
-  return searchMergeRequestsByText(search, projects);
+  return searchMergeRequestsByText(search, projectIds);
 }
 
 async function searchMergeRequestsById(
   search: string,
-  projects: DataProject[],
+  projectIds: number[],
 ): Promise<GitlabMergeRequest[]> {
   const iid = search.replace('!', '');
   return Promise.all(
-    projects.map(
-      ({ projectId }) =>
+    projectIds.map(
+      (projectId) =>
         callAPI(
           `/projects/${projectId}/merge_requests/${iid}`,
         ) as Promise<GitlabMergeRequest>,
@@ -419,11 +418,11 @@ async function searchMergeRequestsByUrl(
 
 async function searchMergeRequestsByText(
   search: string,
-  projects: DataProject[],
+  projectIds: number[],
 ): Promise<GitlabMergeRequest[]> {
   return Promise.all(
-    projects.map(
-      ({ projectId }) =>
+    projectIds.map(
+      (projectId) =>
         callAPI(
           `/projects/${projectId}/merge_requests?state=opened&search=${encodeURIComponent(
             search,

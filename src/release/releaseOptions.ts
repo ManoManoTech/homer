@@ -1,6 +1,11 @@
 import { generateChangelog } from '@/changelog/utils/generateChangelog';
 import ReleasePluginManager from '@/core/pluginManager/ReleasePluginManager';
 import {
+  fetchWorkflowRun,
+  fetchWorkflowRunJobs,
+  fetchWorkflowRuns,
+} from '@/core/services/github';
+import {
   fetchPipelineBridges,
   fetchPipelineJobs,
   fetchProjectTags,
@@ -32,6 +37,11 @@ export default function getReleaseOptions(): ReleaseOptions {
       fetchPipelineBridges,
       fetchPipelineJobs,
       fetchProjectTags,
+    },
+    github: {
+      fetchWorkflowRun,
+      fetchWorkflowRunJobs,
+      fetchWorkflowRuns,
     },
   };
 }

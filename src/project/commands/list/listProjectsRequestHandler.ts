@@ -1,14 +1,14 @@
 import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getProjectsByChannelId } from '@/core/services/data';
-import { fetchProjectById } from '@/core/services/gitlab';
 import { logger } from '@/core/services/logger';
+import { getProvider } from '@/core/services/providers/ProviderFactory';
 import { slackBotWebClient } from '@/core/services/slack';
-import type { GitlabProjectDetails } from '@/core/typings/GitlabProject';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
 } from '@/core/typings/SlackSlashCommand';
+import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 import { buildProjectListEphemeral } from './buildProjectListEphemeral';
 
 const MAX_PROJECTS_BY_MESSAGE = 20;
@@ -21,11 +21,11 @@ export async function listProjectsRequestHandler(
 
   const { channel_id, user_id } = req.body as SlackSlashCommandResponse;
   const dataProjects = await getProjectsByChannelId(channel_id);
-  const projects: GitlabProjectDetails[] = (
+  const projects: UnifiedProject[] = (
     await Promise.all(
-      dataProjects.map(async ({ projectId }) => {
+      dataProjects.map(async ({ projectId, provider }) => {
         try {
-          return await fetchProjectById(projectId);
+          return await getProvider(provider).fetchProject(projectId);
         } catch (error) {
           logger.error(error, `Failed to fetch project ${projectId}:`);
           return null;
@@ -33,10 +33,10 @@ export async function listProjectsRequestHandler(
       }),
     )
   )
-    .filter((project): project is GitlabProjectDetails => project !== null)
-    .sort((a, b) => a.path_with_namespace.localeCompare(b.path_with_namespace));
+    .filter((project): project is UnifiedProject => project !== null)
+    .sort((a, b) => a.path.localeCompare(b.path));
 
-  const projectsParts: GitlabProjectDetails[][] = [];
+  const projectsParts: UnifiedProject[][] = [];
 
   do {
     projectsParts.push(projects.splice(0, MAX_PROJECTS_BY_MESSAGE));
