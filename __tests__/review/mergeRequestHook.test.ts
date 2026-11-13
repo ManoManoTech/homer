@@ -3,6 +3,7 @@ import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
@@ -87,6 +88,7 @@ describe('review > mergeRequestHook', () => {
             action,
           },
         });
+      await settleExclusiveTasks();
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -132,6 +134,7 @@ describe('review > mergeRequestHook', () => {
           action: 'merge',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -170,6 +173,7 @@ describe('review > mergeRequestHook', () => {
           action: 'merge',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -203,6 +207,7 @@ describe('review > mergeRequestHook', () => {
           action: 'update',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -219,6 +224,7 @@ describe('review > mergeRequestHook', () => {
       .post('/api/v1/homer/gitlab')
       .set(getGitlabHeaders())
       .send(mergeRequestHookFixture);
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -239,6 +245,7 @@ describe('review > mergeRequestHook', () => {
           action: 'approved',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
@@ -270,6 +277,7 @@ describe('review > mergeRequestHook', () => {
           action: 'approved',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -301,6 +309,7 @@ describe('review > mergeRequestHook', () => {
           action: 'open',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -334,6 +343,7 @@ describe('review > mergeRequestHook', () => {
           action: 'open',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_OK);
@@ -367,6 +377,7 @@ describe('review > mergeRequestHook', () => {
           action: 'update',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     const { hasModelEntry } = (await import('sequelize')) as any;
@@ -408,6 +419,7 @@ describe('review > mergeRequestHook', () => {
           action: 'update',
         },
       });
+    await settleExclusiveTasks();
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);

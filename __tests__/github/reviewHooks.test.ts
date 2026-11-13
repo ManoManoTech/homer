@@ -27,10 +27,13 @@ const { number: iid } = githubPullRequestFixture;
 
 async function sendHook(event: string, body: Record<string, unknown>) {
   const payload = { repository: githubRepositoryFixture, ...body };
-  return request(app)
+  const response = await request(app)
     .post('/api/v1/homer/github')
     .set(getGithubHeaders(event, payload))
     .send(payload);
+  // Homer answers GitHub before handling relevant events.
+  await settleExclusiveTasks();
+  return response;
 }
 
 function mockMergeRequirements(reviewDecision: string, checksState: string) {
