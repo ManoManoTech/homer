@@ -19,8 +19,9 @@ interface BuildReviewListEphemeralData {
 }
 
 interface ReviewListItem {
-  link: string;
   mergeRequest: UnifiedPullRequest;
+  /** Permalink of the review message shared in the channel */
+  permalink: string;
   projectId: number;
 }
 
@@ -105,8 +106,8 @@ async function fetchOpenedReviewItems(
         return undefined;
       }
       return {
-        link: await getPermalink(channelId, ts),
         mergeRequest,
+        permalink: await getPermalink(channelId, ts),
         projectId,
       };
     }),
@@ -188,8 +189,8 @@ function isSameUser(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-function formatItem({ link, mergeRequest }: ReviewListItem): string {
-  return `• <${link}|${escapeText(mergeRequest.title)}>`;
+function formatItem({ mergeRequest, permalink }: ReviewListItem): string {
+  return `• <${mergeRequest.webUrl}|${escapeText(mergeRequest.title)}> · <${permalink}|thread>`;
 }
 
 /** Spreads the lines over as few sections as Slack accepts. */
