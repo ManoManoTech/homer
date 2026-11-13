@@ -65,8 +65,8 @@ describe('review > listReviews', () => {
         {
           text: {
             text: `*Ongoing reviews:*
-• <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|merge request title>
-• <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|merge request title>`,
+• <${mergeRequestDetailsFixture.web_url}|merge request title> · <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|thread>
+• <${mergeRequestDetailsFixture.web_url}|merge request title> · <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|thread>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -122,8 +122,8 @@ describe('review > listReviews', () => {
         .blocks[0].text.text,
     ).toEqual(
       `*Ongoing reviews:*
-• <https://slack/ts1|first project>
-• <https://slack/ts2|second project>`,
+• <${mergeRequestDetailsFixture.web_url}|first project> · <https://slack/ts1|thread>
+• <${mergeRequestDetailsFixture.web_url}|second project> · <https://slack/ts2|thread>`,
     );
   });
 
@@ -180,7 +180,8 @@ describe('review > listReviews', () => {
       [
         '*Ongoing reviews:*',
         ...titles.map(
-          (title, index) => `• <https://slack/ts${index}|${title}>`,
+          (title, index) =>
+            `• <${mergeRequestDetailsFixture.web_url}|${title}> · <https://slack/ts${index}|thread>`,
         ),
       ].join('\n'),
     );
@@ -225,7 +226,7 @@ describe('review > listReviews', () => {
         .blocks[0].text.text,
     ).toEqual(
       `*Ongoing reviews:*
-• <https://slack/ts|Use &lt;Select&gt; &amp; &lt;Option&gt;>`,
+• <${mergeRequestDetailsFixture.web_url}|Use &lt;Select&gt; &amp; &lt;Option&gt;> · <https://slack/ts|thread>`,
     );
   });
 
@@ -271,6 +272,7 @@ describe('review > listReviews', () => {
           author: title === 'authored' ? john : otherAuthor,
           iid: mergeRequestIid,
           title,
+          web_url: `https://gitlab/${projectId}/${mergeRequestIid}`,
         },
       );
       mockGitlabCall(
@@ -308,7 +310,7 @@ describe('review > listReviews', () => {
         {
           text: {
             text: `*Waiting for your review:*
-• <https://slack/ts2|to review>`,
+• <https://gitlab/1/2|to review> · <https://slack/ts2|thread>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -316,7 +318,7 @@ describe('review > listReviews', () => {
         {
           text: {
             text: `*Your merge requests:*
-• <https://slack/ts1|authored>`,
+• <https://gitlab/1/1|authored> · <https://slack/ts1|thread>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -324,8 +326,8 @@ describe('review > listReviews', () => {
         {
           text: {
             text: `*Other reviews:*
-• <https://slack/ts3|already approved>
-• <https://slack/ts4|not a reviewer>`,
+• <https://gitlab/2/1|already approved> · <https://slack/ts3|thread>
+• <https://gitlab/2/2|not a reviewer> · <https://slack/ts4|thread>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -383,7 +385,7 @@ describe('review > listReviews', () => {
         .blocks[0].text.text,
     ).toEqual(
       `*Ongoing reviews:*
-• <https://slack/ts|merge request title>`,
+• <${mergeRequestDetailsFixture.web_url}|merge request title> · <https://slack/ts|thread>`,
     );
   });
 

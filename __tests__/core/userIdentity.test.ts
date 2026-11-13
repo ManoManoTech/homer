@@ -120,7 +120,7 @@ async function expectReviewListHeading(heading: string) {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `*${heading}:*\n• <https://slack/ts|work of jdoe>`,
+              text: `*${heading}:*\n• <${mergeRequestDetailsFixture.web_url}|work of jdoe> · <https://slack/ts|thread>`,
             },
           },
         ],
