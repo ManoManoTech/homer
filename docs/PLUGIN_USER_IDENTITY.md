@@ -28,7 +28,8 @@ const emailsByGitlabUsername = {
 
 module.exports = {
   async resolve({ provider, username }) {
-    // `provider` is always 'gitlab' for now.
+    // `provider` is 'gitlab' for every user Homer resolves today. Check it
+    // rather than ignoring it if your directory is specific to one provider.
     const email = emailsByGitlabUsername[username];
     return email === undefined ? undefined : { emails: [email] };
   },
