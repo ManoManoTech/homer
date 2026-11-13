@@ -1,7 +1,9 @@
 const path = require('node:path');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.join(process.cwd(), '.env.test') });
+// GitHub Actions sets GITHUB_API_URL and GITHUB_URL-like variables on every
+// runner: without override, tests would call the real GitHub API.
+dotenv.config({ path: path.join(process.cwd(), '.env.test'), override: true });
 
 module.exports = {
   collectCoverageFrom: [
