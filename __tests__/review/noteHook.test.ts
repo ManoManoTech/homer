@@ -66,10 +66,12 @@ describe('review > noteHook', () => {
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_OK);
-      expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
-        1,
-        reviewMessageUpdateFixture,
-      );
+      await waitFor(() => {
+        expect(slackBotWebClient.chat.update).toHaveBeenNthCalledWith(
+          1,
+          reviewMessageUpdateFixture,
+        );
+      });
       await waitFor(() => {
         expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
           blocks: [
@@ -143,6 +145,7 @@ describe('review > noteHook', () => {
 
     // Then
     await waitFor(() => {
+      expect(slackBotWebClient.chat.update).toHaveBeenCalledTimes(1);
       expect(slackBotWebClient.chat.postMessage).toHaveBeenCalledTimes(1);
       expect(slackBotWebClient.chat.postMessage).toHaveBeenNthCalledWith(1, {
         blocks: [
