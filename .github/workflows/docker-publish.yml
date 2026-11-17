@@ -14,6 +14,7 @@ jobs:
   docker:
     name: Build optimized Docker Image and publish to Github Artifact Registry
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       packages: write
