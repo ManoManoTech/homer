@@ -294,6 +294,19 @@ export async function getReviewsByMergeRequestIid(
   return reviews.map(toJSON);
 }
 
+/** Postpones the cleaning of the reviews of an active merge request. */
+export async function touchReviewsByMergeRequestIid(
+  projectId: number,
+  mergeRequestIid: number,
+  provider: ProviderType,
+): Promise<void> {
+  // Sequelize skips an update that only sets updatedAt.
+  await Review.update(
+    { mergeRequestIid },
+    { where: { mergeRequestIid, projectId, provider } },
+  );
+}
+
 export async function getChannelsByProjectId(
   projectId: number,
   provider: ProviderType,

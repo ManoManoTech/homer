@@ -82,14 +82,22 @@ class ModelMock {
     return [entry, false];
   }
 
-  /** Symbol keys such as `Op.or` are not matched. */
+  /**
+   * Symbol keys such as `Op.or` are not matched. Like Sequelize, it skips an
+   * update that only sets updatedAt.
+   */
   async update(values: EntryValues, { where }: Options): Promise<[number]> {
+    if (Object.keys(values).every((key) => key === 'updatedAt')) {
+      return [0];
+    }
     const entries = this.entries.filter((entry) =>
       Object.entries(where).every(
         ([key, value]) => entry.values[key] === value,
       ),
     );
-    entries.forEach((entry) => Object.assign(entry.values, values));
+    entries.forEach((entry) =>
+      Object.assign(entry.values, values, { updatedAt: new Date() }),
+    );
     return [entries.length];
   }
 

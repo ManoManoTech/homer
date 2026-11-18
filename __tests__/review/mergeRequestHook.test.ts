@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { addProjectToChannel, addReviewToChannel } from '@/core/services/data';
+import {
+  addProjectToChannel,
+  addReviewToChannel,
+  getReviewsByMergeRequestIid,
+} from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { projectFixture } from '@root/__tests__/__fixtures__/projectFixture';
@@ -216,6 +220,38 @@ describe('review > mergeRequestHook', () => {
       reviewMessageUpdateFixture,
     );
     expect(slackBotWebClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('should postpone the cleaning of the review whether an event is received', async () => {
+    // Given
+    const { object_attributes, project } = mergeRequestHookFixture;
+
+    await addReviewToChannel({
+      channelId: 'channelId',
+      mergeRequestIid: object_attributes.iid,
+      projectId: project.id,
+      ts: 'ts',
+    });
+    mockBuildReviewMessageCalls();
+
+    // When
+    await request(app)
+      .post('/api/v1/homer/gitlab')
+      .set(getGitlabHeaders())
+      .send({
+        ...mergeRequestHookFixture,
+        object_attributes: { ...object_attributes, action: 'update' },
+      });
+    await settleExclusiveTasks();
+
+    // Then
+    expect(
+      await getReviewsByMergeRequestIid(
+        project.id,
+        object_attributes.iid,
+        'gitlab',
+      ),
+    ).toEqual([expect.objectContaining({ updatedAt: expect.any(Date) })]);
   });
 
   it('should answer no content status whether the action is not managed', async () => {

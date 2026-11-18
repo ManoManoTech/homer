@@ -1,4 +1,7 @@
-import { getReviewsByMergeRequestIid } from '@/core/services/data';
+import {
+  getReviewsByMergeRequestIid,
+  touchReviewsByMergeRequestIid,
+} from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import type { ProviderType } from '@/core/typings/Provider';
 import { StateUpdateDebouncer } from '../utils/StateUpdateDebouncer';
@@ -24,6 +27,7 @@ export async function handleNoteEvent(
   { iid, note, projectId, provider }: NoteEvent,
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
+  await touchReviewsByMergeRequestIid(projectId, iid, provider);
   const reviews = await getReviewsByMergeRequestIid(projectId, iid, provider);
 
   if (reviews.length === 0) {

@@ -5,6 +5,7 @@ import {
   getChannelsByProjectId,
   getReviewsByMergeRequestIid,
   removeReviewsByMergeRequestIid,
+  touchReviewsByMergeRequestIid,
   withAdvisoryLock,
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
@@ -61,6 +62,7 @@ export async function handlePullRequestEvent(
   acknowledge: (handled: boolean) => void,
 ): Promise<void> {
   const { iid, labels, projectId, provider } = event;
+  await touchReviewsByMergeRequestIid(projectId, iid, provider);
   const hasReviews =
     (await getReviewsByMergeRequestIid(projectId, iid, provider)).length > 0;
   const canCreateReview =

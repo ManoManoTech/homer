@@ -1,7 +1,10 @@
 import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { addReviewToChannel } from '@/core/services/data';
+import {
+  addReviewToChannel,
+  getReviewsByMergeRequestIid,
+} from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { mergeRequestNoteHookFixture } from '../__fixtures__/mergeRequestNoteBody';
@@ -105,6 +108,14 @@ describe('review > noteHook', () => {
           unfurl_links: false,
         });
       });
+      // Postpones the cleaning of the review.
+      expect(
+        await getReviewsByMergeRequestIid(
+          mergeRequestFixture.project_id,
+          mergeRequestFixture.iid,
+          'gitlab',
+        ),
+      ).toEqual([expect.objectContaining({ updatedAt: expect.any(Date) })]);
     },
   );
 
