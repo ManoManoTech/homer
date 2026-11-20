@@ -4,6 +4,7 @@ import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { slackBotWebClient } from '@/core/services/slack';
+import { mergeRequestApprovalsFixture } from '../__fixtures__/mergeRequestApprovalsFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import { mergeRequestReviewersFixture } from '../__fixtures__/mergeRequestReviewersFixture';
 import { slackUserFixture } from '../__fixtures__/slackUserFixture';
@@ -280,6 +281,10 @@ describe('review > listReviews', () => {
         reviewersByTitle[title],
       );
     }
+    mockGitlabCall(
+      '/projects/1/merge_requests/1/approvals',
+      mergeRequestApprovalsFixture,
+    );
 
     (slackBotWebClient.users.info as jest.Mock).mockResolvedValue({
       user: {
@@ -318,7 +323,7 @@ describe('review > listReviews', () => {
         {
           text: {
             text: `*Your merge requests:*
-• <https://gitlab/1/1|authored> · <https://slack/ts1|thread>`,
+• <https://gitlab/1/1|authored> · 1/2 approvals ⏳ · <https://slack/ts1|thread>`,
             type: 'mrkdwn',
           },
           type: 'section',
@@ -338,6 +343,99 @@ describe('review > listReviews', () => {
       user: 'userId',
     });
   });
+
+  const [approver] = mergeRequestApprovalsFixture.approved_by;
+
+  it.each([
+    [
+      'required ones reached',
+      {
+        approvals_left: 0,
+        approvals_required: 2,
+        approved_by: [approver, approver],
+      },
+      ' · 2/2 approvals ✅',
+    ],
+    [
+      'one without rule',
+      { approvals_left: 0, approvals_required: 0, approved_by: [approver] },
+      ' · 1 approval',
+    ],
+    [
+      'two without rule',
+      {
+        approvals_left: 0,
+        approvals_required: 0,
+        approved_by: [approver, approver],
+      },
+      ' · 2 approvals',
+    ],
+    ['none', { approvals_left: 0, approvals_required: 0, approved_by: [] }, ''],
+    ['failing lookup', { message: '500 Internal Server Error' }, ''],
+  ])(
+    'should show the approvals of the user merge requests (%s)',
+    async (_, approvals, approvalsText) => {
+      // Given
+      const channelId = 'channelId';
+      const gitlabUsername = 'john.doe';
+      const body = {
+        channel_id: channelId,
+        text: 'review list',
+        user_id: 'userId',
+      };
+      await addReviewToChannel({
+        channelId,
+        mergeRequestIid: 1,
+        projectId: 1,
+        ts: 'ts',
+      });
+      mockGitlabCall('/projects/1/merge_requests/1', {
+        ...mergeRequestDetailsFixture,
+        author: {
+          ...mergeRequestReviewersFixture[0].user,
+          username: gitlabUsername,
+        },
+        iid: 1,
+        title: 'authored',
+        web_url: 'https://gitlab/1/1',
+      });
+      mockGitlabCall('/projects/1/merge_requests/1/approvals', approvals);
+      (slackBotWebClient.users.info as jest.Mock).mockResolvedValue({
+        user: {
+          ...slackUserFixture,
+          profile: {
+            ...slackUserFixture.profile,
+            email: `${gitlabUsername}@${CONFIG.slack.emailDomains.split(',')[0]}`,
+          },
+        },
+      });
+      (slackBotWebClient.chat.getPermalink as jest.Mock).mockResolvedValue({
+        permalink: 'https://slack/ts',
+      });
+
+      // When
+      await request(app)
+        .post('/api/v1/homer/command')
+        .set(getSlackHeaders(body))
+        .send(body);
+
+      // Then
+      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+        expect.objectContaining({
+          blocks: [
+            {
+              text: {
+                text: `*Your merge requests:*
+• <https://gitlab/1/1|authored>${approvalsText} · <https://slack/ts|thread>`,
+                type: 'mrkdwn',
+              },
+              type: 'section',
+            },
+          ],
+        }),
+      );
+    },
+  );
 
   it('should fall back to a non-personalized list when the slack user lookup fails', async () => {
     // Given
