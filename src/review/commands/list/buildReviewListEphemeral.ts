@@ -7,7 +7,10 @@ import { escapeText, getPermalink } from '@/core/services/slack';
 import { findGitUsername } from '@/core/services/slackUsers';
 import type { DataReview } from '@/core/typings/Data';
 import type { ProviderType } from '@/core/typings/Provider';
-import type { UnifiedPullRequest } from '@/core/typings/UnifiedModels';
+import type {
+  UnifiedApprovalInfo,
+  UnifiedPullRequest,
+} from '@/core/typings/UnifiedModels';
 
 // Slack refuses a longer section text with invalid_blocks.
 const SECTION_TEXT_MAX_LENGTH = 3000;
@@ -19,6 +22,8 @@ interface BuildReviewListEphemeralData {
 }
 
 interface ReviewListItem {
+  /** Shown for the user's own merge requests. */
+  approvals?: string;
   mergeRequest: UnifiedPullRequest;
   /** Permalink of the review message shared in the channel */
   permalink: string;
@@ -160,7 +165,17 @@ async function buildPersonalizedSections(
       const username = usernames.get(provider);
 
       if (username !== undefined && isSameUser(author.username, username)) {
-        authored.push(item);
+        const approvals = await getProvider(provider)
+          .fetchApprovalInfo(projectId, iid)
+          .then(formatApprovals)
+          .catch((error: unknown) => {
+            logger.warn(
+              { error, projectId, provider, iid },
+              'Could not fetch the approvals of a pull request',
+            );
+            return undefined;
+          });
+        authored.push({ ...item, approvals });
         return;
       }
 
@@ -189,8 +204,32 @@ function isSameUser(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-function formatItem({ mergeRequest, permalink }: ReviewListItem): string {
-  return `• <${mergeRequest.webUrl}|${escapeText(mergeRequest.title)}> · <${permalink}|thread>`;
+function formatItem({
+  approvals,
+  mergeRequest,
+  permalink,
+}: ReviewListItem): string {
+  return [
+    `• <${mergeRequest.webUrl}|${escapeText(mergeRequest.title)}>`,
+    approvals,
+    `<${permalink}|thread>`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+function formatApprovals({
+  approvers,
+  approvalsLeft,
+  approvalsRequired,
+}: UnifiedApprovalInfo): string | undefined {
+  if (approvalsRequired && approvalsLeft !== undefined) {
+    return `${approvalsRequired - approvalsLeft}/${approvalsRequired} approvals ${approvalsLeft === 0 ? '✅' : '⏳'}`;
+  }
+  if (approvers.length > 0) {
+    return `${approvers.length} approval${approvers.length > 1 ? 's' : ''}`;
+  }
+  return undefined;
 }
 
 /** Spreads the lines over as few sections as Slack accepts. */
