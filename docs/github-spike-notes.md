@@ -1,5 +1,12 @@
 # GitHub support: findings from the documentation review
 
+**Status.** This is the research done before GitHub support was built. GitHub
+support has since been implemented: [github.md](github.md) explains how to set
+it up and [github-support.md](github-support.md) lists what works. Where this
+document and the code differ, the code is right. Sections 10 and 11 say what was
+done in the end, because the implementation departs from their first
+recommendations.
+
 ## Why this document exists
 
 Homer currently works with one git provider (GitLab). We want to add GitHub
@@ -330,13 +337,24 @@ Today the `Project` and `Review` tables store GitLab's numeric `projectId` and
 - REST calls are addressed by `owner/name`, so the GitHub code also needs
   `full_name`. It can be stored next to the numeric id or resolved when needed.
   `full_name` changes when a repository is renamed or transferred, so it
-  shouldn't be the key. (**Unverified:** that the numeric id stays the same
-  after a rename or transfer. This is widely relied on, but it isn't stated in
-  the pages we read.)
-- **Unverified, to check before the database change:** the id columns are
-  `INTEGER` (32-bit, maximum 2,147,483,647). GitHub repository and user ids are
-  large and still growing. We didn't check current values against that limit.
-  If they're close, the new columns (or the existing ones) should be `BIGINT`.
+  shouldn't be the key. Checked since against the live GitHub API: the numeric
+  id stays the same after a rename and after a transfer.
+- When this was written the id columns were `INTEGER` (32-bit, maximum
+  2,147,483,647). Checked since: GitHub repository ids were around 1.45 billion
+  in November 2026 and growing by more than a million a day, so they pass that
+  maximum around 2028.
+
+**What was done.** Nothing in this section is still open.
+
+- `projectId` is `BIGINT` on `Projects`, `Reviews` and `Releases`. The database
+  driver returns it as a string, which `data.ts` converts.
+- A `repoProvider` column on the three tables says which provider a row belongs
+  to. It defaults to `gitlab`, so rows written before GitHub support keep
+  working without a backfill.
+- A `repoSlug` column on `Projects` and `Reviews` stores `owner/name` next to
+  the id. It is refreshed from GitHub webhooks and is not the key.
+- Every lookup and delete filters on the provider,
+  `removeReviewsByMergeRequestIid` included.
 
 ## 11. Matching GitHub users to Slack users
 
@@ -358,13 +376,28 @@ On GitHub:
   setting commit with a GitHub "noreply" address, which won't match Slack.
 
 Consequence: an explicit mapping from GitHub username to Slack user is needed
-from the start. It can begin as a configuration map and move to a database table
-if it grows. The lookup should try, in order: the explicit mapping, then an email
-carried by the payload when it looks like a real corporate address, then the
-computed `<username>@<domain>` convention. When nothing matches, the result stays
-"no Slack user", exactly as today. That ordering keeps GitLab behaviour
-unchanged, because GitLab users have no mapping entry and fall through to the
-convention.
+from the start.
+
+**What was done, and why it differs from the first idea.** The first version of
+this section suggested two fallbacks after the explicit mapping: an email carried
+by the payload when it looks like a corporate address, then the computed
+`<username>@<domain>` convention. Neither proves who owns the Slack account. A
+commit author chooses the email in their git configuration, and anyone can
+register a GitHub login that matches a colleague's email. Do not add either as an
+unconditional fallback.
+
+The implemented lookup identifies people by their GitHub account and tries, in
+order:
+
+1. `config/homer/githubUsers.json`, which maps GitHub logins to emails.
+2. The user identity resolvers of `USER_IDENTITY_RESOLVERS`. The built-in
+   `<username>@<domain>` resolver answers for GitHub users only when
+   `GITHUB_LOGIN_MATCHES_EMAIL=true`, for organizations that control their
+   logins.
+3. The public email of the GitHub profile.
+
+When nothing matches, the result stays "no Slack user", exactly as before.
+GitLab behaviour is unchanged. See [Slack users](github.md#slack-users).
 
 ## 12. Authentication and permissions
 
@@ -405,8 +438,8 @@ Collected from the sections above:
   Each provider translates its own actions into that set.
 - A per-provider rule that decides whether to post a review automatically.
 - A per-provider list of supported Slack message buttons.
-- Git users carrying an optional email, so the Slack lookup can use it when the
-  payload provides one.
+- Git users carrying an optional email. The implementation fills it with the
+  public email of the GitHub profile only, see section 11.
 
 ## Open questions to confirm with a real GitHub delivery
 
@@ -414,7 +447,8 @@ Collected from the sections above:
 2. Whether inline review comments arrive as a burst at the same time as the review.
 3. How often `mergeable` is `null` in `pull_request` webhook payloads.
 4. What commit author emails look like for users with email privacy enabled.
-5. Current magnitude of GitHub repository ids against 32-bit `INTEGER` columns.
+5. Answered since, see section 10: GitHub repository ids pass the 32-bit
+   `INTEGER` maximum around 2028, and the columns are now `BIGINT`.
 6. Which permission the check runs endpoint requires.
 
 ## Sources
