@@ -5,7 +5,7 @@ import {
   countChannelsByProjectId,
 } from '@/core/services/data';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type { UnifiedProject } from '@/core/typings/UnifiedModels';
 
 export async function addProject(
@@ -55,7 +55,7 @@ async function sendSuccessMessage(
       : `in your Gitlab project by following the \
 <${HOMER_GIT_URL}/#1-make-homer-notified-of-changes-happening-in-the-gitlab-project|dedicated documentation>.`;
 
-  await slackBotWebClient.chat.postEphemeral({
+  await postEphemeral({
     channel: channelId,
     user: userId,
     text: `\
@@ -72,7 +72,7 @@ async function sendThresholdWarningMessage(
   projectPath: string,
   numberOfChannelsLinkedToProject: number,
 ): Promise<void> {
-  await slackBotWebClient.chat.postEphemeral({
+  await postEphemeral({
     channel: channelId,
     user: userId,
     text: `\

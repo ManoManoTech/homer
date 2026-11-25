@@ -4,7 +4,7 @@ import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { loadUserIdentityResolvers } from '@/core/services/userIdentity';
 import { settleExclusiveTasks } from '@/core/utils/runExclusive';
 import { mergeRequestHookFixture } from '../__fixtures__/hooks/mergeRequestHookFixture';
@@ -114,17 +114,20 @@ async function listReviewsAs(slackUser: { id: string; email?: string }) {
 async function expectReviewListHeading(heading: string) {
   await waitFor(() =>
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
-      expect.objectContaining({
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `*${heading}:*\n• <${mergeRequestDetailsFixture.web_url}|work of jdoe> · <https://slack/ts|thread>`,
+      expect.objectContaining(
+        addOkButton({
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `*${heading}:*\n• <${mergeRequestDetailsFixture.web_url}|work of jdoe> · <https://slack/ts|thread>`,
+              },
             },
-          },
-        ],
-      }),
+          ],
+          channel: 'channelId',
+        }),
+      ),
     ),
   );
 }

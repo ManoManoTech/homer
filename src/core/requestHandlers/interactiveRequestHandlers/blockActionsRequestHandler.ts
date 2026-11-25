@@ -2,6 +2,10 @@ import type { Request, Response } from 'express';
 import { changelogBlockActionsHandler } from '@/changelog/changelogBlockActionsHandler';
 import { HTTP_STATUS_OK } from '@/constants';
 import { logger } from '@/core/services/logger';
+import {
+  deleteEphemeralMessage,
+  EPHEMERAL_OK_ACTION,
+} from '@/core/services/slack';
 import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionPayload';
 import { projectBlockActionsHandler } from '@/project/projectBlockActionsHandler';
 import { releaseBlockActionsHandler } from '@/release/releaseBlockActionsHandler';
@@ -23,6 +27,9 @@ export async function blockActionsRequestHandler(
       }
 
       switch (true) {
+        case action_id === EPHEMERAL_OK_ACTION:
+          return deleteEphemeralMessage(payload.response_url);
+
         case action_id.startsWith('changelog'):
           return changelogBlockActionsHandler(payload);
 

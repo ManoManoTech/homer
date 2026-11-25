@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
@@ -38,13 +38,16 @@ describe('project > addProject', () => {
         projectId: projectFixture.id,
       }),
     ).toEqual(true);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` added`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should add project by web_url', async () => {
@@ -75,13 +78,16 @@ describe('project > addProject', () => {
         projectId: projectFixture.id,
       }),
     ).toEqual(true);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` added`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should add project by id', async () => {
@@ -109,13 +115,16 @@ describe('project > addProject', () => {
     expect(await hasModelEntry('Project', { channelId, projectId })).toEqual(
       true,
     );
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` added`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should display help if no query', async () => {
@@ -162,11 +171,14 @@ describe('project > addProject', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(`No project matches \`${search}\``),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(`No project matches \`${search}\``),
+        user: userId,
+      }),
+    );
   });
 
   it('should notify user whether no project found by id', async () => {
@@ -190,13 +202,16 @@ describe('project > addProject', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `No project found with id \`${projectId}\``,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `No project found with id \`${projectId}\``,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should allow user to choose whether multiple projects are found', async () => {
@@ -277,13 +292,16 @@ describe('project > addProject', () => {
       }),
     ).toEqual(true);
     expect(mockCall.called).toBeTruthy(); // Deletes ephemeral message
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      2,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` added`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should display threshold warning message when project is in too many channels', async () => {
@@ -327,22 +345,28 @@ describe('project > addProject', () => {
     );
 
     // Verify success message was sent
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` added`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` added`,
+        ),
+        user: userId,
+      }),
+    );
 
     // Verify threshold warning message was sent
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `D'oh! I've added \`${projectFixture.path_with_namespace}\` to this channel, but my brain is starting to hurt.`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      2,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `D'oh! I've added \`${projectFixture.path_with_namespace}\` to this channel, but my brain is starting to hurt.`,
+        ),
+        user: userId,
+      }),
+    );
 
     // Verify the warning message contains the correct information
     const warningMessage = (slackBotWebClient.chat.postEphemeral as jest.Mock)

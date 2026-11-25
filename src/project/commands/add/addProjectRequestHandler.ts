@@ -3,7 +3,7 @@ import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { isGithubConfigured } from '@/core/services/github';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type { ProviderType } from '@/core/typings/Provider';
 import type {
   SlackExpressRequest,
@@ -32,7 +32,7 @@ export async function addProjectRequestHandler(
   res.sendStatus(HTTP_STATUS_NO_CONTENT);
 
   if (provider === 'github' && !isGithubConfigured()) {
-    await slackBotWebClient.chat.postEphemeral({
+    await postEphemeral({
       channel: channel_id,
       user: user_id,
       text: 'GitHub is not configured on this Homer instance :homer-stressed:',
@@ -46,7 +46,7 @@ export async function addProjectRequestHandler(
     try {
       projects = [await getProvider(provider).fetchProject(Number(query))];
     } catch {
-      await slackBotWebClient.chat.postEphemeral({
+      await postEphemeral({
         channel: channel_id,
         user: user_id,
         text: `No project found with id \`${query}\` :homer-stressed:`,
@@ -57,7 +57,7 @@ export async function addProjectRequestHandler(
     projects = await getProvider(provider).searchProjects(query);
 
     if (projects.length === 0) {
-      await slackBotWebClient.chat.postEphemeral({
+      await postEphemeral({
         channel: channel_id,
         user: user_id,
         text: `No project matches \`${query}\` :homer-stressed:`,
@@ -65,7 +65,7 @@ export async function addProjectRequestHandler(
       return;
     }
     if (projects.length > 1) {
-      await slackBotWebClient.chat.postEphemeral(
+      await postEphemeral(
         buildAddProjectSelectionEphemeral({
           channelId: channel_id,
           projects,

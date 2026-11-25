@@ -1,8 +1,5 @@
 import { removeProjectFromChannel } from '@/core/services/data';
-import {
-  deleteEphemeralMessage,
-  slackBotWebClient,
-} from '@/core/services/slack';
+import { deleteEphemeralMessage, postEphemeral } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { parseProjectRef } from '@/core/utils/projectRef';
@@ -21,7 +18,7 @@ export async function removeProject(
 
   await removeProjectFromChannel(projectId, channel_id, provider);
   await deleteEphemeralMessage(response_url);
-  await slackBotWebClient.chat.postEphemeral({
+  await postEphemeral({
     channel: channel_id,
     user: user.id,
     text: `\`${projectName}\` removed from this channel :homer-happy:`,

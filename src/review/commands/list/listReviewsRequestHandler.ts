@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getReviewsByChannelId } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
@@ -17,7 +17,7 @@ export async function listReviewsRequestHandler(
   const { channel_id, user_id } = req.body as SlackSlashCommandResponse;
   const reviews = await getReviewsByChannelId(channel_id);
 
-  await slackBotWebClient.chat.postEphemeral(
+  await postEphemeral(
     await buildReviewListEphemeral({
       channelId: channel_id,
       reviews,

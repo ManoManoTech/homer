@@ -12,7 +12,7 @@ import {
 import { errorMiddleware } from '@/core/middlewares/errorMiddleware';
 import { addProjectToChannel } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
 
@@ -75,11 +75,14 @@ describe('core > errorManagement', () => {
 
       // Then
       expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-        channel: channelId,
-        user: userId,
-        text: GENERIC_ERROR_MESSAGE,
-      });
+      expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+        2,
+        addOkButton({
+          channel: channelId,
+          user: userId,
+          text: GENERIC_ERROR_MESSAGE,
+        }),
+      );
     });
 
     describe('expired_trigger_id', () => {

@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestFixture } from '../__fixtures__/mergeRequestFixture';
 import { pipelineFixture } from '../__fixtures__/pipelineFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
@@ -53,11 +53,14 @@ describe('review > createPipeline', () => {
         body: JSON.stringify({ ref: 'test1', variables: [] }),
       }),
     );
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining('Pipeline created'),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining('Pipeline created'),
+        user: userId,
+      }),
+    );
   });
 
   it('should allow user to create a pipeline and to deploy', async () => {
@@ -109,10 +112,13 @@ describe('review > createPipeline', () => {
         }),
       }),
     );
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining('Pipeline created'),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining('Pipeline created'),
+        user: userId,
+      }),
+    );
   });
 });

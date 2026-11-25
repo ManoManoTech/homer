@@ -8,7 +8,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { mergeRequestApprovalsFixture } from '../__fixtures__/mergeRequestApprovalsFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
@@ -211,11 +211,14 @@ describe('review > addReview', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(`No merge request matches \`${search}\``),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(`No merge request matches \`${search}\``),
+        user: userId,
+      }),
+    );
   });
 
   it('should allow user to choose whether multiple merge requests are found', async () => {

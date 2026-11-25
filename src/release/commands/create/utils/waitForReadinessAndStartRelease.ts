@@ -6,7 +6,7 @@ import {
 } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type { DatabaseEntry, DataRelease } from '@/core/typings/Data';
 import { getReleaseProjectRef } from '@/core/utils/projectRef';
 import { startRelease } from '@/release/commands/create/utils/startRelease';
@@ -53,7 +53,7 @@ export async function waitForReadinessAndStartRelease(
     [{ hasReachedTimeout, isReady }] = await Promise.all([
       waitForReadiness(releaseManager, release, mainBranchPipeline.id),
       notifyUserIfNotReady
-        ? slackBotWebClient.chat.postEphemeral({
+        ? postEphemeral({
             channel: releaseChannelId,
             user: slackAuthor.id,
             text: `The preconditions to launch a release are not yet met, I will \
@@ -89,7 +89,7 @@ wait for them and start the release automatically (<${mainBranchPipeline.webUrl}
   } else if (hasReachedTimeout) {
     await Promise.all([
       removeRelease(projectId, tagName, provider),
-      slackBotWebClient.chat.postEphemeral({
+      postEphemeral({
         channel: releaseChannelId,
         user: slackAuthor.id,
         text: `Timeout has been reached while waiting for the <${mainBranchPipeline.webUrl}|pipeline> to be ready :homer-stressed: Please launch a new release :homer-donut:`,

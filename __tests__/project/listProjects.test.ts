@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
 import { mockGitlabCall } from '../utils/mockGitlabCall';
@@ -46,22 +46,24 @@ describe('project > listProjects', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      blocks: [
-        {
-          text: {
-            text: slackifyMarkdown(`**Channel projects:**
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        blocks: [
+          {
+            text: {
+              text: slackifyMarkdown(`**Channel projects:**
 - [diaspora/diaspora-project-site](https://my-git.domain.com/diaspora/diaspora-project-site)
 - [diaspora/diaspora-project-site](https://my-git.domain.com/diaspora/diaspora-project-site)`),
-            type: 'mrkdwn',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-      ],
-      channel: 'channelId',
-      text: 'Channel projects: diaspora/diaspora-project-site, diaspora/diaspora-project-site.',
-      user: 'userId',
-    });
+        ],
+        channel: 'channelId',
+        text: 'Channel projects: diaspora/diaspora-project-site, diaspora/diaspora-project-site.',
+        user: 'userId',
+      }),
+    );
   });
 
   it('should notify user when there is no project', async () => {
@@ -83,19 +85,21 @@ describe('project > listProjects', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      blocks: [
-        {
-          text: {
-            text: 'No project has been added to this channel yet :homer-metal:',
-            type: 'mrkdwn',
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        blocks: [
+          {
+            text: {
+              text: 'No project has been added to this channel yet :homer-metal:',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-      ],
-      channel: 'channelId',
-      text: 'No project has been added to this channel yet.',
-      user: 'userId',
-    });
+        ],
+        channel: 'channelId',
+        text: 'No project has been added to this channel yet.',
+        user: 'userId',
+      }),
+    );
   });
 });

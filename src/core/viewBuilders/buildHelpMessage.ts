@@ -1,8 +1,9 @@
 import type { ChatPostMessageArguments } from '@slack/web-api';
 import { CONFIG } from '@/config';
+import { addOkButton } from '@/core/services/slack';
 
 export function buildHelpMessage(channelId: string): ChatPostMessageArguments {
-  return {
+  return addOkButton({
     channel: channelId,
     text: `\
 Here are the available commands:
@@ -36,5 +37,5 @@ Don't hesitate to join me on <#${CONFIG.slack.supportChannel.id}> to take a :bee
         },
       },
     ],
-  };
+  });
 }

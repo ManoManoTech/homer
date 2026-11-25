@@ -5,7 +5,11 @@ import type {
 import { getProjectRelease, removeRelease } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { fetchSlackUserFromId, slackBotWebClient } from '@/core/services/slack';
+import {
+  fetchSlackUserFromId,
+  postEphemeral,
+  slackBotWebClient,
+} from '@/core/services/slack';
 import { DEFAULT_PROVIDER, type ProviderType } from '@/core/typings/Provider';
 import { NOT_DEPLOYED_RELEASE_NAME_PREFIX } from '@/release/commands/create/utils/previousReleaseTagOptions';
 import {
@@ -82,7 +86,7 @@ export async function cancelRelease(
     }
 
     case 'monitoring':
-      await slackBotWebClient.chat.postEphemeral({
+      await postEphemeral({
         channel: channelId,
         user: userId,
         text: 'It is too late to cancel that release :homer-stressed:',

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { githubRepositoryFixture } from '../__fixtures__/github/repositoryFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
@@ -40,13 +40,16 @@ describe('github > project', () => {
         repoSlug: full_name,
       }),
     ).toEqual(true);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${full_name}\` added to this channel :homer-happy:\n\nDon't forget to <${githubRepositoryFixture.html_url}/settings/hooks|set up a webhook> in your GitHub repository`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${full_name}\` added to this channel :homer-happy:\n\nDon't forget to <${githubRepositoryFixture.html_url}/settings/hooks|set up a webhook> in your GitHub repository`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should add a repository by URL', async () => {
@@ -87,11 +90,14 @@ describe('github > project', () => {
     await sendCommand('project add github homer-org/unknown');
 
     // Then
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: channelId,
-      text: 'No project matches `homer-org/unknown` :homer-stressed:',
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: channelId,
+        text: 'No project matches `homer-org/unknown` :homer-stressed:',
+        user: userId,
+      }),
+    );
   });
 
   it('should let the user pick a repository among search results', async () => {
