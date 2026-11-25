@@ -1,7 +1,7 @@
 import { GENERIC_ERROR_MESSAGE } from '@/constants';
 import { getProjectRelease } from '@/core/services/data';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral, slackBotWebClient } from '@/core/services/slack';
 import type { BlockActionsPayload } from '@/core/typings/BlockActionPayload';
 import type { ButtonAction } from '@/core/typings/ButtonAction';
 import { parseProjectRef } from '@/core/utils/projectRef';
@@ -40,7 +40,7 @@ export async function displayReleaseChangelog(
       view: await buildReleaseChangelogModalView(tagName, description),
     });
   } catch (error) {
-    await slackBotWebClient.chat.postEphemeral({
+    await postEphemeral({
       channel: container.channel_id,
       user: user.id,
       text: error instanceof Error ? error.message : GENERIC_ERROR_MESSAGE,

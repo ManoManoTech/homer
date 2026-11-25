@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_OK } from '@/constants';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { githubPullRequestFixture } from '../__fixtures__/github/pullRequestFixture';
 import { githubRepositoryFixture } from '../__fixtures__/github/repositoryFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
@@ -63,11 +63,13 @@ describe('github > review actions', () => {
     expect(rerun30.called).toBe(true);
     expect(rerun20.called).toBe(true);
     expect(rerun10.called).toBe(false);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      channel: channelId,
-      text: 'Pipeline created :homer-happy:',
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        channel: channelId,
+        text: 'Pipeline created :homer-happy:',
+        user: userId,
+      }),
+    );
   });
 
   it('should update the pull request branch', async () => {
@@ -89,10 +91,12 @@ describe('github > review actions', () => {
     expect(updateBranch.calledWith?.[1]).toEqual(
       expect.objectContaining({ method: 'PUT' }),
     );
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      channel: channelId,
-      text: 'Rebase in progress :homer-donut:',
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        channel: channelId,
+        text: 'Rebase in progress :homer-donut:',
+        user: userId,
+      }),
+    );
   });
 });

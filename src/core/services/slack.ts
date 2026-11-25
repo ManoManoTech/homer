@@ -1,4 +1,9 @@
-import { WebClient } from '@slack/web-api';
+import type { Block, KnownBlock } from '@slack/types';
+import {
+  type ChatPostEphemeralArguments,
+  type ChatPostEphemeralResponse,
+  WebClient,
+} from '@slack/web-api';
 import { CONFIG } from '@/config';
 import type { GitlabUser } from '@/core/typings/GitlabUser';
 import type { SlackUser } from '@/core/typings/SlackUser';
@@ -12,10 +17,49 @@ import {
 
 const SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN = CONFIG.slack.accessToken;
 
+export const EPHEMERAL_OK_ACTION = 'ephemeral-ok';
+
+// Slack refuses a longer section text with invalid_blocks.
+export const SECTION_TEXT_MAX_LENGTH = 3000;
+
 // This client should be used for everything else.
 export const slackBotWebClient = new WebClient(
   SLACK_BOT_USER_O_AUTH_ACCESS_TOKEN,
 );
+
+/** Ends a message only its user sees with a button deleting it. */
+export function addOkButton<
+  T extends { blocks?: (Block | KnownBlock)[]; channel: string; text?: string },
+>(message: T): T {
+  const { blocks, text = '' } = message;
+
+  // Moved to a section, a longer text would be refused.
+  if (blocks === undefined && text.length > SECTION_TEXT_MAX_LENGTH) {
+    return message;
+  }
+  return {
+    ...message,
+    blocks: [
+      ...(blocks ?? [{ type: 'section', text: { type: 'mrkdwn', text } }]),
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            action_id: EPHEMERAL_OK_ACTION,
+            text: { type: 'plain_text', text: 'OK' },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export function postEphemeral(
+  message: ChatPostEphemeralArguments,
+): Promise<ChatPostEphemeralResponse> {
+  return slackBotWebClient.chat.postEphemeral(addOkButton(message));
+}
 
 export async function deleteEphemeralMessage(
   response_url: string,

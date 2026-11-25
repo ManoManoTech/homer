@@ -3,7 +3,7 @@ import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getProjectsByChannelId } from '@/core/services/data';
 import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
@@ -43,7 +43,7 @@ export async function listProjectsRequestHandler(
   } while (projects.length > 0);
 
   for (const projectsPart of projectsParts) {
-    await slackBotWebClient.chat.postEphemeral(
+    await postEphemeral(
       buildProjectListEphemeral({
         channelId: channel_id,
         displayTitle: projectsParts.indexOf(projectsPart) === 0,

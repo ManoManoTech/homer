@@ -5,7 +5,7 @@ import {
   getProjectsByChannelId,
 } from '@/core/services/data';
 import { searchPullRequests } from '@/core/services/providers/searchPullRequests';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral, slackBotWebClient } from '@/core/services/slack';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
@@ -45,13 +45,13 @@ export async function shareReviewRequestHandler(
       ts: ts as string,
     });
   } else if (mergeRequests.length === 0) {
-    await slackBotWebClient.chat.postEphemeral({
+    await postEphemeral({
       channel: channel_id,
       user: user_id,
       text: `No merge request matches \`${query}\` :homer-stressed:`,
     });
   } else {
-    await slackBotWebClient.chat.postEphemeral(
+    await postEphemeral(
       buildMRSelectionEphemeral({
         channelId: channel_id,
         mergeRequests,

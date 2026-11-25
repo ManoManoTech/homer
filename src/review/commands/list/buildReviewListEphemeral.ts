@@ -3,7 +3,11 @@ import type { ChatPostEphemeralArguments } from '@slack/web-api';
 import { MERGE_REQUEST_OPEN_STATES } from '@/constants';
 import { logger } from '@/core/services/logger';
 import { getProvider } from '@/core/services/providers/ProviderFactory';
-import { escapeText, getPermalink } from '@/core/services/slack';
+import {
+  escapeText,
+  getPermalink,
+  SECTION_TEXT_MAX_LENGTH,
+} from '@/core/services/slack';
 import { findGitUsername } from '@/core/services/slackUsers';
 import type { DataReview } from '@/core/typings/Data';
 import type { ProviderType } from '@/core/typings/Provider';
@@ -11,9 +15,6 @@ import type {
   UnifiedApprovalInfo,
   UnifiedPullRequest,
 } from '@/core/typings/UnifiedModels';
-
-// Slack refuses a longer section text with invalid_blocks.
-const SECTION_TEXT_MAX_LENGTH = 3000;
 
 interface BuildReviewListEphemeralData {
   channelId: string;

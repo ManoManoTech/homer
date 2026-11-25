@@ -7,7 +7,7 @@ import type {
 import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import type { ProjectReleaseConfig } from '@/release/typings/ProjectReleaseConfig';
 import ConfigHelper from '@/release/utils/ConfigHelper';
 import {
@@ -799,12 +799,15 @@ describe('release > createRelease', () => {
 
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(1, {
-      channel: releaseConfig.releaseChannelId,
-      text: `The preconditions to launch a release are not yet met, I will \
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      1,
+      addOkButton({
+        channel: releaseConfig.releaseChannelId,
+        text: `The preconditions to launch a release are not yet met, I will \
 wait for them and start the release automatically (<${pipelineFixture.web_url}|pipeline>) :homer-donut:`,
-      user: userId,
-    });
+        user: userId,
+      }),
+    );
 
     /** Step 2: pipelines becomes ready and release starts */
 

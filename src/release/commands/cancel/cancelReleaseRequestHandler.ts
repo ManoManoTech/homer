@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { Op } from 'sequelize';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { getReleases } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral } from '@/core/services/slack';
 import type {
   SlackExpressRequest,
   SlackSlashCommandResponse,
@@ -30,13 +30,13 @@ export async function cancelReleaseRequestHandler(
   ).filter((release) => isChannelRelease(release, configs));
 
   if (releases.length === 0) {
-    await slackBotWebClient.chat.postEphemeral({
+    await postEphemeral({
       channel: channelId,
       user: userId,
       text: 'There is no release in progress in this channel :homer-donut:',
     });
   } else {
-    await slackBotWebClient.chat.postEphemeral(
+    await postEphemeral(
       await buildReleaseSelectionEphemeral({
         action: 'cancel',
         channelId,

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '@/app';
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_OK } from '@/constants';
 import { addProjectToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
 import { projectFixture } from '../__fixtures__/projectFixture';
 import { getSlackHeaders } from '../utils/getSlackHeaders';
@@ -90,13 +90,16 @@ describe('project > removeProject', () => {
       }),
     ).toEqual(false);
     expect(mockCall.called).toBeTruthy(); // Deletes ephemeral message
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(2, {
-      channel: channelId,
-      text: expect.stringContaining(
-        `\`${projectFixture.path_with_namespace}\` removed`,
-      ),
-      user: userId,
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenNthCalledWith(
+      2,
+      addOkButton({
+        channel: channelId,
+        text: expect.stringContaining(
+          `\`${projectFixture.path_with_namespace}\` removed`,
+        ),
+        user: userId,
+      }),
+    );
   });
 
   it('should notify user whether there is no project to remove', async () => {

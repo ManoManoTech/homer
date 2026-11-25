@@ -7,7 +7,7 @@ import {
   getProjectRelease,
   updateRelease,
 } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import type { DataRelease } from '@/core/typings/Data';
 import ConfigHelper from '@/release/utils/ConfigHelper';
 import { mockUrl } from '@root/__mocks__/fetch-mock';
@@ -410,11 +410,13 @@ describe('release > cancelRelease', () => {
 
     // Check that an ephemeral message was sent
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      channel: channelId,
-      user: userId,
-      text: 'It is too late to cancel that release :homer-stressed:',
-    });
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        channel: channelId,
+        user: userId,
+        text: 'It is too late to cancel that release :homer-stressed:',
+      }),
+    );
 
     // Check that the UI was not updated
     expect(slackBotWebClient.chat.update).not.toHaveBeenCalled();

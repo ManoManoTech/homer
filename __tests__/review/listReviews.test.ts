@@ -3,7 +3,7 @@ import { app } from '@/app';
 import { CONFIG } from '@/config';
 import { HTTP_STATUS_NO_CONTENT } from '@/constants';
 import { addReviewToChannel } from '@/core/services/data';
-import { slackBotWebClient } from '@/core/services/slack';
+import { addOkButton, slackBotWebClient } from '@/core/services/slack';
 import { mergeRequestApprovalsFixture } from '../__fixtures__/mergeRequestApprovalsFixture';
 import { mergeRequestDetailsFixture } from '../__fixtures__/mergeRequestDetailsFixture';
 import { mergeRequestReviewersFixture } from '../__fixtures__/mergeRequestReviewersFixture';
@@ -61,22 +61,24 @@ describe('review > listReviews', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      blocks: [
-        {
-          text: {
-            text: `*Ongoing reviews:*
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        blocks: [
+          {
+            text: {
+              text: `*Ongoing reviews:*
 • <${mergeRequestDetailsFixture.web_url}|merge request title> · <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|thread>
 • <${mergeRequestDetailsFixture.web_url}|merge request title> · <https://manomano-team.slack.com/archives/CKXA1FASF/p1640343776000900|thread>`,
-            type: 'mrkdwn',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-      ],
-      channel: 'channelId',
-      text: 'Ongoing reviews: merge request title, merge request title.',
-      user: 'userId',
-    });
+        ],
+        channel: 'channelId',
+        text: 'Ongoing reviews: merge request title, merge request title.',
+        user: 'userId',
+      }),
+    );
   });
 
   it('should link each review to its own message when merge requests from different projects share an iid', async () => {
@@ -172,9 +174,9 @@ describe('review > listReviews', () => {
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     const texts: string[] = (
       slackBotWebClient.chat.postEphemeral as jest.Mock
-    ).mock.calls[0][0].blocks.map(
-      (block: { text: { text: string } }) => block.text.text,
-    );
+    ).mock.calls[0][0].blocks
+      .filter(({ type }: { type: string }) => type === 'section')
+      .map((block: { text: { text: string } }) => block.text.text);
     expect(texts.length).toBeGreaterThan(1);
     texts.forEach((text) => expect(text.length).toBeLessThanOrEqual(3000));
     expect(texts.join('\n')).toEqual(
@@ -310,38 +312,40 @@ describe('review > listReviews', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.users.info).toHaveBeenCalledWith({ user: userId });
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      blocks: [
-        {
-          text: {
-            text: `*Waiting for your review:*
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        blocks: [
+          {
+            text: {
+              text: `*Waiting for your review:*
 • <https://gitlab/1/2|to review> · <https://slack/ts2|thread>`,
-            type: 'mrkdwn',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-        {
-          text: {
-            text: `*Your merge requests:*
+          {
+            text: {
+              text: `*Your merge requests:*
 • <https://gitlab/1/1|authored> · 1/2 approvals ⏳ · <https://slack/ts1|thread>`,
-            type: 'mrkdwn',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-        {
-          text: {
-            text: `*Other reviews:*
+          {
+            text: {
+              text: `*Other reviews:*
 • <https://gitlab/2/1|already approved> · <https://slack/ts3|thread>
 • <https://gitlab/2/2|not a reviewer> · <https://slack/ts4|thread>`,
-            type: 'mrkdwn',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-      ],
-      channel: 'channelId',
-      text: 'Ongoing reviews: to review, authored, already approved, not a reviewer.',
-      user: 'userId',
-    });
+        ],
+        channel: 'channelId',
+        text: 'Ongoing reviews: to review, authored, already approved, not a reviewer.',
+        user: 'userId',
+      }),
+    );
   });
 
   const [approver] = mergeRequestApprovalsFixture.approved_by;
@@ -421,18 +425,21 @@ describe('review > listReviews', () => {
 
       // Then
       expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
-        expect.objectContaining({
-          blocks: [
-            {
-              text: {
-                text: `*Your merge requests:*
+        expect.objectContaining(
+          addOkButton({
+            blocks: [
+              {
+                text: {
+                  text: `*Your merge requests:*
 • <https://gitlab/1/1|authored>${approvalsText} · <https://slack/ts|thread>`,
-                type: 'mrkdwn',
+                  type: 'mrkdwn',
+                },
+                type: 'section',
               },
-              type: 'section',
-            },
-          ],
-        }),
+            ],
+            channel: 'channelId',
+          }),
+        ),
       );
     },
   );
@@ -553,19 +560,21 @@ describe('review > listReviews', () => {
     // Then
     expect(response.status).toEqual(HTTP_STATUS_NO_CONTENT);
     expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledTimes(1);
-    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith({
-      blocks: [
-        {
-          text: {
-            text: 'There is no ongoing review shared in this channel :homer-metal:',
-            type: 'mrkdwn',
+    expect(slackBotWebClient.chat.postEphemeral).toHaveBeenCalledWith(
+      addOkButton({
+        blocks: [
+          {
+            text: {
+              text: 'There is no ongoing review shared in this channel :homer-metal:',
+              type: 'mrkdwn',
+            },
+            type: 'section',
           },
-          type: 'section',
-        },
-      ],
-      channel: 'channelId',
-      text: 'There is no ongoing review shared in this channel.',
-      user: 'userId',
-    });
+        ],
+        channel: 'channelId',
+        text: 'There is no ongoing review shared in this channel.',
+        user: 'userId',
+      }),
+    );
   });
 });

@@ -8,7 +8,7 @@ import {
   PRIVATE_CHANNEL_ERROR_MESSAGE,
 } from '@/constants';
 import { logger } from '@/core/services/logger';
-import { slackBotWebClient } from '@/core/services/slack';
+import { postEphemeral, slackBotWebClient } from '@/core/services/slack';
 
 export async function errorMiddleware(
   error: any,
@@ -72,7 +72,7 @@ export async function errorMiddleware(
         text: errorMessage,
       });
     } else {
-      await slackBotWebClient.chat.postEphemeral({
+      await postEphemeral({
         channel: channel_id,
         user: user_id,
         text: errorMessage,
