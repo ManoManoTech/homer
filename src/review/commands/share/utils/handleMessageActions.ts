@@ -5,6 +5,7 @@ import type { BlockActionsPayloadWithChannel } from '@/core/typings/BlockActionP
 import type { StaticSelectAction } from '@/core/typings/StaticSelectAction';
 import { createPipeline } from './createPipeline';
 import { rebaseSourceBranch } from './rebaseSourceBranch';
+import { refreshReview } from './refreshReview';
 
 export async function handleMessageAction(
   payload: BlockActionsPayloadWithChannel,
@@ -22,6 +23,8 @@ export async function handleMessageAction(
     await removeReview(ts);
   } else if (mergeRequestAction.startsWith('review-rebase-source-branch')) {
     await rebaseSourceBranch(payload, action);
+  } else if (mergeRequestAction.startsWith('review-refresh')) {
+    await refreshReview(payload, action);
   } else {
     logger.error(
       new Error(`Unknown review message action: ${mergeRequestAction}.`),
